@@ -49,14 +49,15 @@ React 19 / TypeScript SPA         FastAPI API Gateway
 
 ## 2. Implementation Status by Component
 
-| Subsystem | Phase 1 Status | Target Implementation |
+| Subsystem | Status | Implementation Details |
 | :--- | :--- | :--- |
 | **API Gateway** | `IMPLEMENTED` | FastAPI with structured JSON logging, security middlewares, correlation IDs, and unified error envelopes. |
 | **Health Probes** | `IMPLEMENTED` | `/health` and `/api/v1/health` verifying DB connection and Redis vitality. |
-| **Database Abstraction** | `FOUNDATION ONLY` | SQLAlchemy 2.0 with async SQLite (dev/test) and PostgreSQL pool configuration (prod). Full domain models planned for Phase 2 & 3. |
-| **Cache & Queue Boundary** | `FOUNDATION ONLY` | `RedisService` abstraction with safe local dev fallback. Message queue processing planned for Phase 7. |
-| **Frontend Shell** | `FOUNDATION ONLY` | React 19 + TypeScript + Vite with dark-first design tokens, global ErrorBoundary, client routing, and system diagnostics page. |
-| **Authentication & RBAC** | `PLANNED` | Phase 2: Argon2id hashing, short-lived JWTs, refresh token family rotation, server-side RBAC guards. |
+| **Database Architecture** | `OPERATIONAL` | SQLAlchemy 2.0 async engine + Alembic migrations. Full Phase 2 schemas: `users`, `user_profiles`, `refresh_tokens`, `payment_orders`, `payment_transactions`, `premium_entitlements`, `audit_logs`. |
+| **Authentication & RBAC** | `IMPLEMENTED` | Argon2id hashing, short-lived JWT access tokens, rotated refresh tokens with family reuse detection, HTTP-only SameSite cookies, RBAC dependencies (`require_role`, `require_admin`). |
+| **Payments & Entitlements** | `IMPLEMENTED` | Server-authoritative pricing (₹999/yr), PhonePe gateway boundary with SHA256 checksums, constant-time signature verification, idempotent activation, `require_premium` gate. |
+| **Cache & Rate Limiting** | `OPERATIONAL` | Redis sliding window rate limiter with in-memory local fallback. |
+| **Frontend Foundation** | `OPERATIONAL` | React 19 + TypeScript + Vite. Dark-first tokens, global ErrorBoundary, AuthContext (in-memory JWT + silent cookie refresh), AuthModal, Pro upgrade checkout, System Status. |
 | **Online Judge Sandbox** | `PLANNED` | Phase 7: Isolated process runner (dev) and containerized sandboxes with network/memory/syscall constraints (prod). **FastAPI will never execute student code in-process.** |
 | **AI System** | `PLANNED` | Phases 8–10: Backend AI provider adapter with strict Pydantic output validation and prompt defense barriers. |
 

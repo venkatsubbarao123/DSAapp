@@ -52,6 +52,26 @@ class Settings(BaseSettings):
     SESSION_COOKIE_SECURE: bool = False
     RATE_LIMIT_ENABLED: bool = True
 
+    # Authentication & Tokens (Phase 2)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    JWT_ALGORITHM: str = "HS256"
+
+    # Premium Entitlement & Authoritative Pricing (Phase 2)
+    PREMIUM_PRICE: int = 1  # Authoritative server price (e.g. 1 USD or configured INR)
+    PREMIUM_CURRENCY: str = "USD"
+    PREMIUM_PLAN_ID: str = "plan_premium_monthly"
+    PREMIUM_DURATION_DAYS: int = 30
+
+    # PhonePe Payment Gateway (Phase 2)
+    PAYMENT_MODE: Literal["phonepe_production", "phonepe_sandbox", "development_manual"] = "development_manual"
+    PHONEPE_MERCHANT_ID: str = ""
+    PHONEPE_SALT_KEY: str = ""
+    PHONEPE_SALT_INDEX: str = "1"
+    PHONEPE_HOST_URL: str = "https://api-preprod.phonepe.com/apis/pg-sandbox"
+    PHONEPE_CALLBACK_URL: str = "http://localhost:8000/api/v1/payments/webhook"
+    PHONEPE_REDIRECT_URL: str = "http://localhost:5173/status"
+
     # Logging
     LOG_LEVEL: str = "INFO"
     STRUCTURED_LOGS: bool = True
@@ -114,7 +134,33 @@ class Settings(BaseSettings):
             if not self.SECURE_COOKIES:
                 issues.append("SECURE_COOKIES must be enabled (True) in production.")
 
+            # 5. Payment mode in production
+            if self.PAYMENT_MODE == "phonepe_production":
+                payment_valid, payment_issues = self.validate_payment_config()
+                if not payment_valid:
+                    issues.extend(payment_issues)
+
         return len(issues) == 0, issues
+
+    def validate_payment_config(self) -> Tuple[bool, List[str]]:
+        """Validates PhonePe configuration without disclosing secret values."""
+        missing: List[str] = []
+        if self.PAYMENT_MODE in ("phonepe_production", "phonepe_sandbox"):
+            if not self.PHONEPE_MERCHANT_ID:
+                missing.append("PHONEPE_MERCHANT_ID")
+            if not self.PHONEPE_SALT_KEY:
+                missing.append("PHONEPE_SALT_KEY")
+            if not self.PHONEPE_SALT_INDEX:
+                missing.append("PHONEPE_SALT_INDEX")
+        return len(missing) == 0, missing
+
+    def get_payment_config_diagnostic(self) -> str:
+        """Safe PhonePe diagnostic output. Never reveals secrets."""
+        is_valid, missing = self.validate_payment_config()
+        if is_valid:
+            return "PHONEPE CONFIGURATION VALID"
+        else:
+            return "PHONEPE CONFIGURATION INVALID\nMissing:\n" + "\n".join(f"- {name}" for name in missing)
 
     def get_config_diagnostic(self) -> str:
         """Returns safe configuration diagnostic status without exposing sensitive values."""

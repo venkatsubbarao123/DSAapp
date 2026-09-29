@@ -47,11 +47,22 @@ LLM Provider API (Google Gemini / Anthropic / OpenAI)
 
 ## 3. Cryptography & Secrets Management
 
-* **Secrets Storage:** All credentials (`SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`, API keys) reside in environment variables. No secrets are committed to Git.
+* **Secrets Storage:** All credentials (`SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`, PhonePe keys, API keys) reside in environment variables. No secrets are committed to Git.
 * **Production Validation:** Backend startup (`validate_production_config`) immediately aborts if `SECRET_KEY` is missing, insecure, or under 64 characters in production.
 * **Diagnostic Redaction:** Configuration diagnostics report `CONFIGURATION VALID` or `CONFIGURATION INVALID` without exposing actual values.
-* **Password Hashing (Phase 2):** Argon2id hashing via `argon2-cffi` with tuned memory and iteration costs. Plaintext passwords must never be logged, cached, or serialized.
-* **Token Architecture (Phase 2):** Short-lived access tokens (15 minutes) with HTTP-only, `SameSite=Strict`, `Secure` refresh cookies and automatic token reuse revocation.
+* **Password Hashing (IMPLEMENTED - Phase 2):** Argon2id hashing via `argon2-cffi` (`time_cost=3`, `memory_cost=65536`, `parallelism=4`, `salt_len=16`). Constant-time password verification.
+* **Token Architecture & Replay Detection (IMPLEMENTED - Phase 2):**
+  * Short-lived JWT access tokens (15 minutes).
+  * Long-lived refresh tokens (7 days) stored in database with unique JTI and Family ID.
+  * Refresh token rotation: Every refresh invalidates the used refresh token and issues a new pair.
+  * Replay attack detection: If an already-revoked refresh token is presented, the entire family of active sessions for that user is immediately revoked and audited.
+  * Delivered via HTTP-only, `SameSite=Lax/Strict`, `Secure` cookies with client-side fallback.
+* **Payment Security & Webhooks (IMPLEMENTED - Phase 2):**
+  * Zero-trust pricing: Price is calculated strictly on the server (`extra='forbid'` rejects client amounts).
+  * Non-custodial: No card, banking, or UPI PIN credentials ever stored.
+  * PhonePe SHA256 checksum generation and constant-time webhook signature verification (`hmac.compare_digest`).
+  * Idempotent entitlement activation with duration extensions.
+  * IDOR protection preventing cross-user access to payment orders.
 
 ---
 

@@ -20,13 +20,16 @@ os.environ["ALLOWED_HOSTS"] = '["localhost", "127.0.0.1", "testserver"]'
 
 from backend.app.main import app
 from backend.app.db.init_db import init_db
+from backend.app.services.rate_limiter import rate_limiter
 
 
 @pytest.fixture(autouse=True)
 async def setup_test_db():
-    """Initializes in-memory database schema for each test session."""
+    """Initializes in-memory database schema and resets rate limits for each test."""
+    rate_limiter._local_buckets.clear()
     await init_db()
     yield
+    rate_limiter._local_buckets.clear()
 
 
 @pytest.fixture

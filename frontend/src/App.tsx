@@ -5,11 +5,14 @@ import { Header } from "./components/common/Header.tsx";
 import { Footer } from "./components/common/Footer.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
 import { SystemStatusPage } from "./pages/SystemStatusPage.tsx";
+import { PremiumPage } from "./pages/PremiumPage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
+import { AuthProvider } from "./context/AuthContext.tsx";
+import { AuthModal } from "./components/auth/AuthModal.tsx";
 import { fetchApi } from "./services/apiClient.ts";
 import { HealthData } from "./types/api.ts";
 
-export const App: React.FC = () => {
+export const AppContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>(
     window.location.pathname || "/"
   );
@@ -57,57 +60,69 @@ export const App: React.FC = () => {
     if (currentPath === "/status") {
       return <SystemStatusPage />;
     }
+    if (currentPath === "/premium") {
+      return <PremiumPage />;
+    }
     return <NotFoundPage onNavigate={navigate} />;
   };
 
   return (
-    <ErrorBoundary>
-      <div
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        backgroundColor: "var(--bg-primary)",
+        color: "var(--text-primary)",
+      }}
+    >
+      {/* Accessible skip link */}
+      <a
+        href="#main-content"
         style={{
-          display: "flex",
-          flexDirection: "column",
-          minHeight: "100vh",
-          backgroundColor: "var(--bg-primary)",
-          color: "var(--text-primary)",
+          position: "absolute",
+          top: "-9999px",
+          left: "var(--space-4)",
+          backgroundColor: "var(--brand-primary)",
+          color: "#ffffff",
+          padding: "var(--space-2) var(--space-4)",
+          borderRadius: "var(--radius-sm)",
+          zIndex: 100,
+          textDecoration: "none",
+          fontWeight: 600,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.top = "var(--space-4)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.top = "-9999px";
         }}
       >
-        {/* Accessible skip link */}
-        <a
-          href="#main-content"
-          style={{
-            position: "absolute",
-            top: "-9999px",
-            left: "var(--space-4)",
-            backgroundColor: "var(--brand-primary)",
-            color: "#ffffff",
-            padding: "var(--space-2) var(--space-4)",
-            borderRadius: "var(--radius-sm)",
-            zIndex: 100,
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.top = "var(--space-4)";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.top = "-9999px";
-          }}
-        >
-          Skip to main content
-        </a>
+        Skip to main content
+      </a>
 
-        <Header
-          currentPath={currentPath}
-          onNavigate={navigate}
-          serviceHealthy={serviceHealthy}
-        />
+      <Header
+        currentPath={currentPath}
+        onNavigate={navigate}
+        serviceHealthy={serviceHealthy}
+      />
 
-        <div id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          {renderCurrentView()}
-        </div>
-
-        <Footer />
+      <div id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {renderCurrentView()}
       </div>
+
+      <Footer />
+      <AuthModal />
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ErrorBoundary>
   );
 };

@@ -18,6 +18,16 @@ export class APIClientError extends Error {
   }
 }
 
+let inMemoryAccessToken: string | null = null;
+
+export function setAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return inMemoryAccessToken;
+}
+
 const DEFAULT_TIMEOUT_MS = 10000;
 
 export async function fetchApi<T>(
@@ -33,12 +43,17 @@ export async function fetchApi<T>(
     ...(options.headers as Record<string, string>),
   };
 
+  if (inMemoryAccessToken && !headers["Authorization"]) {
+    headers["Authorization"] = `Bearer ${inMemoryAccessToken}`;
+  }
+
   if (options.body && typeof options.body === "string" && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
   try {
     const response = await fetch(endpoint, {
+      credentials: options.credentials ?? "include",
       ...options,
       headers,
       signal: controller.signal,
