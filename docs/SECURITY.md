@@ -128,12 +128,31 @@ Every HTTP response is fortified with defensive headers via `SecurityHeadersMidd
 
 ---
 
-## 8. Future Security Controls (Phases 4–27)
+## 8. Phase 4 Security Controls: Progress, Submissions, Mistakes & Revision
+
+### Zero-Execution Security Invariant
+* **Threat Model:** Remote Code Execution (RCE), command injection, and container breakout via arbitrary student code execution.
+* **Invariant:** Student code is strictly stored as untrusted text and queued (`QUEUED_FOR_FUTURE_JUDGE`). No in-process execution (`eval`, `exec`, `subprocess`) is executed in Phase 4.
+* **Enforcement:** Code is stored directly to PostgreSQL without being invoked. No fake "Accepted" execution verdicts are fabricated.
+
+### Strict Ingestion & Payload Protection
+* **Payload Bound:** Maximum 64 KB (65,536 UTF-8 bytes). Enforced at Pydantic schema validation (`extra="forbid"`) and frontend input handlers.
+* **Language Allowlist:** Restricted to `python`, `javascript`, `typescript`, `java`, `cpp`. Arbitrary values trigger HTTP 422.
+* **Log Privacy:** Raw student code is excluded from application logger outputs and audit log metadata JSON.
+
+### IDOR & Ownership Protection
+* **Threat Model:** Malicious user inspecting, updating, or deleting another student's submissions, progress records, or mistake notes.
+* **Invariant:** Every progress query, submission fetch, mistake mutation, and revision review filters strictly by `user_id == current_user.id`.
+* **Enforcement:** Attempting to access an ID belonging to another user returns `HTTP 404 Not Found` (preventing ID enumeration).
+
+---
+
+## 9. Future Security Controls (Phases 5–27)
 
 | Security Subsystem | Target Phase | Implementation Strategy |
 | :--- | :--- | :--- |
-| **Progress & Submission Integrity** | Phase 4 | Server-validated completion milestones; preventing fabricated student progress state. |
 | **Execution Sandboxing** | Phase 7 | Isolated process runner (dev) and containerized sandboxes with network/memory/syscall constraints. |
 | **AI Prompt Injection Defense** | Phase 8 | Strict Pydantic output schemas, prompt guardrails, and token-bucket rate limits. |
 | **Ephemeral SQL Sandbox** | Phase 20 | In-memory temporary SQLite instances for student SQL queries; complete network and filesystem isolation. |
 | **File Upload Sanitation** | Phase 21 | Generated UUID filenames, strict MIME magic-number checking, virus scanning, and path traversal normalization. |
+

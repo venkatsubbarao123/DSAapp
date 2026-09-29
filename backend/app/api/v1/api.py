@@ -10,8 +10,12 @@ from backend.app.api.v1.endpoints import (
     auth,
     content,
     health,
+    mistakes,
     payments,
     premium,
+    progress,
+    revision,
+    submissions,
     users,
 )
 
@@ -31,3 +35,10 @@ api_v1_router.include_router(premium.router, prefix="/premium", tags=["Premium"]
 # 4. Curriculum, Topics, Lessons & Problems (Phase 3 Implemented)
 api_v1_router.include_router(content.router, tags=["Content & Curriculum"])
 api_v1_router.include_router(admin_content.router, prefix="/admin", tags=["Content Administration"])
+
+# 5. Progress Tracking, Submissions, Mistakes & Revision (Phase 4 Implemented)
+api_v1_router.include_router(progress.router, prefix="/progress", tags=["Progress Tracking"])
+api_v1_router.include_router(submissions.router, prefix="/submissions", tags=["Submissions"])
+api_v1_router.include_router(mistakes.router, prefix="/mistakes", tags=["Mistakes Notebook"])
+api_v1_router.include_router(revision.router, prefix="/revision", tags=["Spaced Revision"])
+

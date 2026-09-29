@@ -11,6 +11,11 @@ import { TopicsPage } from "./pages/TopicsPage.tsx";
 import { LessonPage } from "./pages/LessonPage.tsx";
 import { ProblemsPage } from "./pages/ProblemsPage.tsx";
 import { ProblemDetailPage } from "./pages/ProblemDetailPage.tsx";
+import { ProgressPage } from "./pages/ProgressPage.tsx";
+import { SubmissionsPage } from "./pages/SubmissionsPage.tsx";
+import { SubmissionDetailPage } from "./pages/SubmissionDetailPage.tsx";
+import { MistakesPage } from "./pages/MistakesPage.tsx";
+import { RevisionPage } from "./pages/RevisionPage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { AuthModal } from "./components/auth/AuthModal.tsx";
@@ -88,6 +93,22 @@ export const AppContent: React.FC = () => {
     if (currentPath.startsWith("/problems/")) {
       const problemId = currentPath.replace("/problems/", "");
       return <ProblemDetailPage problemId={problemId} onNavigate={navigate} />;
+    }
+    if (currentPath === "/progress") {
+      return <ProgressPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/submissions") {
+      return <SubmissionsPage onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/submissions/")) {
+      const submissionId = currentPath.replace("/submissions/", "");
+      return <SubmissionDetailPage submissionId={submissionId} onNavigate={navigate} />;
+    }
+    if (currentPath === "/mistakes") {
+      return <MistakesPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/revision") {
+      return <RevisionPage onNavigate={navigate} />;
     }
     return <NotFoundPage onNavigate={navigate} />;
   };

@@ -114,3 +114,14 @@ Test Harness Evaluation (ACCEPTED, WRONG_ANSWER, TIME_LIMIT, RUNTIME_ERROR)
       ▼
 Database Submission Record
 ```
+
+---
+
+## 7. Phase 4 Architecture: Progress, Submissions, Mistakes & Revision
+Phase 4 introduces zero-trust student learning persistence:
+- **Progress Tracking Engine**: Mathematical, non-fabricated metrics for lessons and problems. `UserLessonProgress` and `UserProblemProgress` state transitions are strictly server-computed.
+- **Untrusted Source Code Ingestion**: 64KB UTF-8 payload boundary, language allowlist (`python`, `javascript`, `typescript`, `java`, `cpp`), idempotency key deduplication. Code is stored safely without evaluation (`QUEUED_FOR_FUTURE_JUDGE`).
+- **Mistake Notebook**: Structured cognitive error taxonomy (`CONCEPT_GAP`, `LOGIC_ERROR`, `EDGE_CASE`, `COMPLEXITY_ISSUE`, etc.) with user isolation and keyword search.
+- **Spaced Revision System**: SM-2 inspired memory recall scheduling (`AGAIN`, `HARD`, `GOOD`, `EASY` outcomes) calculating dynamic intervals and ease factors.
+- **Mastery Analytics**: Pro-entitlement gated server analytics computed over user attempt and review distributions.
+

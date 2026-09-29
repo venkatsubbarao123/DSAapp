@@ -1,7 +1,7 @@
 import React from "react";
 
 interface PremiumGateProps {
-  contentType?: "problem" | "lesson" | "topic";
+  contentType?: "problem" | "lesson" | "topic" | "mastery" | "analytics";
   onUpgrade: () => void;
 }
 

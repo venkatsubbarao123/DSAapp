@@ -30,6 +30,21 @@ from backend.app.models.content import (
     problem_patterns,
     problem_tags,
 )
+from backend.app.models.progress import (
+    LessonProgressStatus,
+    Mistake,
+    MistakeType,
+    ProblemProgressStatus,
+    ReviewOutcome,
+    RevisionItem,
+    RevisionSchedule,
+    RevisionScheduleStatus,
+    RevisionSourceType,
+    Submission,
+    SubmissionStatus,
+    UserLessonProgress,
+    UserProblemProgress,
+)
 
 __all__ = [
     "User",
@@ -60,4 +75,17 @@ __all__ = [
     "TestCase",
     "problem_tags",
     "problem_patterns",
+    "ProblemProgressStatus",
+    "LessonProgressStatus",
+    "SubmissionStatus",
+    "MistakeType",
+    "RevisionSourceType",
+    "RevisionScheduleStatus",
+    "ReviewOutcome",
+    "UserProblemProgress",
+    "UserLessonProgress",
+    "Submission",
+    "Mistake",
+    "RevisionItem",
+    "RevisionSchedule",
 ]

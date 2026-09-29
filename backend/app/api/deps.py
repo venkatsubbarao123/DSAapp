@@ -116,3 +116,10 @@ def get_content_service(session: AsyncSession = Depends(get_db)):
     from backend.app.services.content_service import ContentService
     return ContentService(session)
 
+
+def get_progress_service(session: AsyncSession = Depends(get_db)):
+    """Dependency injector for ProgressService."""
+    from backend.app.services.progress_service import ProgressService
+    return ProgressService(session)
+
+

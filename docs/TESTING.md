@@ -94,7 +94,7 @@ npm run typecheck
 npm run build
 ```
 
-### Frontend Test Coverage Breakdown (16 tests):
+### Frontend Test Coverage Breakdown (22 tests):
 1. `src/test/App.test.tsx` (4 tests):
    - Application shell and overview page rendering.
    - Navigation transitions between `/` and `/status`.
@@ -115,3 +115,21 @@ npm run build
    - Problem Detail view rendering problem statement, constraints, examples, sample test cases, and progressive hints.
    - Premium Content Gate rendering with upgrade CTA when Free user encounters locked problem.
    - Lesson Page rendering structured JSON blocks (headings, paragraphs, code) with zero XSS risk.
+5. `src/test/Progress.test.tsx` (6 tests):
+   - Unauthenticated access guard redirecting to sign in prompt for `/progress`.
+   - Authenticated `ProgressPage` with mathematical metrics, topic progress breakdown, and recent activity.
+   - `SubmissionsPage` with zero-trust architectural execution notice and history list.
+   - `MistakesPage` with categories, search input, and modal for recording errors.
+   - `RevisionPage` with due items and recall quality actions (`AGAIN`, `HARD`, `GOOD`, `EASY`).
+   - Solution code submission from `ProblemDetailPage` with 64KB size protection and queued non-execution notice.
+
+---
+
+## 4. Phase 4 Test Summary
+
+| Test Domain | Framework | Test File Count | Total Tests | Pass Rate |
+|---|---|---|---|---|
+| **Backend API, Models & Security** | Pytest | 10 | 71 | **100% (71/71)** |
+| **Frontend UI, State & Guardrails**| Vitest | 5 | 22 | **100% (22/22)** |
+| **Type Integrity** | TypeScript | — | Full Project | **0 errors** |
+

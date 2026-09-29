@@ -147,6 +147,82 @@ export const Header: React.FC<HeaderProps> = ({
                 Problems
               </button>
             </li>
+            {isAuthenticated && (
+              <>
+                <li>
+                  <button
+                    onClick={() => onNavigate("/progress")}
+                    style={{
+                      background: currentPath === "/progress" ? "var(--bg-tertiary)" : "none",
+                      border: "none",
+                      color: currentPath === "/progress" ? "var(--text-primary)" : "var(--text-secondary)",
+                      fontWeight: currentPath === "/progress" ? 600 : 400,
+                      fontSize: "0.875rem",
+                      padding: "var(--space-2) var(--space-4)",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Progress
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate("/submissions")}
+                    style={{
+                      background: currentPath.startsWith("/submissions") ? "var(--bg-tertiary)" : "none",
+                      border: "none",
+                      color: currentPath.startsWith("/submissions") ? "var(--text-primary)" : "var(--text-secondary)",
+                      fontWeight: currentPath.startsWith("/submissions") ? 600 : 400,
+                      fontSize: "0.875rem",
+                      padding: "var(--space-2) var(--space-4)",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Submissions
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate("/mistakes")}
+                    style={{
+                      background: currentPath === "/mistakes" ? "var(--bg-tertiary)" : "none",
+                      border: "none",
+                      color: currentPath === "/mistakes" ? "var(--text-primary)" : "var(--text-secondary)",
+                      fontWeight: currentPath === "/mistakes" ? 600 : 400,
+                      fontSize: "0.875rem",
+                      padding: "var(--space-2) var(--space-4)",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Mistakes
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate("/revision")}
+                    style={{
+                      background: currentPath === "/revision" ? "var(--bg-tertiary)" : "none",
+                      border: "none",
+                      color: currentPath === "/revision" ? "var(--text-primary)" : "var(--text-secondary)",
+                      fontWeight: currentPath === "/revision" ? 600 : 400,
+                      fontSize: "0.875rem",
+                      padding: "var(--space-2) var(--space-4)",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Revision
+                  </button>
+                </li>
+              </>
+            )}
             <li>
               <button
                 onClick={() => onNavigate("/premium")}
@@ -341,7 +417,7 @@ export const Header: React.FC<HeaderProps> = ({
             borderRadius: "var(--radius-sm)",
           }}
         >
-          v0.3.0-phase3
+          v0.4.0-phase4
         </span>
       </div>
     </header>
