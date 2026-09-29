@@ -8,6 +8,10 @@ from fastapi import APIRouter
 from backend.app.api.v1.endpoints import (
     admin_content,
     admin_judge,
+    admin_users,
+    admin_analytics,
+    admin_system,
+    admin_problems,
     auth,
     content,
     contests,
@@ -17,6 +21,7 @@ from backend.app.api.v1.endpoints import (
     interview,
     leaderboards,
     mistakes,
+    notifications,
     oop,
     payments,
     practice,
@@ -69,6 +74,13 @@ api_v1_router.include_router(interview.router, prefix="/interview", tags=["Inter
 api_v1_router.include_router(cp.router, prefix="/competitive", tags=["Competitive Programming"])
 api_v1_router.include_router(sql_learning.router, prefix="/sql", tags=["SQL Practice Engine"])
 api_v1_router.include_router(oop.router, prefix="/oop", tags=["OOP Module"])
+
+# 10. Admin, Analytics, Notifications & System Management (Phase 9 Implemented)
+api_v1_router.include_router(admin_users.router, prefix="/admin/users", tags=["Admin User Management"])
+api_v1_router.include_router(admin_analytics.router, prefix="/admin", tags=["Admin Analytics"])
+api_v1_router.include_router(admin_system.router, prefix="/admin/system", tags=["Admin System Diagnostics & Audit"])
+api_v1_router.include_router(admin_problems.router, prefix="/admin/problems", tags=["Admin Problem & Test Case Management"])
+api_v1_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 
 
 

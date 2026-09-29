@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from backend.app.db.base import Base
 
@@ -103,6 +104,57 @@ class Notification(Base):
         Index("idx_notifications_user_read", "user_id", "read_at"),
         Index("idx_notifications_user_created", "user_id", "created_at"),
     )
+
+    def __init__(self, **kwargs):
+        import json
+        is_read = kwargs.pop("is_read", None)
+        dedup_key = kwargs.pop("deduplication_key", None)
+        data_json = kwargs.pop("data_json", None)
+        if data_json and "metadata_json" not in kwargs:
+            kwargs["metadata_json"] = data_json
+        if dedup_key:
+            meta = {}
+            if "metadata_json" in kwargs and kwargs["metadata_json"]:
+                try:
+                    meta = json.loads(kwargs["metadata_json"])
+                except Exception:
+                    meta = {}
+            meta["deduplication_key"] = dedup_key
+            kwargs["metadata_json"] = json.dumps(meta)
+
+        super().__init__(**kwargs)
+        if is_read is not None:
+            self.is_read = is_read
+
+    @hybrid_property
+    def is_read(self) -> bool:
+        return self.read_at is not None
+
+    @is_read.setter
+    def is_read(self, val: bool) -> None:
+        if val and self.read_at is None:
+            self.read_at = datetime.now(timezone.utc)
+        elif not val:
+            self.read_at = None
+
+    @is_read.expression
+    def is_read(cls):
+        return cls.read_at.isnot(None)
+
+    @property
+    def data_json(self) -> Optional[str]:
+        return self.metadata_json
+
+    @property
+    def deduplication_key(self) -> Optional[str]:
+        import json
+        if not self.metadata_json:
+            return None
+        try:
+            return json.loads(self.metadata_json).get("deduplication_key")
+        except Exception:
+            return None
+
 
 
 class NotificationPreference(Base):

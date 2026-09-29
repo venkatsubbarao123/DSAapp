@@ -123,3 +123,21 @@ def get_progress_service(session: AsyncSession = Depends(get_db)):
     return ProgressService(session)
 
 
+def get_admin_service(session: AsyncSession = Depends(get_db)):
+    """Dependency injector for AdminService."""
+    from backend.app.services.admin.admin_service import AdminService
+    return AdminService(session)
+
+
+def get_analytics_service(session: AsyncSession = Depends(get_db)):
+    """Dependency injector for AnalyticsService."""
+    from backend.app.services.admin.analytics_service import AnalyticsService
+    return AnalyticsService(session)
+
+
+def get_notification_service(session: AsyncSession = Depends(get_db)):
+    """Dependency injector for NotificationService."""
+    from backend.app.services.notification.notification_service import NotificationService
+    return NotificationService(session)
+
+
