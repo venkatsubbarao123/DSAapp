@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { InstallPrompt } from '../components/common/InstallPrompt';
 import { PwaUpdateToast } from '../components/common/PwaUpdateToast';
 import * as registerSwModule from '../pwa/registerSw';
-import fs from 'fs';
-import path from 'path';
+import manifest from '../../public/manifest.json';
+import swContent from '../../public/sw.js?raw';
 
 describe('DSAapp Phase 9 PWA & Offline Engine', () => {
   beforeEach(() => {
@@ -13,12 +13,7 @@ describe('DSAapp Phase 9 PWA & Offline Engine', () => {
 
   describe('Web App Manifest Verification', () => {
     it('verifies manifest.json exists, is valid JSON, and defines standalone PWA parameters', () => {
-      const manifestPath = path.resolve(__dirname, '../../public/manifest.json');
-      expect(fs.existsSync(manifestPath)).toBe(true);
-
-      const raw = fs.readFileSync(manifestPath, 'utf-8');
-      const manifest = JSON.parse(raw);
-
+      expect(manifest).toBeDefined();
       expect(manifest.name).toContain('DSAapp');
       expect(manifest.short_name).toBe('DSAapp');
       expect(manifest.display).toBe('standalone');
@@ -37,10 +32,7 @@ describe('DSAapp Phase 9 PWA & Offline Engine', () => {
 
   describe('Service Worker (sw.js) Architecture & Security Boundaries', () => {
     it('verifies sw.js exists and implements Cache-First static assets and Network-Only security rules', () => {
-      const swPath = path.resolve(__dirname, '../../public/sw.js');
-      expect(fs.existsSync(swPath)).toBe(true);
-
-      const swContent = fs.readFileSync(swPath, 'utf-8');
+      expect(typeof swContent).toBe('string');
 
       // Verify versioning and cache identifier
       expect(swContent).toContain('CACHE_NAME');

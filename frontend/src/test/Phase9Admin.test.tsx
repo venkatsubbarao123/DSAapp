@@ -57,7 +57,7 @@ describe('DSAapp Phase 9 Admin Console & Analytics UI', () => {
         refreshUser: vi.fn(),
         openAuthModal: vi.fn(),
         closeAuthModal: vi.fn(),
-        isAuthModalOpen: false,
+        authModalOpen: false,
         authModalMode: 'login',
       });
 
@@ -89,7 +89,7 @@ describe('DSAapp Phase 9 Admin Console & Analytics UI', () => {
         refreshUser: vi.fn(),
         openAuthModal: vi.fn(),
         closeAuthModal: vi.fn(),
-        isAuthModalOpen: false,
+        authModalOpen: false,
         authModalMode: 'login',
       });
 
