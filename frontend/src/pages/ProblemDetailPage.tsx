@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { fetchApi, APIClientError } from "../services/apiClient.ts";
 import { useAuth } from "../context/AuthContext.tsx";
 import { ProblemDetail, ProblemDifficulty } from "../types/curriculum.ts";
-import { ProblemProgress, SubmissionDetail, MistakeType } from "../types/progress.ts";
+import { ProblemProgress, SubmissionDetail, SubmissionResult, SubmissionStatus, MistakeType } from "../types/progress.ts";
 import { LoadingSpinner } from "../components/common/LoadingSpinner.tsx";
 import { PremiumGate } from "../components/common/PremiumGate.tsx";
 
@@ -37,6 +37,9 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [submissionFeedback, setSubmissionFeedback] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [judgingStatus, setJudgingStatus] = useState<SubmissionStatus | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   // Mistake modal
   const [showMistakeModal, setShowMistakeModal] = useState(false);
@@ -116,6 +119,8 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
     setSubmitting(true);
     setSubmissionError(null);
     setSubmissionFeedback(null);
+    setJudgingStatus(null);
+    setSubmissionResult(null);
 
     const idempotencyKey = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
@@ -133,8 +138,10 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
       });
 
       setSubmissionFeedback(res.data);
+      setJudgingStatus(res.data.status);
+      setSubmissionResult(res.data.result || null);
 
-      // Re-fetch or update progress
+      // Advance progress to ATTEMPTED
       setProgress((prev) =>
         prev
           ? {
@@ -145,6 +152,58 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
             }
           : null
       );
+
+      // Start polling for judge verdict if still queued or judging
+      const terminalStatuses = [
+        "ACCEPTED",
+        "WRONG_ANSWER",
+        "TIME_LIMIT_EXCEEDED",
+        "MEMORY_LIMIT_EXCEEDED",
+        "RUNTIME_ERROR",
+        "COMPILATION_ERROR",
+        "OUTPUT_LIMIT_EXCEEDED",
+        "SYSTEM_ERROR",
+        "CANCELLED",
+      ];
+
+      if (!terminalStatuses.includes(res.data.status)) {
+        setIsPolling(true);
+        let attempts = 0;
+        const maxAttempts = 15;
+        const pollInterval = setInterval(async () => {
+          attempts += 1;
+          try {
+            const detailRes = await fetchApi<SubmissionDetail>(`/api/v1/submissions/${res.data.id}`);
+            if (detailRes.data) {
+              setJudgingStatus(detailRes.data.status);
+              if (detailRes.data.result) {
+                setSubmissionResult(detailRes.data.result);
+              }
+              if (terminalStatuses.includes(detailRes.data.status) || attempts >= maxAttempts) {
+                clearInterval(pollInterval);
+                setIsPolling(false);
+                if (detailRes.data.status === "ACCEPTED" || detailRes.data.result?.verdict === "ACCEPTED") {
+                  setProgress((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          status: "SOLVED",
+                          successful_attempts: prev.successful_attempts + 1,
+                          solved_at: new Date().toISOString(),
+                        }
+                      : null
+                  );
+                }
+              }
+            }
+          } catch {
+            if (attempts >= maxAttempts) {
+              clearInterval(pollInterval);
+              setIsPolling(false);
+            }
+          }
+        }, 1200);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to record submission.";
       setSubmissionError(msg);
@@ -639,25 +698,137 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
             role="region"
             aria-label="Submission Result"
             style={{
-              backgroundColor: "var(--status-success-bg)",
-              border: "1px solid var(--status-success)",
-              color: "var(--status-success)",
+              backgroundColor:
+                submissionResult?.verdict === "ACCEPTED"
+                  ? "rgba(35, 134, 54, 0.15)"
+                  : submissionResult?.verdict
+                  ? "rgba(218, 54, 51, 0.15)"
+                  : "var(--status-success-bg)",
+              border: `1px solid ${
+                submissionResult?.verdict === "ACCEPTED"
+                  ? "#238636"
+                  : submissionResult?.verdict
+                  ? "#da3633"
+                  : "var(--status-success)"
+              }`,
+              color:
+                submissionResult?.verdict === "ACCEPTED"
+                  ? "#3fb950"
+                  : submissionResult?.verdict
+                  ? "#f85149"
+                  : "var(--status-success)",
               padding: "var(--space-4)",
               borderRadius: "var(--radius-md)",
               marginBottom: "var(--space-4)",
               fontSize: "0.875rem",
             }}
           >
-            <div style={{ fontWeight: 700, marginBottom: "4px" }}>
-              ✓ Submission Received & Queued!
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-2)" }}>
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: "4px" }}>
+                  ✓ Submission Received & Queued!
+                </div>
+                {submissionResult ? (
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                      color: submissionResult.verdict === "ACCEPTED" ? "#3fb950" : "#f85149",
+                    }}
+                  >
+                    {submissionResult.verdict === "ACCEPTED" ? "✓ Accepted" : `✗ ${submissionResult.verdict.replace(/_/g, " ")}`}
+                  </div>
+                ) : isPolling ? (
+                  <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
+                    ⏳ Judging in Progress ({judgingStatus || "QUEUED"})...
+                  </div>
+                ) : null}
+              </div>
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: "var(--radius-full)",
+                  backgroundColor:
+                    submissionResult?.verdict === "ACCEPTED"
+                      ? "rgba(35, 134, 54, 0.3)"
+                      : "rgba(255, 255, 255, 0.1)",
+                  color: "#ffffff",
+                }}
+              >
+                {judgingStatus || submissionFeedback.status}
+              </span>
             </div>
-            <div style={{ fontSize: "0.8125rem", color: "var(--text-primary)" }}>
+
+            <div style={{ fontSize: "0.8125rem", color: "var(--text-primary)", marginBottom: "var(--space-2)" }}>
               ID: <span style={{ fontFamily: "var(--font-mono)" }}>{submissionFeedback.public_id}</span> • Status:{" "}
-              <strong>{submissionFeedback.status}</strong>
+              <strong>{judgingStatus || submissionFeedback.status}</strong>
             </div>
-            <div style={{ fontSize: "0.75rem", marginTop: "4px", color: "var(--text-secondary)" }}>
+
+            {/* Execution Metrics Grid */}
+            {submissionResult && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: "var(--space-3)",
+                  margin: "var(--space-3) 0",
+                  padding: "var(--space-3)",
+                  backgroundColor: "rgba(0, 0, 0, 0.2)",
+                  borderRadius: "var(--radius-sm)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.8125rem",
+                }}
+              >
+                <div>
+                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Test Cases</span>
+                  <strong style={{ fontSize: "1rem" }}>
+                    {submissionResult.tests_passed} / {submissionResult.tests_total}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Runtime</span>
+                  <strong style={{ fontSize: "1rem" }}>{submissionResult.execution_time_ms ?? 0} ms</strong>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Memory</span>
+                  <strong style={{ fontSize: "1rem" }}>
+                    {Math.round((submissionResult.memory_used_bytes ?? 0) / (1024 * 1024))} MB
+                  </strong>
+                </div>
+              </div>
+            )}
+
+            {/* Error logs */}
+            {(submissionResult?.compiler_output_safe || submissionResult?.runtime_output_safe) && (
+              <div style={{ marginTop: "var(--space-3)" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                  Execution Details / Logs:
+                </span>
+                <pre
+                  style={{
+                    backgroundColor: "#0d1117",
+                    border: "1px solid #30363d",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "var(--space-3)",
+                    fontSize: "0.75rem",
+                    color: "#f85149",
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                    marginTop: "4px",
+                  }}
+                >
+                  {submissionResult.compiler_output_safe || submissionResult.runtime_output_safe}
+                </pre>
+              </div>
+            )}
+
+            <div style={{ fontSize: "0.75rem", marginTop: "var(--space-2)", color: "var(--text-secondary)" }}>
               {submissionFeedback.execution_notice}
             </div>
+
             <button
               onClick={() => onNavigate(`/submissions/${submissionFeedback.public_id}`)}
               style={{

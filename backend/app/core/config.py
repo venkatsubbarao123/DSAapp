@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     PHONEPE_CALLBACK_URL: str = "http://localhost:8000/api/v1/payments/webhook"
     PHONEPE_REDIRECT_URL: str = "http://localhost:5173/status"
 
+    # Online Judge & Code Execution (Phase 5)
+    JUDGE_SANDBOX_DRIVER: Literal["docker", "mock", "auto"] = "auto"
+    JUDGE_WORKER_CONCURRENCY: int = 2
+    JUDGE_JOB_TIMEOUT_SECONDS: int = 30
+    JUDGE_HEARTBEAT_INTERVAL_SECONDS: int = 5
+
     # Logging
     LOG_LEVEL: str = "INFO"
     STRUCTURED_LOGS: bool = True

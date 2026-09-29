@@ -125,11 +125,43 @@ npm run build
 
 ---
 
-## 4. Phase 4 Test Summary
+## 5. Phase 5 Online Judge Tests
+
+### Backend Test Coverage
+1. **Output Comparator (`test_judge_comparator.py`)**:
+   - Exact and normalized whitespace modes
+   - CRLF and LF cross-platform handling
+   - Trailing newline stripping
+2. **Language Registry (`test_judge_languages.py`)**:
+   - Supported runtimes (Python, C++, Java, Node.js, TypeScript)
+   - Compile vs interpreted definitions
+   - Dynamic command injection prevention
+3. **Sandbox Isolation & Diagnostics (`test_judge_sandbox_and_security.py`)**:
+   - Docker security spec (`--network none`, `--read-only`, `10001:10001`, `pids_limit: 64`, `cap_drop: ALL`)
+   - Availability probing without exceptions
+4. **Judge Worker & Lifecycle (`test_judge_worker_and_lifecycle.py`)**:
+   - Verdict assignment (`ACCEPTED`, `WRONG_ANSWER`, `TIME_LIMIT_EXCEEDED`, `MEMORY_LIMIT_EXCEEDED`, `COMPILATION_ERROR`)
+   - Invariant: `ACCEPTED` marks problem `SOLVED` and sets `solved_at`
+   - Invariant: Non-accepted verdicts keep status `ATTEMPTED`
+5. **API & IDOR Defense (`test_judge_api.py`)**:
+   - Submission polling and result retrieval
+   - IDOR protection on `/submissions/{id}/result`
+   - User cancellation of queued jobs
+   - Admin RBAC on `/admin/judge/health`
+
+### Frontend Test Coverage (`src/test/Judge.test.tsx`)
+1. **Verdict & Metrics Card**:
+   - Renders Accepted verdict, test cases passed (`10 / 10`), runtime, and memory metrics.
+2. **Safe Error Logs**:
+   - Renders compiler and runtime error logs inside monospace `<pre>` blocks safely.
+
+---
+
+## 6. Current Test Summary (Phases 1–5 Cumulative)
 
 | Test Domain | Framework | Test File Count | Total Tests | Pass Rate |
 |---|---|---|---|---|
-| **Backend API, Models & Security** | Pytest | 10 | 71 | **100% (71/71)** |
-| **Frontend UI, State & Guardrails**| Vitest | 5 | 22 | **100% (22/22)** |
+| **Backend API, Models, Judge & Security** | Pytest | 15 | 88 | **100% (88/88)** |
+| **Frontend UI, State, Judge & Guardrails**| Vitest | 6 | 24 | **100% (24/24)** |
 | **Type Integrity** | TypeScript | — | Full Project | **0 errors** |
 

@@ -216,20 +216,125 @@ export const SubmissionDetailPage: React.FC<SubmissionDetailPageProps> = ({
         </div>
       </header>
 
+      {/* Execution Verdict & Metrics Card */}
+      {submission.result && (
+        <section
+          role="region"
+          aria-label="Judge Execution Result"
+          style={{
+            backgroundColor:
+              submission.result.verdict === "ACCEPTED"
+                ? "rgba(35, 134, 54, 0.15)"
+                : "rgba(218, 54, 51, 0.15)",
+            border: `1px solid ${
+              submission.result.verdict === "ACCEPTED" ? "#238636" : "#da3633"
+            }`,
+            borderRadius: "var(--radius-lg)",
+            padding: "var(--space-5) var(--space-6)",
+            marginBottom: "var(--space-6)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "1.125rem",
+                fontWeight: 700,
+                color: submission.result.verdict === "ACCEPTED" ? "#3fb950" : "#f85149",
+              }}
+            >
+              {submission.result.verdict === "ACCEPTED" ? "✓ Accepted" : `✗ ${submission.result.verdict.replace(/_/g, " ")}`}
+            </h2>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                padding: "3px 10px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor:
+                  submission.result.verdict === "ACCEPTED"
+                    ? "rgba(35, 134, 54, 0.3)"
+                    : "rgba(218, 54, 51, 0.3)",
+                color: "#ffffff",
+              }}
+            >
+              {submission.result.verdict}
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gap: "var(--space-3)",
+              marginBottom: "var(--space-3)",
+              padding: "var(--space-3)",
+              backgroundColor: "rgba(0, 0, 0, 0.2)",
+              borderRadius: "var(--radius-sm)",
+            }}
+          >
+            <div>
+              <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block" }}>Test Cases</span>
+              <strong style={{ fontSize: "1rem", color: "var(--text-primary)" }}>
+                {submission.result.tests_passed} / {submission.result.tests_total}
+              </strong>
+            </div>
+            <div>
+              <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block" }}>Runtime</span>
+              <strong style={{ fontSize: "1rem", color: "var(--text-primary)" }}>
+                {submission.result.execution_time_ms ?? 0} ms
+              </strong>
+            </div>
+            <div>
+              <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block" }}>Memory</span>
+              <strong style={{ fontSize: "1rem", color: "var(--text-primary)" }}>
+                {Math.round((submission.result.memory_used_bytes ?? 0) / (1024 * 1024))} MB
+              </strong>
+            </div>
+          </div>
+
+          {(submission.result.compiler_output_safe || submission.result.runtime_output_safe) && (
+            <div style={{ marginTop: "var(--space-3)" }}>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                Compiler / Runtime Log:
+              </span>
+              <pre
+                style={{
+                  backgroundColor: "#0d1117",
+                  border: "1px solid #30363d",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "var(--space-3)",
+                  fontSize: "0.75rem",
+                  color: "#f85149",
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                  marginTop: "4px",
+                }}
+              >
+                {submission.result.compiler_output_safe || submission.result.runtime_output_safe}
+              </pre>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Execution Notice Box */}
-      <div
-        style={{
-          border: "1px dashed var(--border-muted)",
-          borderRadius: "var(--radius-md)",
-          padding: "var(--space-3) var(--space-5)",
-          marginBottom: "var(--space-6)",
-          fontSize: "0.8125rem",
-          color: "var(--text-muted)",
-          backgroundColor: "var(--bg-tertiary)",
-        }}
-      >
-        <strong>Notice:</strong> {submission.execution_notice}
-      </div>
+      {submission.execution_notice && (
+        <div
+          style={{
+            border: "1px dashed var(--border-muted)",
+            borderRadius: "var(--radius-md)",
+            padding: "var(--space-3) var(--space-5)",
+            marginBottom: "var(--space-6)",
+            fontSize: "0.8125rem",
+            color: "var(--text-muted)",
+            backgroundColor: "var(--bg-tertiary)",
+          }}
+        >
+          <strong>Notice:</strong> {submission.execution_notice}
+        </div>
+      )}
 
       {/* Source Code Container (Safe string rendering) */}
       <section>

@@ -150,6 +150,7 @@ class SubmissionSummary(BaseModel):
     status: SubmissionStatus
     created_at: datetime
     execution_notice: str = "Code recorded securely. Future online judge execution will evaluate in Phase 7."
+    result: Optional[Any] = None
 
 
 class SubmissionDetail(BaseModel):
@@ -167,6 +168,7 @@ class SubmissionDetail(BaseModel):
     created_at: datetime
     updated_at: datetime
     execution_notice: str = "Code recorded securely. Future online judge execution will evaluate in Phase 7."
+    result: Optional[Any] = None
 
 
 # ---------------------------------------------------------------------------

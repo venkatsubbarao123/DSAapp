@@ -43,17 +43,24 @@ class LessonProgressStatus(str, enum.Enum):
 
 
 class SubmissionStatus(str, enum.Enum):
-    """Phase 4 Submission lifecycle state.
-    
-    CRITICAL NON-GOAL / ANTI-FABRICATION RULE:
-    Phase 4 does not execute code. States are strictly non-evaluated states.
-    ACCEPTED, WRONG_ANSWER, TIME_LIMIT_EXCEEDED, and RUNTIME_ERROR are reserved
-    for Phase 7 containerized sandbox evaluation and MUST NOT exist in Phase 4.
-    """
+    """Phase 5 Online Judge submission lifecycle states."""
     CREATED = "CREATED"
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    COMPILING = "COMPILING"
+    JUDGING = "JUDGING"
+    ACCEPTED = "ACCEPTED"
+    WRONG_ANSWER = "WRONG_ANSWER"
+    TIME_LIMIT_EXCEEDED = "TIME_LIMIT_EXCEEDED"
+    MEMORY_LIMIT_EXCEEDED = "MEMORY_LIMIT_EXCEEDED"
+    RUNTIME_ERROR = "RUNTIME_ERROR"
+    COMPILATION_ERROR = "COMPILATION_ERROR"
+    OUTPUT_LIMIT_EXCEEDED = "OUTPUT_LIMIT_EXCEEDED"
+    SYSTEM_ERROR = "SYSTEM_ERROR"
+    CANCELLED = "CANCELLED"
+    # Backward compatibility with Phase 4 legacy records:
     QUEUED_FOR_FUTURE_JUDGE = "QUEUED_FOR_FUTURE_JUDGE"
     NOT_EXECUTED = "NOT_EXECUTED"
-    CANCELLED = "CANCELLED"
 
 
 class MistakeType(str, enum.Enum):

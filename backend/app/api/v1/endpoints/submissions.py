@@ -1,15 +1,17 @@
-"""Submission API endpoints for recording student code and viewing history."""
-
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.deps import (
     get_current_user,
+    get_db,
     get_progress_service,
 )
+from backend.app.judge.service import JudgeService
 from backend.app.models.progress import SubmissionStatus
 from backend.app.models.user import User
 from backend.app.schemas.content import PaginatedData
+from backend.app.schemas.judge import SubmissionResultRead
 from backend.app.schemas.progress import (
     SubmissionCreate,
     SubmissionDetail,
@@ -95,3 +97,39 @@ async def get_submission_detail(
     """
     submission = await service.get_submission_detail(submission_id, current_user.id)
     return {"success": True, "data": submission.model_dump()}
+
+
+@router.get("/{submission_id}/result", response_model=dict)
+async def get_submission_result(
+    submission_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieves online judge execution result for a submission.
+    
+    STRICT IDOR DEFENSE: Strictly owner-only or staff.
+    """
+    result = await JudgeService.get_submission_result_safe(db, submission_id, current_user)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submission result not found or judging pending.",
+        )
+    read_data = SubmissionResultRead.model_validate(result)
+    return {"success": True, "data": read_data.model_dump()}
+
+
+@router.post("/{submission_id}/cancel", response_model=dict)
+async def cancel_submission(
+    submission_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cancels a queued submission before execution begins."""
+    cancelled = await JudgeService.cancel_user_submission(db, submission_id, current_user)
+    if not cancelled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Submission cannot be cancelled (already running or completed).",
+        )
+    return {"success": True, "message": "Submission cancelled successfully."}

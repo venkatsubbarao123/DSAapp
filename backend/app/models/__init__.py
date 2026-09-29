@@ -45,6 +45,12 @@ from backend.app.models.progress import (
     UserLessonProgress,
     UserProblemProgress,
 )
+from backend.app.models.judge import (
+    JudgeJob,
+    JudgeJobStatus,
+    SubmissionResult,
+    Verdict,
+)
 
 __all__ = [
     "User",
@@ -88,4 +94,8 @@ __all__ = [
     "Mistake",
     "RevisionItem",
     "RevisionSchedule",
+    "JudgeJob",
+    "JudgeJobStatus",
+    "SubmissionResult",
+    "Verdict",
 ]

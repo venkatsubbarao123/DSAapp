@@ -243,6 +243,11 @@ class Problem(Base):
     constraints: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     expected_time_complexity: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     expected_space_complexity: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    # Execution configuration limits (Phase 5 Online Judge)
+    time_limit_ms: Mapped[int] = mapped_column(Integer, default=2000, nullable=False)
+    memory_limit_mb: Mapped[int] = mapped_column(Integer, default=256, nullable=False)
+    output_limit_bytes: Mapped[int] = mapped_column(Integer, default=65536, nullable=False)
+    comparison_mode: Mapped[str] = mapped_column(String(32), default="exact", nullable=False)
     # Stored as JSON list of language identifiers, e.g. ["python", "java", "cpp"]
     supported_languages: Mapped[str] = mapped_column(String(255), default='["python", "java", "cpp", "javascript"]', nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

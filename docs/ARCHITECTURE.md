@@ -125,3 +125,12 @@ Phase 4 introduces zero-trust student learning persistence:
 - **Spaced Revision System**: SM-2 inspired memory recall scheduling (`AGAIN`, `HARD`, `GOOD`, `EASY` outcomes) calculating dynamic intervals and ease factors.
 - **Mastery Analytics**: Pro-entitlement gated server analytics computed over user attempt and review distributions.
 
+## 8. Phase 5 Architecture: Online Judge & Code Execution
+Phase 5 establishes the asynchronous online judge and container sandbox execution system:
+- **Judge Queue**: Durable `JudgeJob` database queue with atomic claims, worker heartbeats, and dead job reclamation.
+- **Judge Worker**: Background runner process executing compilation and test cases against visible and hidden inputs.
+- **Container Sandbox**: Docker sandbox driver with zero network access (`--network none`), read-only rootfs, non-root user `uid 10001`, dropped capabilities (`cap_drop: ALL`), and memory/CPU/PIDs limits.
+- **Output Comparator**: Whitespace and line-break normalization (`exact` and `normalized` modes).
+- **Progress Integration**: `ACCEPTED` verdicts advance problem progress to `SOLVED` with `solved_at` timestamps.
+- **Submissions & Admin API**: IDOR-protected result polling (`/submissions/{id}/result`), cancellation (`/submissions/{id}/cancel`), and administrative health monitoring (`/admin/judge/health`, `/admin/judge/queue`).
+

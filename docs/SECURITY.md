@@ -147,11 +147,33 @@ Every HTTP response is fortified with defensive headers via `SecurityHeadersMidd
 
 ---
 
-## 9. Future Security Controls (Phases 5–27)
+## 9. Phase 5 Security Controls: Online Judge & Sandbox Execution
+
+### Zero-Trust Isolation Architecture
+* **Container Hardening:** Every execution occurs in an ephemeral Docker container with:
+  - Network isolation: `--network none` (no egress or ingress)
+  - Dropped Linux capabilities: `cap_drop: ["ALL"]`
+  - Unprivileged user: `uid 10001:10001` (`judge:judge`)
+  - Read-only root filesystem: `--read-only` with memory-backed tmpfs (`/tmp`, `/workspace`)
+  - No privilege escalation: `no-new-privileges: true`
+* **Resource Limits:**
+  - Memory: `mem_limit` and `memswap_limit` (swap disabled)
+  - CPU: `nano_cpus=1.0` (1 core)
+  - Process limits: `pids_limit: 64` (fork-bomb prevention)
+  - Wall-clock timeout: hard process kill on execution timeout
+* **Hidden Test Case Privacy:**
+  - Hidden test inputs and outputs are never included in API responses.
+* **IDOR Defense:**
+  - `GET /api/v1/submissions/{id}/result` and `POST /api/v1/submissions/{id}/cancel` strictly check user ownership (`submission.user_id == current_user.id`).
+* **Anti-Fabrication Guarantee:**
+  - If Docker daemon is absent on the host environment, the system reports `SANDBOX EXECUTION: NOT VERIFIED`. Live execution is never faked.
+
+---
+
+## 10. Future Security Controls (Phases 6–27)
 
 | Security Subsystem | Target Phase | Implementation Strategy |
 | :--- | :--- | :--- |
-| **Execution Sandboxing** | Phase 7 | Isolated process runner (dev) and containerized sandboxes with network/memory/syscall constraints. |
 | **AI Prompt Injection Defense** | Phase 8 | Strict Pydantic output schemas, prompt guardrails, and token-bucket rate limits. |
 | **Ephemeral SQL Sandbox** | Phase 20 | In-memory temporary SQLite instances for student SQL queries; complete network and filesystem isolation. |
 | **File Upload Sanitation** | Phase 21 | Generated UUID filenames, strict MIME magic-number checking, virus scanning, and path traversal normalization. |

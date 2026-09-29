@@ -7,6 +7,7 @@ Only routes with actual operational implementations are registered.
 from fastapi import APIRouter
 from backend.app.api.v1.endpoints import (
     admin_content,
+    admin_judge,
     auth,
     content,
     health,
@@ -41,4 +42,7 @@ api_v1_router.include_router(progress.router, prefix="/progress", tags=["Progres
 api_v1_router.include_router(submissions.router, prefix="/submissions", tags=["Submissions"])
 api_v1_router.include_router(mistakes.router, prefix="/mistakes", tags=["Mistakes Notebook"])
 api_v1_router.include_router(revision.router, prefix="/revision", tags=["Spaced Revision"])
+
+# 6. Online Judge Administration (Phase 5 Implemented)
+api_v1_router.include_router(admin_judge.router, prefix="/admin/judge", tags=["Online Judge Administration"])
 

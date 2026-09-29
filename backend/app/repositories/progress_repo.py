@@ -389,7 +389,10 @@ class ProgressRepository:
 
         query = (
             select(Submission)
-            .options(selectinload(Submission.problem))
+            .options(
+                selectinload(Submission.problem),
+                selectinload(Submission.result),
+            )
             .where(and_(*filters))
             .order_by(desc(Submission.created_at))
             .limit(limit)
@@ -404,7 +407,10 @@ class ProgressRepository:
         """Ownership-safe retrieval: strictly matches user_id."""
         stmt = (
             select(Submission)
-            .options(selectinload(Submission.problem))
+            .options(
+                selectinload(Submission.problem),
+                selectinload(Submission.result),
+            )
             .where(
                 or_(Submission.id == submission_id, Submission.public_id == submission_id),
                 Submission.user_id == user_id,

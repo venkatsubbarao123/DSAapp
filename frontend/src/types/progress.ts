@@ -5,11 +5,46 @@
 export type ProblemProgressStatus = "NOT_STARTED" | "ATTEMPTED" | "SOLVED";
 export type LessonProgressStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 
+export type Verdict =
+  | "ACCEPTED"
+  | "WRONG_ANSWER"
+  | "TIME_LIMIT_EXCEEDED"
+  | "MEMORY_LIMIT_EXCEEDED"
+  | "RUNTIME_ERROR"
+  | "COMPILATION_ERROR"
+  | "OUTPUT_LIMIT_EXCEEDED"
+  | "SYSTEM_ERROR";
+
 export type SubmissionStatus =
   | "CREATED"
+  | "QUEUED"
   | "QUEUED_FOR_FUTURE_JUDGE"
   | "NOT_EXECUTED"
+  | "RUNNING"
+  | "COMPILING"
+  | "JUDGING"
+  | "ACCEPTED"
+  | "WRONG_ANSWER"
+  | "TIME_LIMIT_EXCEEDED"
+  | "MEMORY_LIMIT_EXCEEDED"
+  | "RUNTIME_ERROR"
+  | "COMPILATION_ERROR"
+  | "OUTPUT_LIMIT_EXCEEDED"
+  | "SYSTEM_ERROR"
   | "CANCELLED";
+
+export interface SubmissionResult {
+  id: string;
+  submission_id: string;
+  verdict: Verdict;
+  tests_total: number;
+  tests_passed: number;
+  execution_time_ms?: number | null;
+  memory_used_bytes?: number | null;
+  compiler_output_safe?: string | null;
+  runtime_output_safe?: string | null;
+  created_at: string;
+}
 
 export type MistakeType =
   | "CONCEPT_GAP"
@@ -92,7 +127,8 @@ export interface SubmissionSummary {
   language: string;
   status: SubmissionStatus;
   created_at: string;
-  execution_notice: string;
+  execution_notice?: string;
+  result?: SubmissionResult | null;
 }
 
 export interface SubmissionDetail {
@@ -106,7 +142,8 @@ export interface SubmissionDetail {
   status: SubmissionStatus;
   created_at: string;
   updated_at: string;
-  execution_notice: string;
+  execution_notice?: string;
+  result?: SubmissionResult | null;
 }
 
 export interface Mistake {

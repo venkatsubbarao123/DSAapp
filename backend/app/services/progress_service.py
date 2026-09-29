@@ -20,6 +20,7 @@ from backend.app.models.progress import (
     UserLessonProgress,
     UserProblemProgress,
 )
+from backend.app.judge.queue import JudgeQueue
 from backend.app.repositories.content_repo import ContentRepository
 from backend.app.repositories.progress_repo import ProgressRepository
 from backend.app.schemas.progress import (
@@ -256,7 +257,10 @@ class ProgressService:
         # 4. Automatically advance user problem progress to ATTEMPTED (NOT SOLVED)
         await self.repo.record_problem_attempt(user_id, problem.id)
 
-        # 5. Audit log (NEVER logging source code)
+        # 5. Enqueue submission into durable JudgeQueue for online judging (Phase 5)
+        await JudgeQueue.enqueue(self.db, submission.id)
+
+        # 6. Audit log (NEVER logging source code)
         audit = AuditLog(
             actor_id=user_id,
             action="submission_created",
@@ -315,6 +319,7 @@ class ProgressService:
                 language=sub.language,
                 status=sub.status,
                 created_at=sub.created_at,
+                result=self._to_submission_result_dict(sub.__dict__.get("result")),
             )
             for sub in items
         ]
@@ -331,6 +336,22 @@ class ProgressService:
             )
         return self._to_submission_detail(sub)
 
+    def _to_submission_result_dict(self, res: Any) -> Optional[Dict[str, Any]]:
+        if not res:
+            return None
+        return {
+            "id": res.id,
+            "submission_id": res.submission_id,
+            "verdict": res.verdict.value if hasattr(res.verdict, "value") else str(res.verdict),
+            "tests_total": res.tests_total,
+            "tests_passed": res.tests_passed,
+            "execution_time_ms": res.execution_time_ms,
+            "memory_used_bytes": res.memory_used_bytes,
+            "compiler_output_safe": res.compiler_output_safe,
+            "runtime_output_safe": res.runtime_output_safe,
+            "created_at": res.created_at,
+        }
+
     def _to_submission_detail(self, sub: Submission) -> SubmissionDetail:
         return SubmissionDetail(
             id=sub.id,
@@ -343,6 +364,7 @@ class ProgressService:
             status=sub.status,
             created_at=sub.created_at,
             updated_at=sub.updated_at,
+            result=self._to_submission_result_dict(sub.__dict__.get("result")),
         )
 
     # -----------------------------------------------------------------------
