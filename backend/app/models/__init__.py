@@ -94,6 +94,14 @@ from backend.app.models.sql_learning import (
     SQLProblem,
     SQLSubmission,
 )
+from backend.app.models.notification import (
+    DeliveryStatus,
+    Notification,
+    NotificationChannel,
+    NotificationDelivery,
+    NotificationPreference,
+    NotificationType,
+)
 
 
 __all__ = [
@@ -173,6 +181,12 @@ __all__ = [
     "CompetitiveRatingHistory",
     "SQLProblem",
     "SQLSubmission",
+    "Notification",
+    "NotificationType",
+    "NotificationChannel",
+    "DeliveryStatus",
+    "NotificationPreference",
+    "NotificationDelivery",
 ]
 
 
