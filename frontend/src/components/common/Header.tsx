@@ -95,6 +95,60 @@ export const Header: React.FC<HeaderProps> = ({
             </li>
             <li>
               <button
+                onClick={() => onNavigate("/curriculum")}
+                style={{
+                  background: currentPath.startsWith("/curriculum") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/curriculum") ? "var(--text-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/curriculum") ? 600 : 400,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Curriculum
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate("/topics")}
+                style={{
+                  background: currentPath.startsWith("/topics") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/topics") ? "var(--text-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/topics") ? 600 : 400,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Topics
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate("/problems")}
+                style={{
+                  background: currentPath.startsWith("/problems") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/problems") ? "var(--text-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/problems") ? 600 : 400,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Problems
+              </button>
+            </li>
+            <li>
+              <button
                 onClick={() => onNavigate("/premium")}
                 style={{
                   background: currentPath === "/premium" ? "var(--bg-tertiary)" : "none",
@@ -287,7 +341,7 @@ export const Header: React.FC<HeaderProps> = ({
             borderRadius: "var(--radius-sm)",
           }}
         >
-          v0.2.0-phase2
+          v0.3.0-phase3
         </span>
       </div>
     </header>

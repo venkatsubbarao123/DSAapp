@@ -6,6 +6,11 @@ import { Footer } from "./components/common/Footer.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
 import { SystemStatusPage } from "./pages/SystemStatusPage.tsx";
 import { PremiumPage } from "./pages/PremiumPage.tsx";
+import { CurriculumPage } from "./pages/CurriculumPage.tsx";
+import { TopicsPage } from "./pages/TopicsPage.tsx";
+import { LessonPage } from "./pages/LessonPage.tsx";
+import { ProblemsPage } from "./pages/ProblemsPage.tsx";
+import { ProblemDetailPage } from "./pages/ProblemDetailPage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { AuthModal } from "./components/auth/AuthModal.tsx";
@@ -62,6 +67,27 @@ export const AppContent: React.FC = () => {
     }
     if (currentPath === "/premium") {
       return <PremiumPage />;
+    }
+    if (currentPath === "/curriculum") {
+      return <CurriculumPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/topics") {
+      return <TopicsPage onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/topics/")) {
+      const topicId = currentPath.replace("/topics/", "");
+      return <TopicsPage topicId={topicId} onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/lessons/")) {
+      const lessonId = currentPath.replace("/lessons/", "");
+      return <LessonPage lessonId={lessonId} onNavigate={navigate} />;
+    }
+    if (currentPath === "/problems" || currentPath.startsWith("/problems?")) {
+      return <ProblemsPage onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/problems/")) {
+      const problemId = currentPath.replace("/problems/", "");
+      return <ProblemDetailPage problemId={problemId} onNavigate={navigate} />;
     }
     return <NotFoundPage onNavigate={navigate} />;
   };

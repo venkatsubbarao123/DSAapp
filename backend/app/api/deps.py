@@ -90,3 +90,29 @@ def get_payment_service(session: AsyncSession = Depends(get_db)):
     from backend.app.services.payment_service import PaymentService
     return PaymentService(session)
 
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Optionally authenticates user without failing if no token is present."""
+    if not credentials or not credentials.credentials:
+        return None
+    payload = decode_token(credentials.credentials)
+    if not payload or payload.get("type") != "access":
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(user_id)
+    if not user or not user.is_active:
+        return None
+    return user
+
+
+def get_content_service(session: AsyncSession = Depends(get_db)):
+    """Dependency injector for ContentService."""
+    from backend.app.services.content_service import ContentService
+    return ContentService(session)
+

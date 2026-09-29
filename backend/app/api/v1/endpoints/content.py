@@ -1,0 +1,147 @@
+"""Student read-only API endpoints for curricula, tracks, topics, lessons, and problems."""
+
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query, Request
+
+from backend.app.api.deps import get_content_service, get_current_user_optional
+from backend.app.models.content import ContentAccessLevel, ContentLevel, ProblemDifficulty
+from backend.app.models.user import User
+from backend.app.schemas.content import (
+    CurriculumDetail,
+    CurriculumSummary,
+    LessonDetail,
+    PaginatedData,
+    ProblemDetail,
+    ProblemSummary,
+    SubtopicDetail,
+    TopicDetail,
+    TopicSummary,
+    TrackSummary,
+)
+from backend.app.services.content_service import ContentService
+
+router = APIRouter()
+
+
+# --- Curricula & Tracks ---
+
+@router.get("/curricula", response_model=dict)
+async def list_curricula(
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns list of all published curricula."""
+    curricula = await content_service.get_curricula_list()
+    return {"success": True, "data": [c.model_dump() for c in curricula]}
+
+
+@router.get("/curricula/{slug_or_id}", response_model=dict)
+async def get_curriculum(
+    slug_or_id: str,
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns published curriculum with associated learning tracks."""
+    curriculum = await content_service.get_curriculum_by_slug(slug_or_id)
+    return {"success": True, "data": curriculum.model_dump()}
+
+
+# --- Topics & Subtopics ---
+
+@router.get("/topics", response_model=dict)
+async def list_topics(
+    track_id: Optional[str] = Query(None, description="Filter by learning track UUID"),
+    difficulty: Optional[ContentLevel] = Query(None, description="Filter by pedagogical difficulty"),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(20, ge=1, le=100, description="Page size limit"),
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns paginated list of published topics."""
+    data = await content_service.get_topics_list(
+        track_id=track_id,
+        difficulty=difficulty,
+        page=page,
+        page_size=page_size,
+    )
+    return {"success": True, "data": data.model_dump()}
+
+
+@router.get("/topics/{slug_or_id}", response_model=dict)
+async def get_topic(
+    slug_or_id: str,
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns topic detail with associated subtopics."""
+    topic = await content_service.get_topic_detail(slug_or_id)
+    return {"success": True, "data": topic.model_dump()}
+
+
+@router.get("/subtopics/{subtopic_id}", response_model=dict)
+async def get_subtopic(
+    subtopic_id: str,
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns subtopic summary."""
+    subtopic = await content_service.get_subtopic_detail(subtopic_id)
+    return {"success": True, "data": subtopic.model_dump()}
+
+
+# --- Lessons ---
+
+@router.get("/lessons/{slug_or_id}", response_model=dict)
+async def get_lesson(
+    slug_or_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns lesson with structured blocks. Enforces Premium gate if applicable."""
+    lesson = await content_service.get_lesson_detail(
+        slug_or_id=slug_or_id,
+        current_user=current_user,
+    )
+    return {"success": True, "data": lesson.model_dump()}
+
+
+# --- Problems ---
+
+@router.get("/problems", response_model=dict)
+async def list_problems(
+    topic_slug: Optional[str] = Query(None, description="Filter by parent topic slug"),
+    difficulty: Optional[ProblemDifficulty] = Query(None, description="Filter by EASY, MEDIUM, HARD, EXPERT"),
+    access_level: Optional[ContentAccessLevel] = Query(None, description="Filter by FREE or PREMIUM"),
+    tag: Optional[str] = Query(None, description="Filter by tag slug (e.g. array, hash-table)"),
+    pattern: Optional[str] = Query(None, description="Filter by pattern slug (e.g. two-pointers, sliding-window)"),
+    search: Optional[str] = Query(None, min_length=1, max_length=100, description="Safe title search query"),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(20, ge=1, le=100, description="Page size limit"),
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Returns paginated, searchable problem directory."""
+    data = await content_service.get_problems_list(
+        topic_slug=topic_slug,
+        difficulty=difficulty,
+        access_level=access_level,
+        tag_slug=tag,
+        pattern_slug=pattern,
+        search=search,
+        page=page,
+        page_size=page_size,
+    )
+    return {"success": True, "data": data.model_dump()}
+
+
+@router.get("/problems/{slug_or_id}", response_model=dict)
+async def get_problem(
+    slug_or_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    content_service: ContentService = Depends(get_content_service),
+):
+    """Fetches problem specification.
+    
+    SECURITY INVARIANTS:
+    1. Premium Gate: Free users without active entitlement receive 403 Forbidden.
+    2. Hidden Test Case Suppression: Hidden test cases are strictly excluded from output.
+    """
+    problem = await content_service.get_problem_detail(
+        slug_or_id=slug_or_id,
+        current_user=current_user,
+    )
+    return {"success": True, "data": problem.model_dump()}

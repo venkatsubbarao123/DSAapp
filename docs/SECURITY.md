@@ -109,11 +109,31 @@ Every HTTP response is fortified with defensive headers via `SecurityHeadersMidd
 
 ---
 
-## 7. Future Security Controls (Phases 2–27)
+## 7. Content Security & Integrity Controls (IMPLEMENTED - Phase 3)
+
+### Hidden Test Case Isolation Invariant
+* **Threat Model:** Students or automated grading-bypass tools attempting to scrape hidden evaluation test cases to hardcode expected outputs.
+* **Invariant:** Database test cases with `is_hidden = True` and `is_sample = False` are strictly isolated server-side.
+* **Enforcement:** Student endpoints (`/api/v1/problems/{slug}`) filter queries exclusively for `is_sample == True` and `is_hidden == False`. Hidden test cases are never serialized in student API responses.
+
+### Structured Pedagogical Content (XSS Prevention)
+* **Threat Model:** Stored Cross-Site Scripting (XSS) via rich text injection or raw HTML in educational content and explanations.
+* **Invariant:** Lesson content blocks are strictly validated as structured JSON (headings, paragraphs, code, callout blocks).
+* **Enforcement:** The frontend parses typed JSON blocks and renders native React DOM elements (`<h3>`, `<p>`, `<pre><code>`) without raw HTML decoding or `dangerouslySetInnerHTML`.
+
+### Content Lifecycle & Public Exposure
+* **Threat Model:** Premature leakage of draft problems, unreviewed contest questions, or retracted curriculum content.
+* **Invariant:** Public student APIs strictly enforce `status == 'PUBLISHED'`.
+* **Enforcement:** All draft, review, or archived content returns `HTTP 404 Not Found` to public users. Only verified `ADMIN` or `CONTENT_EDITOR` roles can view or author unpublished content via `/api/v1/admin/content/*`.
+
+---
+
+## 8. Future Security Controls (Phases 4–27)
 
 | Security Subsystem | Target Phase | Implementation Strategy |
 | :--- | :--- | :--- |
-| **Server-Side RBAC & IDOR Defense** | Phase 2 | User ownership validation on all entity mutations; `STUDENT`, `CONTENT_EDITOR`, `MODERATOR`, `ADMIN` role gates. |
-| **Rate Limiting** | Phase 2 | Sliding-window Redis token bucket on `/auth/*`, `/code/submit`, and `/ai/*`. |
+| **Progress & Submission Integrity** | Phase 4 | Server-validated completion milestones; preventing fabricated student progress state. |
+| **Execution Sandboxing** | Phase 7 | Isolated process runner (dev) and containerized sandboxes with network/memory/syscall constraints. |
+| **AI Prompt Injection Defense** | Phase 8 | Strict Pydantic output schemas, prompt guardrails, and token-bucket rate limits. |
 | **Ephemeral SQL Sandbox** | Phase 20 | In-memory temporary SQLite instances for student SQL queries; complete network and filesystem isolation. |
 | **File Upload Sanitation** | Phase 21 | Generated UUID filenames, strict MIME magic-number checking, virus scanning, and path traversal normalization. |
