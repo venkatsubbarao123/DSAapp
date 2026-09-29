@@ -228,11 +228,37 @@ Every HTTP response is fortified with defensive headers via `SecurityHeadersMidd
 
 ---
 
-## 13. Future Security Controls (Phases 9–27)
+## 13. Phase 9 Security Controls: Admin, Analytics, Notifications & PWA
+
+### Administrative RBAC & Self-Lockout Defense
+- **Zero-Trust Role Gating**: All administrative routes (`/api/v1/admin/*`) require `require_admin` dependency enforcement. Unauthorized callers receive `403 Forbidden` (`{"success": false, "error": {"code": "INSUFFICIENT_PERMISSIONS"}}`).
+- **Self-Demotion Prevention**: Administrators cannot demote their own account from `ADMIN` to any lower role.
+- **Self-Suspension Prevention**: Administrators cannot toggle `is_active = False` on their own account.
+- **Mandatory Audit Rationale**: All user privilege changes and account state mutations require a mandatory audit reason logged to the append-only `audit_logs` table.
+
+### Hidden Test Case Confidentiality
+- **Curriculum API Isolation**: Hidden verification test cases (`is_hidden = True`) are completely stripped from student-facing problem endpoints (`/api/v1/problems/{id}`).
+- **Sandboxed Evaluation**: Hidden test cases are injected solely inside the isolated Docker sandbox runtime during judge worker execution.
+
+### Zero Secret Leakage Diagnostics
+- **Typed Diagnostic Contract**: Infrastructure probes for Database, Redis, Docker, Queue, and AI Provider report vitality and latency metrics only.
+- **Credential Stripping**: Connection URLs, passwords, API keys, and JWT secrets are never serialized in health responses or application logs.
+
+### Multi-Channel Notification Invariants
+- **Deduplication Engine**: Enforces deterministic keys (`daily_challenge:{prob}:{date}`, `streak_reminder:{user}:{date}`) to block duplicate automated alerts.
+- **Granular Preference Matrix**: Learner opt-outs are strictly honored at the delivery layer. Critical security notices (`SYSTEM_NOTICE`) bypass marketing opt-outs.
+
+### Progressive Web App (PWA) Security Boundary
+- **Network-Only API Interception**: The service worker explicitly excludes and bypasses any request starting with `/api/`, `/health`, `/auth/`, `/payments/`, `/judge/`, or `/admin/`.
+- **Zero Credential Caching**: Auth tokens, session cookies, payment orders, and student code submissions are never written to `caches` storage.
+- **Cache Versioning**: Automatic cache evacuation of stale assets upon service worker activation (`dsaapp-shell-v1`).
+
+---
+
+## 14. Future Security Controls (Phases 10–27)
 
 | Security Subsystem | Target Phase | Implementation Strategy |
 | :--- | :--- | :--- |
-| **Notification Rate-Limiting & Spam Defense** | Phase 9 | Push/Email/SMS dispatch caps, unsubscribe verification, tokenized links. |
-| **PWA & Offline Cache Security** | Phase 9 | ServiceWorker cache encryption, stale token invalidation, offline tamper resistance. |
+| **Multi-Region HA & Disaster Recovery** | Phase 10 | Automated cross-region database replication and failover validation. |
 | **File Upload Sanitation** | Phase 21 | Generated UUID filenames, strict MIME magic-number checking, virus scanning, and path traversal normalization. |
 

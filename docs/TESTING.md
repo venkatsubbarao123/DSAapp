@@ -254,14 +254,70 @@ npm run build
 
 ---
 
-## 9. Current Cumulative Test Summary (Phases 1–8)
+## 9. Phase 9 Test Coverage Breakdown: Admin, Analytics, Notifications & PWA
+
+### Backend Test Coverage (23 tests):
+1. **Admin RBAC & User Management (`test_admin_rbac_and_users.py` - 6 tests)**:
+   - Superuser access verification (`403` for student/unauthenticated, `200` for admin).
+   - User directory listing with search, role filters, status filters, and pagination.
+   - User detail inspection including solve counts and activity stats.
+   - Role elevation/demotion with mandatory audit reasons and audit log generation.
+   - Self-demotion guardrail (`400 Bad Request` when admin attempts to demote own account).
+   - Account status suspension/activation and self-suspension guardrail (`400 Bad Request`).
+2. **Admin Content & Test Cases Studio (`test_admin_content_and_problems.py` - 4 tests)**:
+   - Problem listing with test case counters and hidden test case counts.
+   - Test case suite retrieval (`GET /api/v1/admin/problems/{id}/test-cases`).
+   - Creation of public sample cases (`is_sample=True, is_hidden=False`) and hidden verification cases (`is_hidden=True`).
+   - Test case deletion and verification case isolation from student curriculum endpoints.
+3. **Admin Analytics & System Diagnostics (`test_admin_analytics_and_system.py` - 4 tests)**:
+   - Authoritative overview KPIs derived strictly from live database aggregations.
+   - Redis caching verification (subsequent requests served from cache).
+   - Cache invalidation and bypass via `force_refresh=True`.
+   - Real-time subsystem health diagnostics with zero secret leakage.
+4. **Notifications & Broadcasts (`test_notifications_and_broadcasts.py` - 5 tests)**:
+   - Notification creation, unread count badge increment, and list retrieval.
+   - Notification mark-as-read and bulk mark-all-read.
+   - Deduplication key enforcement blocking duplicate daily/streak alerts.
+   - Notification channel preference matrix retrieval, mutation, and opt-out enforcement.
+   - Multi-channel administrative broadcast dispatch (`POST /api/v1/notifications/broadcast`).
+5. **Phase 9 Security & IDOR Isolation (`test_phase9_security_and_idor.py` - 4 tests)**:
+   - Non-admin blocked from administrative routes (`403 Forbidden`).
+   - Cross-user notification IDOR protection (cannot read or modify another user's notifications).
+   - Cross-user notification preference IDOR protection.
+   - Zero secret leakage validation across all admin diagnostic endpoints.
+
+### Frontend Test Coverage (18 tests across 3 test files):
+1. **Admin Console & Governance UI (`src/test/Phase9Admin.test.tsx` - 8 tests)**:
+   - RBAC access gate rendering Access Denied and redirect for non-admin users.
+   - AdminLayout sidebar rendering navigation links and superuser branding.
+   - AdminOverviewPage rendering live KPIs and subsystem connectivity indicators.
+   - AdminUsersPage rendering user directory and learner profile inspection modal.
+   - AdminProblemsPage rendering catalog table and Test Cases Studio with hidden cases.
+   - AdminSystemPage rendering health cards and Zero Secret Leakage Verification badge.
+   - AdminAuditPage rendering security audit logs table with actor ID and action filters.
+   - AdminBroadcastPage dispatching multi-channel announcements to active students.
+2. **Notifications UI (`src/test/Phase9Notifications.test.tsx` - 3 tests)**:
+   - NotificationBell rendering unread badge, polling for count, and toggling drawer.
+   - NotificationsPage rendering notifications list with category tags and preferences link.
+   - NotificationPreferencesPage rendering channel matrix toggles and save action.
+3. **PWA & Offline Engine (`src/test/Phase9Pwa.test.tsx` - 7 tests)**:
+   - Web App Manifest verification (`manifest.json` parameters, standalone display, shortcuts).
+   - Service worker architecture verification (`sw.js` cache-first static assets, network-only sensitive bypass).
+   - InstallPrompt component rendering banner and triggering install prompt.
+   - InstallPrompt dismissing on close action.
+   - PwaUpdateToast rendering update notification on service worker updatefound.
+   - PwaUpdateToast applying skip-waiting update on click.
+
+---
+
+## 10. Current Cumulative Test Summary (Phases 1–9)
 
 | Test Domain | Framework | Test File Count | Total Tests | Pass Rate |
 |---|---|---|---|---|
-| **Backend Unit, Integration & Security** | Pytest | 27 | 166 | **100% (166/166)** |
+| **Backend Unit, Integration & Security** | Pytest | 32 | 189 | **100% (189/189)** |
 | **Backend Real Docker Sandbox Suite** | Pytest + Real Docker | 1 | 28 | **100% (28/28)** |
-| **Total Backend Verification** | Pytest | 28 | 194 | **100% (194/194)** |
-| **Frontend UI, Components & State**| Vitest | 10 | 42 | **100% (42/42)** |
+| **Total Backend Verification** | Pytest | 33 | 217 | **100% (217/217)** |
+| **Frontend UI, Components & State**| Vitest | 13 | 61 | **100% (61/61)** |
 | **Type Integrity** | TypeScript (`tsc --noEmit`) | — | Full Project | **0 errors** |
 | **Production Build** | Vite (`npm run build`) | — | Full Project | **CLEAN** |
 
