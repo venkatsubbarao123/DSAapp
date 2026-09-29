@@ -78,9 +78,22 @@ class Settings(BaseSettings):
     JUDGE_JOB_TIMEOUT_SECONDS: int = 30
     JUDGE_HEARTBEAT_INTERVAL_SECONDS: int = 5
 
+    # AI Learning System & DSA Assistant (Phase 6)
+    AI_PROVIDER: Literal["mock", "openai"] = "mock"
+    AI_MODEL: str = "gpt-4o-mini"
+    AI_API_KEY: str = ""
+    AI_BASE_URL: str = "https://api.openai.com/v1"
+    AI_TIMEOUT_SECONDS: int = 15
+    AI_MAX_INPUT_TOKENS: int = 2000
+    AI_MAX_OUTPUT_TOKENS: int = 1500
+    AI_RATE_LIMIT_PER_MINUTE: int = 20
+    AI_FREE_TIER_DAILY_LIMIT: int = 15
+    AI_PREMIUM_TIER_DAILY_LIMIT: int = 150
+
     # Logging
     LOG_LEVEL: str = "INFO"
     STRUCTURED_LOGS: bool = True
+
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -167,6 +180,25 @@ class Settings(BaseSettings):
             return "PHONEPE CONFIGURATION VALID"
         else:
             return "PHONEPE CONFIGURATION INVALID\nMissing:\n" + "\n".join(f"- {name}" for name in missing)
+
+    def validate_ai_config(self) -> Tuple[bool, List[str]]:
+        """Validates AI configuration without leaking API keys."""
+        missing: List[str] = []
+        if self.AI_PROVIDER == "openai":
+            if not self.AI_API_KEY or self.AI_API_KEY.startswith("test_") or len(self.AI_API_KEY) < 8:
+                missing.append("AI_API_KEY (valid OpenAI API key required for live AI provider)")
+        return len(missing) == 0, missing
+
+    def get_ai_config_diagnostic(self) -> str:
+        """Returns safe diagnostic for AI provider. Never leaks secrets."""
+        is_valid, missing = self.validate_ai_config()
+        if self.AI_PROVIDER == "mock":
+            return "AI CONFIGURATION: MOCK (DETERMINISTIC TEST/DEVELOPMENT PROVIDER)"
+        if is_valid:
+            return f"AI CONFIGURATION VALID (Provider: {self.AI_PROVIDER}, Model: {self.AI_MODEL})"
+        else:
+            return f"AI CONFIGURATION INVALID (Provider: {self.AI_PROVIDER})\nMissing:\n" + "\n".join(f"- {m}" for m in missing)
+
 
     def get_config_diagnostic(self) -> str:
         """Returns safe configuration diagnostic status without exposing sensitive values."""

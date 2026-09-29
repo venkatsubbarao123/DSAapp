@@ -16,7 +16,10 @@ import { SubmissionsPage } from "./pages/SubmissionsPage.tsx";
 import { SubmissionDetailPage } from "./pages/SubmissionDetailPage.tsx";
 import { MistakesPage } from "./pages/MistakesPage.tsx";
 import { RevisionPage } from "./pages/RevisionPage.tsx";
+import { AiLearningPage } from "./pages/AiLearningPage.tsx";
+import { VisualizersPage } from "./pages/VisualizersPage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
+
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { AuthModal } from "./components/auth/AuthModal.tsx";
 import { fetchApi } from "./services/apiClient.ts";
@@ -110,7 +113,14 @@ export const AppContent: React.FC = () => {
     if (currentPath === "/revision") {
       return <RevisionPage onNavigate={navigate} />;
     }
+    if (currentPath === "/ai" || currentPath.startsWith("/ai?")) {
+      return <AiLearningPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/visualizers" || currentPath.startsWith("/visualizers?") || currentPath.startsWith("/visualize/")) {
+      return <VisualizersPage onNavigate={navigate} />;
+    }
     return <NotFoundPage onNavigate={navigate} />;
+
   };
 
   return (

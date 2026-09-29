@@ -46,3 +46,7 @@ api_v1_router.include_router(revision.router, prefix="/revision", tags=["Spaced 
 # 6. Online Judge Administration (Phase 5 Implemented)
 api_v1_router.include_router(admin_judge.router, prefix="/admin/judge", tags=["Online Judge Administration"])
 
+# 7. AI Learning System & Tutor (Phase 6 Implemented)
+from backend.app.ai import ai_router
+api_v1_router.include_router(ai_router, prefix="/ai", tags=["AI Learning System"])
+

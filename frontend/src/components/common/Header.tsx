@@ -221,8 +221,45 @@ export const Header: React.FC<HeaderProps> = ({
                     Revision
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate("/ai")}
+                    style={{
+                      background: currentPath.startsWith("/ai") ? "var(--bg-tertiary)" : "none",
+                      border: "none",
+                      color: currentPath.startsWith("/ai") ? "var(--brand-primary)" : "var(--text-secondary)",
+                      fontWeight: currentPath.startsWith("/ai") ? 700 : 500,
+                      fontSize: "0.875rem",
+                      padding: "var(--space-2) var(--space-4)",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    AI Tutor
+                  </button>
+                </li>
               </>
             )}
+            <li>
+              <button
+                onClick={() => onNavigate("/visualizers")}
+                style={{
+                  background: currentPath.startsWith("/visualiz") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/visualiz") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/visualiz") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Visualizers
+              </button>
+            </li>
+
             <li>
               <button
                 onClick={() => onNavigate("/premium")}

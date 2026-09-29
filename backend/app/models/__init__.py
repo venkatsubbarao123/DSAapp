@@ -51,6 +51,12 @@ from backend.app.models.judge import (
     SubmissionResult,
     Verdict,
 )
+from backend.app.models.ai import (
+    AIConversation,
+    AIMessage,
+    AIRequestType,
+    AIUsage,
+)
 
 __all__ = [
     "User",
@@ -98,4 +104,9 @@ __all__ = [
     "JudgeJobStatus",
     "SubmissionResult",
     "Verdict",
+    "AIRequestType",
+    "AIUsage",
+    "AIConversation",
+    "AIMessage",
 ]
+
