@@ -1,0 +1,48 @@
+{
+  "short_name": "DSAapp",
+  "name": "DSAapp — Advanced Coding & Online Judge Platform",
+  "description": "Production-grade DSA learning, real Docker code execution, interview simulations, and competitive programming.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090d16",
+  "theme_color": "#3b82f6",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["education", "developer tools", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Quick Practice",
+      "short_name": "Practice",
+      "description": "Start an adaptive problem solving practice session",
+      "url": "/practice",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Live Contests",
+      "short_name": "Contests",
+      "description": "Compete in live algorithmic contests",
+      "url": "/contests",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Revision Deck",
+      "short_name": "Revision",
+      "description": "Review spaced repetition mistakes",
+      "url": "/revision",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
