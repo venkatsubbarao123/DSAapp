@@ -23,6 +23,13 @@ SENSITIVE_KEYS = {
     "database_url",
     "cookie",
     "set-cookie",
+    "salt_key",
+    "phonepe_salt_key",
+    "salt_index",
+    "credit_card",
+    "cvv",
+    "pin",
+    "private_key",
 }
 
 

@@ -70,3 +70,4 @@ logs/
 *.log
 scratch/
 tmp/
+backups/

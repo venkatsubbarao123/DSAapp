@@ -1,0 +1,238 @@
+name: DSAapp CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "20"
+
+jobs:
+  # ─────────────────────────────────────────────
+  backend-lint:
+    name: Backend — Lint & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install flake8 mypy types-redis
+
+      - name: Flake8 lint
+        run: flake8 app/ --max-line-length=120 --ignore=E501,W503
+
+      - name: mypy type check
+        run: mypy app/ --ignore-missing-imports --no-strict-optional
+
+  # ─────────────────────────────────────────────
+  backend-test:
+    name: Backend — Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: backend-lint
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dsaapp
+          POSTGRES_PASSWORD: dsaapp_ci
+          POSTGRES_DB: dsaapp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://dsaapp:dsaapp_ci@localhost:5432/dsaapp_test
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-test-secret-key-minimum-32-chars-long
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      PHONEPE_MERCHANT_ID: ci_merchant
+      PHONEPE_SALT_KEY: ci_salt_key
+      PHONEPE_SALT_INDEX: 1
+      ENVIRONMENT: test
+      PREMIUM_PRICE: 99900
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Add workspace root to Python path
+        run: echo "${{ github.workspace }}" >> ${{ github.workspace }}/backend/.venv/lib/python${{ env.PYTHON_VERSION }}/site-packages/dsaapp_root.pth
+        continue-on-error: true
+
+      - name: Run Alembic migrations
+        run: python -m alembic upgrade head
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Run backend tests (excluding real-Docker tests)
+        run: |
+          python -m pytest tests/ \
+            --ignore=tests/test_real_docker_integration.py \
+            -v --tb=short -q \
+            --junitxml=pytest-report.xml
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-pytest-report
+          path: backend/pytest-report.xml
+
+  # ─────────────────────────────────────────────
+  frontend-test:
+    name: Frontend — Vitest + TypeScript + Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Run Vitest tests
+        run: npm test -- --run --reporter=verbose
+
+      - name: Production build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+  # ─────────────────────────────────────────────
+  docker-images:
+    name: Docker — Build Judge Images
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    if: github.ref == 'refs/heads/main'
+
+    strategy:
+      matrix:
+        language: [python, cpp, java, javascript]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build judge image — ${{ matrix.language }}
+        run: |
+          docker build \
+            -t dsaapp-judge-${{ matrix.language }}:${{ github.sha }} \
+            infra/judge/${{ matrix.language }}/
+
+      - name: Security scan — ${{ matrix.language }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: dsaapp-judge-${{ matrix.language }}:${{ github.sha }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+        continue-on-error: true  # advisory only; fix before release
+
+  # ─────────────────────────────────────────────
+  security-scan:
+    name: Security — Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Python dependency audit (pip-audit)
+        run: |
+          pip install pip-audit
+          pip-audit -r backend/requirements.txt --ignore-vuln GHSA-jfh8-c2jp-6gph
+        continue-on-error: true  # advisory only
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: npm audit
+        run: npm audit --audit-level=high
+        working-directory: frontend
+        continue-on-error: true  # advisory only
+
+  # ─────────────────────────────────────────────
+  release-gate:
+    name: Release Gate — All Green
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test, security-scan]
+    if: always()
+
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
+            echo "❌ Backend tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
+            echo "❌ Frontend tests failed"
+            exit 1
+          fi
+          echo "✅ All required checks passed — release gate open"

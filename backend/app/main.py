@@ -95,7 +95,7 @@ def create_application() -> FastAPI:
     # Request Correlation: Track X-Request-ID across all requests and logs
     app.add_middleware(RequestCorrelationMiddleware)
 
-    # 3. Register Root Health Endpoint
+    # 3. Register Root Health, Liveness, and Readiness Endpoints
     @app.get(
         "/health",
         tags=["Health"],
@@ -115,6 +115,56 @@ def create_application() -> FastAPI:
                     "status": "healthy" if db_healthy else "degraded",
                     "service": settings.APP_NAME,
                     "environment": settings.ENVIRONMENT,
+                    "database": "connected" if db_healthy else "disconnected",
+                    "redis": redis_status,
+                },
+                "request_id": req_id,
+            },
+            headers={"X-Request-ID": req_id} if req_id else {},
+        )
+
+    @app.get(
+        "/liveness",
+        tags=["Health"],
+        summary="Kubernetes / Orchestrator Liveness Probe",
+        description="Fast check verifying the web server process and event loop are responsive.",
+    )
+    async def liveness(request: Request) -> JSONResponse:
+        req_id = getattr(request.state, "request_id", None)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "success": True,
+                "data": {
+                    "status": "alive",
+                    "service": settings.APP_NAME,
+                },
+                "request_id": req_id,
+            },
+            headers={"X-Request-ID": req_id} if req_id else {},
+        )
+
+    @app.get(
+        "/readiness",
+        tags=["Health"],
+        summary="Kubernetes / Orchestrator Readiness Probe",
+        description="Validates core database and broker connectivity before routing incoming traffic.",
+    )
+    async def readiness(request: Request) -> JSONResponse:
+        db_healthy = await check_db_health()
+        redis_status = await redis_service.check_health()
+        # In production if REDIS_REQUIRED is True, Redis must be healthy
+        redis_ok = (redis_status == "healthy") if settings.REDIS_REQUIRED else True
+        is_ready = db_healthy and redis_ok
+        req_id = getattr(request.state, "request_id", None)
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK if is_ready else status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "success": is_ready,
+                "data": {
+                    "status": "ready" if is_ready else "not_ready",
+                    "service": settings.APP_NAME,
                     "database": "connected" if db_healthy else "disconnected",
                     "redis": redis_status,
                 },
