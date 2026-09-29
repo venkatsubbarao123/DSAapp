@@ -134,3 +134,22 @@ Phase 5 establishes the asynchronous online judge and container sandbox executio
 - **Progress Integration**: `ACCEPTED` verdicts advance problem progress to `SOLVED` with `solved_at` timestamps.
 - **Submissions & Admin API**: IDOR-protected result polling (`/submissions/{id}/result`), cancellation (`/submissions/{id}/cancel`), and administrative health monitoring (`/admin/judge/health`, `/admin/judge/queue`).
 
+## 9. Phase 6 Architecture: AI Learning System & DSA Visualizers
+Phase 6 establishes the AI-assisted pedagogical guidance and algorithm visualizer engine:
+- **AI Tutor Service**: Multi-turn contextual guidance with strict anti-solution guardrails (never gives away raw solutions).
+- **Progressive Hint Engine**: 3-tier staged hints (Gentle -> Conceptual -> Concrete).
+- **Mistake & Complexity Analysis**: Automated classification of error output and Big-O asymptotic analysis.
+- **Quota & Tier Enforcement**: 5 questions/day for Free learners, 50 questions/day for Pro subscribers.
+- **Interactive Visualizers**: Frame-by-frame step execution for Binary Search, Two Pointers, Sliding Window, Bubble/Selection Sort, Linked Lists, Binary Trees, and BFS/DFS.
+
+## 10. Phase 7 Architecture: Practice Engine & Advanced Gamification
+Phase 7 establishes the server-authoritative practice drills, anti-cheat gamification, and competitive community leaderboards:
+- **Practice Engine**: 8 targeted pedagogical modes (`QUICK`, `TOPIC`, `PATTERN`, `DIFFICULTY`, `WEAK_AREA`, `MISTAKES`, `REVISION`, `DAILY_CHALLENGE`) with live duration, accuracy tracking, and IDOR protection.
+- **Integer Quadratic Level Curve**: $XP(L) = 50 \times (L - 1) \times L$ with $O(1)$ integer inversion preventing floating-point calculation drift.
+- **Immutable XP Ledger**: Append-only `xp_transactions` table with composite idempotency key (`user_id:event_type:source_id`) preventing duplicate reward exploits.
+- **Timezone-Aware Streaks**: UTC calendar day evaluation, same-day idempotency, streak freeze consumption, and milestone bonuses.
+- **Skill Rating System**: Starting at 1,000 points with difficulty-scaled deltas (+5 Easy, +12 Medium, +25 Hard, +40 Expert) and drill accuracy bonuses.
+- **Intelligent Recommendation Engine**: Multi-factor scoring ($TopicNeed + PatternNeed + RevisionPriority + MistakePriority + DifficultyFit$) filtering unpublished and inaccessible content.
+- **Adaptive Difficulty**: Real-time calibration analyzing recent submissions (stepping up after 3 solves, stepping down after 3 failures).
+- **Community Leaderboards**: Rankings across 5 categories (`weekly_xp`, `monthly_xp`, `all_time_xp`, `weekly_solves`, `streak`) with deterministic tie-breaking, privacy-safe display names, and Redis caching (60s TTL).
+

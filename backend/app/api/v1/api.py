@@ -10,9 +10,12 @@ from backend.app.api.v1.endpoints import (
     admin_judge,
     auth,
     content,
+    gamification,
     health,
+    leaderboards,
     mistakes,
     payments,
+    practice,
     premium,
     progress,
     revision,
@@ -49,4 +52,10 @@ api_v1_router.include_router(admin_judge.router, prefix="/admin/judge", tags=["O
 # 7. AI Learning System & Tutor (Phase 6 Implemented)
 from backend.app.ai import ai_router
 api_v1_router.include_router(ai_router, prefix="/ai", tags=["AI Learning System"])
+
+# 8. Practice Engine & Gamification (Phase 7 Implemented)
+api_v1_router.include_router(practice.router, prefix="/practice", tags=["Practice Engine"])
+api_v1_router.include_router(gamification.router, prefix="/gamification", tags=["Gamification & Profiles"])
+api_v1_router.include_router(leaderboards.router, prefix="/leaderboards", tags=["Leaderboards"])
+
 

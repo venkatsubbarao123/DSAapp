@@ -4,18 +4,18 @@ DSAapp is a production-grade, highly secure software engineering and data struct
 
 ---
 
-## Current Status: Phase 1 — Security & Architecture Foundation
+## Current Status: Phase 7 — Practice Engine + Advanced Gamification Verified
 
-| Layer / Feature | Phase 1 Status | Description |
-| :--- | :--- | :--- |
-| **API Gateway & Core** | `IMPLEMENTED` | FastAPI application with structured JSON logging, security headers, request correlation (`X-Request-ID`), size limit protection, and centralized error handling. |
-| **Health Probes** | `IMPLEMENTED` | `/health` and `/api/v1/health` providing structured system vitality and connectivity metrics without leaking secrets. |
-| **Database Abstraction** | `FOUNDATION ONLY` | SQLAlchemy 2.0 async engine supporting SQLite (dev/test) and PostgreSQL (prod) with dependency injection. Models planned for Phase 2 & 3. |
-| **Cache / Queue Boundary** | `FOUNDATION ONLY` | `RedisService` interface supporting caching and queues with safe local development fallback. |
-| **Frontend Foundation** | `FOUNDATION ONLY` | React 19 + TypeScript + Vite with dark-first design tokens, global `ErrorBoundary`, client routing, and system diagnostics page. |
-| **Authentication & RBAC** | `PLANNED` | Phase 2: Argon2id password hashing, short-lived JWTs, token rotation, and server-side RBAC. |
-| **Online Judge Sandbox** | `PLANNED` | Phase 7: Isolated execution sandbox. **FastAPI will never execute student code in-process.** |
-| **AI Tutor & Solver** | `PLANNED` | Phases 8–10: Multi-lingual AI tutor and coach with strict schema validation. |
+| Layer / Feature | Status | Description |
+| :--- | :---: | :--- |
+| **Foundation & Gateway** | `VERIFIED` | FastAPI gateway with correlation IDs, security headers, size limits, structured JSON logging, and health diagnostics. |
+| **Auth & Entitlements** | `VERIFIED` | Argon2id password hashing, JWT access/refresh rotation, RBAC, Pro tier subscription boundary, and PhonePe payment integration. |
+| **Curriculum & Content** | `VERIFIED` | Tracks, Topics, Subtopics, Lessons, Concepts, Problems, Test-Cases, Code Templates, and Admin/Editor authoring workflows. |
+| **Progress & Spaced Repetition** | `VERIFIED` | Problem & lesson progress tracking, cognitive mistake classification, and Leitner/SM-2 spaced revision intervals. |
+| **Online Judge & Sandbox** | `VERIFIED` | Multi-language compilation (Python, Java, C++, JS) executing in real Docker containers with cgroup resource limits and security isolation (28/28 tests passed). |
+| **AI Tutor & Visualizers** | `VERIFIED` | Pedagogical multi-turn AI chat, progressive hint disclosure, complexity analysis, and interactive algorithm visualizers. |
+| **Practice Engine** | `VERIFIED` | Multi-mode adaptive drills (`QUICK`, `TOPIC`, `PATTERN`, `DIFFICULTY`, `WEAK_AREA`, `MISTAKES`, `REVISION`), real-time accuracy, and IDOR protection. |
+| **Server-Authoritative Gamification** | `VERIFIED` | Integer quadratic level curve $XP(L) = 50 \times (L - 1) \times L$, immutable ledger, UTC daily streaks, skill ratings, 12 mastery achievements, and privacy-safe leaderboards. |
 
 ---
 
@@ -31,6 +31,7 @@ cp .env.example .env
 python -m venv backend/.venv
 .\backend\.venv\Scripts\Activate.ps1   # On Windows
 pip install -r backend/requirements.txt
+alembic -c backend/alembic.ini upgrade head
 uvicorn backend.app.main:app --reload --port 8000
 ```
 
@@ -43,12 +44,21 @@ npm run dev
 
 ### 4. Running Automated Tests
 ```bash
-# Run backend pytest suite
-.\backend\.venv\Scripts\pytest -v
+# Run backend non-docker suite (141 tests)
+.\backend\.venv\Scripts\pytest backend/tests -v --ignore=backend/tests/test_real_docker_integration.py
 
-# Run frontend test suite
+# Run backend real Docker sandbox integration suite (28 tests)
+.\backend\.venv\Scripts\pytest backend/tests/test_real_docker_integration.py -v
+
+# Run frontend Vitest suite (35 tests)
 cd frontend
 npm run test
+
+# Run frontend TypeScript typecheck
+npm run typecheck
+
+# Build frontend production bundle
+npm run build
 ```
 
 ---
@@ -58,5 +68,8 @@ npm run test
 * [Security Specification & Compliance](docs/SECURITY.md)
 * [Local Development Guide](docs/DEVELOPMENT.md)
 * [Testing & Verification Guide](docs/TESTING.md)
-* [Production Deployment & Infrastructure](docs/DEPLOYMENT.md)
-* [Initial Implementation Gap Report](docs/IMPLEMENTATION_GAP_REPORT.md)
+* [Practice Engine Specification](docs/PRACTICE_ENGINE.md)
+* [Gamification Architecture](docs/GAMIFICATION.md)
+* [Recommendation Engine](docs/RECOMMENDATION_ENGINE.md)
+* [Community Leaderboards](docs/LEADERBOARDS.md)
+* [Phase 7 Completion Report](docs/PHASE_7_COMPLETION_REPORT.md)

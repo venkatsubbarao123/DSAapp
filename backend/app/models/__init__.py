@@ -57,6 +57,20 @@ from backend.app.models.ai import (
     AIRequestType,
     AIUsage,
 )
+from backend.app.models.gamification import (
+    Achievement,
+    DailyChallenge,
+    PracticeMode,
+    PracticeSession,
+    PracticeSessionProblem,
+    PracticeSessionStatus,
+    RatingHistory,
+    UserAchievement,
+    UserDailyChallenge,
+    UserGamificationProfile,
+    XPTransaction,
+)
+
 
 __all__ = [
     "User",
@@ -108,5 +122,16 @@ __all__ = [
     "AIUsage",
     "AIConversation",
     "AIMessage",
+    "PracticeMode",
+    "PracticeSessionStatus",
+    "PracticeSession",
+    "PracticeSessionProblem",
+    "XPTransaction",
+    "UserGamificationProfile",
+    "DailyChallenge",
+    "UserDailyChallenge",
+    "Achievement",
+    "UserAchievement",
+    "RatingHistory",
 ]
 

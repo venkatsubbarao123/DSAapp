@@ -168,13 +168,48 @@ Every HTTP response is fortified with defensive headers via `SecurityHeadersMidd
 * **Anti-Fabrication Guarantee:**
   - If Docker daemon is absent on the host environment, the system reports `SANDBOX EXECUTION: NOT VERIFIED`. Live execution is never faked.
 
+## 10. Phase 6 Security Controls: AI Learning & Visualizers
+
+### Anti-Solution Extraction Defense
+* **Threat Model:** Students using the AI Tutor to bypass problem-solving by extracting complete solutions or raw code.
+* **Invariant:** System prompts and post-processors strictly prohibit providing direct solutions or raw implementations.
+* **Enforcement:** The AI Tutor provides conceptual socratic guidance, algorithmic hints, and time/space complexity analysis only.
+
+### AI Quota & Tier Enforcement
+* **Free Tier:** Strictly capped at 5 questions per calendar day (UTC).
+* **Pro Tier:** Capped at 50 questions per calendar day (UTC).
+* **Prompt Length:** Requests exceeding 2,000 characters are rejected at the Pydantic schema validation layer.
+
 ---
 
-## 10. Future Security Controls (Phases 6–27)
+## 11. Phase 7 Security Controls: Practice Engine & Gamification Anti-Cheat
+
+### Zero-Client Authority Invariant
+* **Threat Model:** Malicious clients or scripts attempting to forge XP awards, set arbitrary level values, inflate skill ratings, or fake solved streaks.
+* **Invariant:** Clients have zero write authority over XP, levels, streaks, ratings, achievements, or leaderboard positions.
+* **Enforcement:** Endpoints for `/api/v1/gamification/xp` and `/api/v1/gamification/profile` accept NO mutating request bodies (`PUT`/`PATCH`/`POST` blocked with `HTTP 405 Method Not Allowed`). All rewards are calculated server-side exclusively.
+
+### Immutable Ledger & Idempotency Key Invariant
+* **Threat Model:** Network replay attacks or rapid concurrent requests designed to duplicate XP awards.
+* **Invariant:** Every XP award is recorded in an immutable ledger with unique `idempotency_key = f"{user_id}:{event_type}:{source_id}"`.
+* **Enforcement:** Duplicate requests trigger database unique constraint collisions, gracefully returning the existing transaction without incrementing the balance.
+
+### Practice Session IDOR Isolation
+* **Threat Model:** Learner A attempting to read, record problem results on, or complete Learner B's active practice drill.
+* **Invariant:** Every practice session query and mutation enforces `session.user_id == current_user.id`.
+* **Enforcement:** Unauthorized access attempts return `HTTP 403 Forbidden` and log security warnings.
+
+### Leaderboard Privacy & Leakage Defense
+* **Threat Model:** Public community leaderboard exposing student email addresses or private database IDs.
+* **Invariant:** Emails are never output in leaderboard responses. Only verified public display names (or sanitized email prefixes) are serialized.
+
+---
+
+## 12. Future Security Controls (Phases 8–27)
 
 | Security Subsystem | Target Phase | Implementation Strategy |
 | :--- | :--- | :--- |
-| **AI Prompt Injection Defense** | Phase 8 | Strict Pydantic output schemas, prompt guardrails, and token-bucket rate limits. |
+| **Contest Anti-Cheat & Plagiarism** | Phase 8 | Moss-based AST plagiarism detection, fullscreen lockdown, tab-switch monitoring. |
 | **Ephemeral SQL Sandbox** | Phase 20 | In-memory temporary SQLite instances for student SQL queries; complete network and filesystem isolation. |
 | **File Upload Sanitation** | Phase 21 | Generated UUID filenames, strict MIME magic-number checking, virus scanning, and path traversal normalization. |
 

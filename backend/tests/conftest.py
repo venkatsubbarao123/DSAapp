@@ -38,3 +38,12 @@ async def client():
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
         yield ac
+
+
+@pytest.fixture
+async def db_session():
+    """Async database session fixture for test data setup and validation."""
+    from backend.app.db.session import async_session_factory
+    async with async_session_factory() as session:
+        yield session
+

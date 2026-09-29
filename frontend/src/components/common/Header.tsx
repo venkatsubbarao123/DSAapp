@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext.tsx";
+import { gamificationApi } from "../../services/gamificationApi.ts";
+import { UserGamificationProfile } from "../../types/gamification.ts";
 
 interface HeaderProps {
   currentPath: string;
@@ -13,6 +15,15 @@ export const Header: React.FC<HeaderProps> = ({
   serviceHealthy,
 }) => {
   const { user, isAuthenticated, isPremium, logout, openAuthModal } = useAuth();
+  const [gamificationProfile, setGamificationProfile] = useState<UserGamificationProfile | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      gamificationApi.getUserProfile().then(setGamificationProfile).catch(() => {});
+    } else {
+      setGamificationProfile(null);
+    }
+  }, [isAuthenticated, currentPath]);
 
   const displayName =
     user?.profile?.display_name || user?.email.split("@")[0] || "User";
@@ -262,6 +273,79 @@ export const Header: React.FC<HeaderProps> = ({
 
             <li>
               <button
+                onClick={() => onNavigate("/practice")}
+                style={{
+                  background: currentPath.startsWith("/practice") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/practice") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/practice") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Practice
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate("/daily")}
+                style={{
+                  background: currentPath.startsWith("/daily") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/daily") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/daily") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Daily
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate("/leaderboard")}
+                style={{
+                  background: currentPath.startsWith("/leaderboard") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/leaderboard") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/leaderboard") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Leaderboard
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate("/achievements")}
+                style={{
+                  background: currentPath.startsWith("/achievements") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/achievements") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/achievements") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Badges
+              </button>
+            </li>
+
+            <li>
+              <button
                 onClick={() => onNavigate("/premium")}
                 style={{
                   background: currentPath === "/premium" ? "var(--bg-tertiary)" : "none",
@@ -394,6 +478,46 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
+            {/* Gamification Stats Badge */}
+            {gamificationProfile && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-subtle)",
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                }}
+                onClick={() => onNavigate("/practice")}
+                title="View your practice and XP profile"
+              >
+                <span
+                  style={{
+                    fontSize: "0.6875rem",
+                    fontWeight: 700,
+                    padding: "2px 6px",
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: "var(--brand-primary)",
+                    color: "#ffffff",
+                  }}
+                >
+                  Lv {gamificationProfile.current_level}
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--brand-primary)" }}>
+                  {gamificationProfile.total_xp} XP
+                </span>
+                {gamificationProfile.current_streak > 0 && (
+                  <span style={{ fontWeight: 700, color: "#f97316" }}>
+                    🔥 {gamificationProfile.current_streak}d
+                  </span>
+                )}
+              </div>
+            )}
+
             <button
               onClick={() => logout()}
               style={{
@@ -454,7 +578,7 @@ export const Header: React.FC<HeaderProps> = ({
             borderRadius: "var(--radius-sm)",
           }}
         >
-          v0.4.0-phase4
+          v0.7.0-phase7
         </span>
       </div>
     </header>

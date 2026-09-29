@@ -18,6 +18,10 @@ import { MistakesPage } from "./pages/MistakesPage.tsx";
 import { RevisionPage } from "./pages/RevisionPage.tsx";
 import { AiLearningPage } from "./pages/AiLearningPage.tsx";
 import { VisualizersPage } from "./pages/VisualizersPage.tsx";
+import { PracticePage } from "./pages/PracticePage.tsx";
+import { DailyChallengePage } from "./pages/DailyChallengePage.tsx";
+import { AchievementsPage } from "./pages/AchievementsPage.tsx";
+import { LeaderboardPage } from "./pages/LeaderboardPage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 
 import { AuthProvider } from "./context/AuthContext.tsx";
@@ -118,6 +122,18 @@ export const AppContent: React.FC = () => {
     }
     if (currentPath === "/visualizers" || currentPath.startsWith("/visualizers?") || currentPath.startsWith("/visualize/")) {
       return <VisualizersPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/practice" || currentPath.startsWith("/practice?")) {
+      return <PracticePage onNavigate={navigate} />;
+    }
+    if (currentPath === "/daily" || currentPath.startsWith("/daily?")) {
+      return <DailyChallengePage onNavigate={navigate} />;
+    }
+    if (currentPath === "/achievements" || currentPath.startsWith("/achievements?")) {
+      return <AchievementsPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/leaderboard" || currentPath === "/leaderboards" || currentPath.startsWith("/leaderboard")) {
+      return <LeaderboardPage onNavigate={navigate} />;
     }
     return <NotFoundPage onNavigate={navigate} />;
 

@@ -157,11 +157,71 @@ npm run build
 
 ---
 
-## 6. Current Test Summary (Phases 1–5 Cumulative)
+## 6. Phase 6 AI Learning System & Visualizers Tests
+
+### Backend AI Test Coverage (`test_ai_api_and_recommendations.py`):
+1. **AI Chat & Tutor Guidance**: Verifies conceptual tutoring without revealing full code implementations.
+2. **Progressive Hint Disclosure**: Verifies 3-stage hint unlocking (`GENTLE`, `CONCEPTUAL`, `CONCRETE`).
+3. **Complexity & Mistake Analysis**: Verifies error message classification and Big-O asymptotic analysis.
+4. **Quota Gating**: Verifies 5 questions/day limit for Free tier and 50 questions/day for Pro tier.
+
+### Frontend AI & Visualizers Test Coverage (`src/test/AiLearning.test.tsx`, `src/test/Visualizers.test.tsx`):
+1. **AI Dashboard UI**: Quota progress bar, tutor tabs, and visualizer redirection.
+2. **Visualizer Animation**: Frame-by-frame forward/backward stepping and category filtering.
+
+---
+
+## 7. Phase 7 Practice Engine & Gamification Tests
+
+### Backend Test Coverage (22 tests across 7 test modules):
+1. **Practice Engine (`test_practice_engine.py`)**:
+   - Practice session creation and sequencing across modes.
+   - Live accuracy calculation and problem outcome recording.
+   - Strict IDOR defense on session reading and mutations.
+   - Paginated historical session retrieval.
+2. **XP Ledger & Progression (`test_gamification_xp_and_levels.py`)**:
+   - Exact mathematical level curve verification ($XP(L) = 50 \times (L - 1) \times L$).
+   - Atomic ledger entries with unique idempotency keys preventing replay exploits.
+   - Profile retrieval and client XP manipulation rejection (`405 Method Not Allowed`).
+3. **Streaks & Skill Rating (`test_gamification_streak_and_rating.py`)**:
+   - Day-by-day streak transitions and same-day idempotency.
+   - Atomic streak freeze consumption protecting continuity.
+   - Rating adjustments scaled by problem difficulty (+5, +12, +25, +40) and accuracy bonus (+10).
+4. **Daily Challenge (`test_daily_challenge.py`)**:
+   - Deterministic SHA256 calendar date challenge selection.
+   - Solution prerequisite verification, first-attempt bonus (+25 XP), and duplicate claim rejection.
+5. **Achievements & Leaderboards (`test_achievements_and_leaderboard.py`)**:
+   - 12 standard badges catalog and idempotent unlock evaluation.
+   - Multi-category leaderboards with deterministic tie-breaking (`-score, user_id`).
+   - Strict privacy preservation barring email leakage.
+6. **Recommendations & Adaptive Difficulty (`test_recommendation_and_adaptive.py`)**:
+   - Multi-factor candidate scoring and published/free content filtration.
+   - Revision mode solved problem prioritization.
+   - Dynamic difficulty calibration (step-up on 3 solves, step-down on 3 failures).
+   - "Why recommended?" pedagogical explanation endpoint.
+7. **Security & Anti-Cheat (`test_phase7_security_and_idor.py`)**:
+   - Unauthenticated call rejections (HTTP 401).
+   - Cross-user session IDOR attacks blocked (HTTP 403).
+   - Pro tier practice mode gates enforced (`WEAK_AREA`, `MISTAKES`).
+   - Direct XP, rating, and profile manipulation blocked.
+
+### Frontend Practice & Gamification Test Coverage (`src/test/Practice.test.tsx`):
+1. **Practice Dashboard**: Mode selection, problem count buttons, and drill initialization.
+2. **Daily Challenge**: Problem card, XP reward breakdown, and claim state.
+3. **Achievements**: Badge cards, tier filters, and unlocked status.
+4. **Leaderboards**: Category switchers and privacy-safe ranking rows.
+5. **Header Gamification**: Level, XP, streak pill, and `v0.7.0-phase7` tag.
+
+---
+
+## 8. Current Cumulative Test Summary (Phases 1–7)
 
 | Test Domain | Framework | Test File Count | Total Tests | Pass Rate |
 |---|---|---|---|---|
-| **Backend API, Models, Judge & Security** | Pytest | 15 | 88 | **100% (88/88)** |
-| **Frontend UI, State, Judge & Guardrails**| Vitest | 6 | 24 | **100% (24/24)** |
-| **Type Integrity** | TypeScript | — | Full Project | **0 errors** |
+| **Backend Unit, Integration & Security** | Pytest | 22 | 141 | **100% (141/141)** |
+| **Backend Real Docker Sandbox Suite** | Pytest + Real Docker | 1 | 28 | **100% (28/28)** |
+| **Total Backend Verification** | Pytest | 23 | 169 | **100% (169/169)** |
+| **Frontend UI, Components & State**| Vitest | 9 | 35 | **100% (35/35)** |
+| **Type Integrity** | TypeScript (`tsc --noEmit`) | — | Full Project | **0 errors** |
+| **Production Build** | Vite (`npm run build`) | — | Full Project | **CLEAN** |
 
