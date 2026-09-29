@@ -1,0 +1,94 @@
+"""Pydantic schemas for Phase 8 Interview Mode."""
+
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
+
+
+class StartInterviewRequest(BaseModel):
+    """Payload to initialize a technical interview simulation."""
+    mode: str = Field("GENERAL_SOFTWARE", description="Mode: GENERAL_SOFTWARE, DSA, PYTHON, JAVA, SQL, OOP, MIXED_TECHNICAL")
+    duration_minutes: int = Field(45, ge=15, le=90, description="Session duration in minutes")
+
+
+class InterviewQuestionResponse(BaseModel):
+    """Interview question presented to student (answers protected)."""
+    id: str
+    sequence: int
+    question_type: str  # MCQ, CODING, SQL, OOP, DEBUGGING, CONCEPTUAL
+    question_title: str
+    question_prompt: str
+    options: Optional[List[str]] = None
+    difficulty: str
+    user_answer: Optional[str] = None
+    is_answered: bool = False
+
+
+class InterviewSessionResponse(BaseModel):
+    """Interactive interview session state with server-authoritative timer."""
+    id: str
+    user_id: str
+    mode: str
+    status: str
+    started_at: datetime
+    duration_seconds: int
+    remaining_seconds: int
+    is_expired: bool
+    total_questions: int
+    answered_questions: int
+    score: int
+    evaluation_status: str
+    questions: List[InterviewQuestionResponse] = []
+
+
+class SubmitInterviewAnswerRequest(BaseModel):
+    """Student submission for an interview question."""
+    question_id: str
+    answer: str = Field(..., max_length=65536)
+
+
+class SubmitInterviewAnswerResponse(BaseModel):
+    """Confirmation of answer submission."""
+    question_id: str
+    answered: bool
+    remaining_seconds: int
+    is_expired: bool
+
+
+class InterviewCategoryScore(BaseModel):
+    """Performance breakdown for a technical category."""
+    category: str
+    score: int
+    total_possible: int
+    percentage: float
+
+
+class InterviewReportResponse(BaseModel):
+    """Comprehensive performance scorecard generated at interview completion."""
+    session_id: str
+    mode: str
+    started_at: datetime
+    completed_at: Optional[datetime]
+    duration_seconds: int
+    time_spent_seconds: int
+    overall_score: int
+    total_questions: int
+    correct_questions: int
+    category_scores: List[InterviewCategoryScore] = []
+    time_management_feedback: str
+    strengths: List[str] = []
+    areas_to_improve: List[str] = []
+    recommended_topics: List[str] = []
+    ai_debrief: Optional[str] = None
+
+
+class InterviewCoachRequest(BaseModel):
+    """Query to the AI Interview Coach during or after an interview."""
+    question_id: Optional[str] = None
+    message: str = Field(..., min_length=2, max_length=2000)
+
+
+class InterviewCoachResponse(BaseModel):
+    """Educational feedback from AI Interview Coach."""
+    reply: str
+    suggestion: Optional[str] = None

@@ -74,6 +74,38 @@ class RedisService:
     def is_connected(self) -> bool:
         return self._connected
 
+    async def get(self, key: str) -> Optional[str]:
+        """Gets value from Redis with safe graceful fallback."""
+        if self._connected and self._client and hasattr(self._client, "get"):
+            try:
+                return await self._client.get(key)
+            except Exception:
+                return None
+        return None
+
+    async def set(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
+        """Sets value in Redis with optional TTL and safe graceful fallback."""
+        if self._connected and self._client and hasattr(self._client, "set"):
+            try:
+                if ttl and hasattr(self._client, "setex"):
+                    await self._client.setex(key, ttl, value)
+                else:
+                    await self._client.set(key, value)
+                return True
+            except Exception:
+                return False
+        return False
+
+    async def delete(self, key: str) -> bool:
+        """Deletes key from Redis with safe graceful fallback."""
+        if self._connected and self._client and hasattr(self._client, "delete"):
+            try:
+                await self._client.delete(key)
+                return True
+            except Exception:
+                return False
+        return False
+
 
 redis_service = RedisService()
 

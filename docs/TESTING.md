@@ -214,14 +214,54 @@ npm run build
 
 ---
 
-## 8. Current Cumulative Test Summary (Phases 1–7)
+## 8. Phase 8 Contests, Interview Mode, CP, SQL & OOP Tests
+
+### Backend Test Coverage (25 tests across 5 test modules):
+1. **Interactive SQL Engine (`test_sql_sandbox_and_engine.py` - 13 tests)**:
+   - Sandbox execution with sample tables and multi-row datasets.
+   - AST/lexical firewall rejecting `DROP`, `UPDATE`, `DELETE`, `INSERT`, `ALTER`, `CREATE`, `ATTACH`, `PRAGMA`.
+   - Multi-statement `;` query rejection.
+   - System catalog query rejection (`sqlite_master`, `sqlite_schema`).
+   - Read-only enforcement (`SELECT` / `WITH ... SELECT` allowed).
+   - Expected vs Actual result matrix equality verification.
+   - Execution timeout enforcement (2.0s).
+   - SQL problem retrieval and XP/streak rewards.
+2. **AI Interview Simulation Mode (`test_interview_mode.py` - 3 tests)**:
+   - 7 interview modes initialization and question retrieval.
+   - Server-authoritative countdown timer calculation.
+   - Question answer submission, AI evaluation report, and 5-dimensional rubric scoring.
+3. **Competitive Programming & OOP Guides (`test_cp_and_oop.py` - 3 tests)**:
+   - CP problem catalog by rating bands (Div 4 to Div 1).
+   - Competitive rating history and global leaderboard.
+   - OOP 4 pillars, SOLID refactoring diffs, and GoF patterns.
+4. **Contest Arena Engine & Scoring (`test_contests_and_ranking.py` - 3 tests)**:
+   - Contest lifecycle (`UPCOMING`, `LIVE`, `ENDED`) and server timer synchronization.
+   - User registration flow and rejection of late join on ended contests.
+   - Problem submission queuing, ICPC scoring/penalties, and anti-cheat 5s debounce.
+5. **Security & IDOR Isolation (`test_phase8_security_and_idor.py` - 3 tests)**:
+   - Contest submission rate-limiting enforcement.
+   - Cross-user interview session IDOR protection.
+   - Strict SQL sandbox isolation from application database.
+
+### Frontend Test Coverage (`src/test/Phase8.test.tsx` - 7 tests):
+1. **Phase 8 Navigation**: Verifies Header buttons for Contests, Interview, SQL, and OOP.
+2. **ContestsPage**: Live, upcoming, and past contest tabs and registration badge.
+3. **ContestDetailPage**: Problem matrix, countdown timer, submission panel, and live scoreboard.
+4. **InterviewPage**: 7 interview track cards and customization configuration.
+5. **CompetitivePage**: Rating profile widget, rating band filters, and global CP leaderboard.
+6. **SqlPracticePage**: Schema inspector, AST firewall notice, and query execution.
+7. **OopPage**: Four Pillars, SOLID principles with code diffs, and GoF patterns.
+
+---
+
+## 9. Current Cumulative Test Summary (Phases 1–8)
 
 | Test Domain | Framework | Test File Count | Total Tests | Pass Rate |
 |---|---|---|---|---|
-| **Backend Unit, Integration & Security** | Pytest | 22 | 141 | **100% (141/141)** |
+| **Backend Unit, Integration & Security** | Pytest | 27 | 166 | **100% (166/166)** |
 | **Backend Real Docker Sandbox Suite** | Pytest + Real Docker | 1 | 28 | **100% (28/28)** |
-| **Total Backend Verification** | Pytest | 23 | 169 | **100% (169/169)** |
-| **Frontend UI, Components & State**| Vitest | 9 | 35 | **100% (35/35)** |
+| **Total Backend Verification** | Pytest | 28 | 194 | **100% (194/194)** |
+| **Frontend UI, Components & State**| Vitest | 10 | 42 | **100% (42/42)** |
 | **Type Integrity** | TypeScript (`tsc --noEmit`) | — | Full Project | **0 errors** |
 | **Production Build** | Vite (`npm run build`) | — | Full Project | **CLEAN** |
 

@@ -205,11 +205,34 @@ Every HTTP response is fortified with defensive headers via `SecurityHeadersMidd
 
 ---
 
-## 12. Future Security Controls (Phases 8–27)
+## 12. Phase 8 Security Controls: Contests, Interview, CP & SQL Engine
+
+### Ephemeral In-Memory SQL Sandbox Isolation
+* **Core Invariant:** Arbitrary student SQL queries are NEVER executed against the application or production PostgreSQL database.
+* **Lexical & AST Firewall:**
+  - Enforces single-statement queries (blocks `;` statement chaining).
+  - Permits strictly `SELECT` or `WITH ... SELECT` queries.
+  - Rejects blacklisted DDL and DML operations: `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `CREATE`, `ATTACH`, `DETACH`, `PRAGMA`, `VACUUM`, `REINDEX`, `LOAD_EXTENSION`, `TRANSACTION`.
+  - Rejects access to SQLite system catalog tables (`sqlite_master`, `sqlite_schema`).
+  - Strict 2.0s execution timeout per ephemeral instance.
+
+### Contest Platform Zero-Client Authority & Anti-Cheat
+* **Lifecycle & Timers:** Submissions are validated against UTC server time (`start_at <= now <= end_at`). Post-contest submissions receive `400 Bad Request`.
+* **Rapid-Submission Throttling:** Submissions are throttled to a minimum interval of 5 seconds per participant to mitigate denial-of-service and brute-force guessing.
+* **Code Similarity Auditing:** Identical normalized code hashes across participants within the same contest trigger `ContestCheatSignal` security audit records.
+
+### Interview Mode Injection Defense
+* **PromptGuard:** All student responses within the AI interview simulator pass through `PromptGuard.detect_injection` to neutralize prompt injection or jailbreak attempts.
+* **PIIGuard:** Automatic redaction of personally identifiable information from AI input payloads.
+* **OutputGuard:** Output sanitization to maintain pedagogical role boundaries without premature solution disclosure.
+
+---
+
+## 13. Future Security Controls (Phases 9–27)
 
 | Security Subsystem | Target Phase | Implementation Strategy |
 | :--- | :--- | :--- |
-| **Contest Anti-Cheat & Plagiarism** | Phase 8 | Moss-based AST plagiarism detection, fullscreen lockdown, tab-switch monitoring. |
-| **Ephemeral SQL Sandbox** | Phase 20 | In-memory temporary SQLite instances for student SQL queries; complete network and filesystem isolation. |
+| **Notification Rate-Limiting & Spam Defense** | Phase 9 | Push/Email/SMS dispatch caps, unsubscribe verification, tokenized links. |
+| **PWA & Offline Cache Security** | Phase 9 | ServiceWorker cache encryption, stale token invalidation, offline tamper resistance. |
 | **File Upload Sanitation** | Phase 21 | Generated UUID filenames, strict MIME magic-number checking, virus scanning, and path traversal normalization. |
 

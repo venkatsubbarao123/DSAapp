@@ -346,6 +346,82 @@ export const Header: React.FC<HeaderProps> = ({
 
             <li>
               <button
+                onClick={() => onNavigate("/contests")}
+                style={{
+                  background: currentPath.startsWith("/contests") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/contests") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/contests") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Contests
+              </button>
+            </li>
+
+            <li>
+              <button
+                onClick={() => onNavigate("/interview")}
+                style={{
+                  background: currentPath.startsWith("/interview") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/interview") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/interview") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Interview
+              </button>
+            </li>
+
+            <li>
+              <button
+                onClick={() => onNavigate("/sql")}
+                style={{
+                  background: currentPath.startsWith("/sql") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/sql") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/sql") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                SQL
+              </button>
+            </li>
+
+            <li>
+              <button
+                onClick={() => onNavigate("/oop")}
+                style={{
+                  background: currentPath.startsWith("/oop") ? "var(--bg-tertiary)" : "none",
+                  border: "none",
+                  color: currentPath.startsWith("/oop") ? "var(--brand-primary)" : "var(--text-secondary)",
+                  fontWeight: currentPath.startsWith("/oop") ? 700 : 500,
+                  fontSize: "0.875rem",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                OOP
+              </button>
+            </li>
+
+            <li>
+              <button
                 onClick={() => onNavigate("/premium")}
                 style={{
                   background: currentPath === "/premium" ? "var(--bg-tertiary)" : "none",

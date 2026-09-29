@@ -22,6 +22,14 @@ import { PracticePage } from "./pages/PracticePage.tsx";
 import { DailyChallengePage } from "./pages/DailyChallengePage.tsx";
 import { AchievementsPage } from "./pages/AchievementsPage.tsx";
 import { LeaderboardPage } from "./pages/LeaderboardPage.tsx";
+import { ContestsPage } from "./pages/ContestsPage.tsx";
+import { ContestDetailPage } from "./pages/ContestDetailPage.tsx";
+import { InterviewPage } from "./pages/InterviewPage.tsx";
+import { InterviewSessionPage } from "./pages/InterviewSessionPage.tsx";
+import { InterviewReportPage } from "./pages/InterviewReportPage.tsx";
+import { CompetitivePage } from "./pages/CompetitivePage.tsx";
+import { SqlPracticePage } from "./pages/SqlPracticePage.tsx";
+import { OopPage } from "./pages/OopPage.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 
 import { AuthProvider } from "./context/AuthContext.tsx";
@@ -134,6 +142,33 @@ export const AppContent: React.FC = () => {
     }
     if (currentPath === "/leaderboard" || currentPath === "/leaderboards" || currentPath.startsWith("/leaderboard")) {
       return <LeaderboardPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/contests" || currentPath.startsWith("/contests?")) {
+      return <ContestsPage onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/contests/")) {
+      const slug = currentPath.replace("/contests/", "");
+      return <ContestDetailPage slug={slug} onNavigate={navigate} />;
+    }
+    if (currentPath === "/interview" || currentPath.startsWith("/interview?")) {
+      return <InterviewPage onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/interview/") && currentPath.endsWith("/report")) {
+      const sessionId = currentPath.replace("/interview/", "").replace("/report", "");
+      return <InterviewReportPage sessionId={sessionId} onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/interview/")) {
+      const sessionId = currentPath.replace("/interview/", "");
+      return <InterviewSessionPage sessionId={sessionId} onNavigate={navigate} />;
+    }
+    if (currentPath === "/competitive" || currentPath.startsWith("/competitive?")) {
+      return <CompetitivePage onNavigate={navigate} />;
+    }
+    if (currentPath === "/sql" || currentPath.startsWith("/sql?")) {
+      return <SqlPracticePage onNavigate={navigate} />;
+    }
+    if (currentPath === "/oop" || currentPath.startsWith("/oop?")) {
+      return <OopPage onNavigate={navigate} />;
     }
     return <NotFoundPage onNavigate={navigate} />;
 

@@ -70,6 +70,30 @@ from backend.app.models.gamification import (
     UserGamificationProfile,
     XPTransaction,
 )
+from backend.app.models.contest import (
+    Contest,
+    ContestCheatSignal,
+    ContestParticipant,
+    ContestProblem,
+    ContestStatus,
+    ContestSubmission,
+    ContestVisibility,
+)
+from backend.app.models.interview import (
+    InterviewMode,
+    InterviewQuestion,
+    InterviewSession,
+    InterviewStatus,
+)
+from backend.app.models.cp import (
+    CPProblemMetadata,
+    CompetitiveRating,
+    CompetitiveRatingHistory,
+)
+from backend.app.models.sql_learning import (
+    SQLProblem,
+    SQLSubmission,
+)
 
 
 __all__ = [
@@ -133,5 +157,22 @@ __all__ = [
     "Achievement",
     "UserAchievement",
     "RatingHistory",
+    "Contest",
+    "ContestStatus",
+    "ContestVisibility",
+    "ContestProblem",
+    "ContestParticipant",
+    "ContestSubmission",
+    "ContestCheatSignal",
+    "InterviewMode",
+    "InterviewStatus",
+    "InterviewSession",
+    "InterviewQuestion",
+    "CPProblemMetadata",
+    "CompetitiveRating",
+    "CompetitiveRatingHistory",
+    "SQLProblem",
+    "SQLSubmission",
 ]
+
 

@@ -153,3 +153,11 @@ Phase 7 establishes the server-authoritative practice drills, anti-cheat gamific
 - **Adaptive Difficulty**: Real-time calibration analyzing recent submissions (stepping up after 3 solves, stepping down after 3 failures).
 - **Community Leaderboards**: Rankings across 5 categories (`weekly_xp`, `monthly_xp`, `all_time_xp`, `weekly_solves`, `streak`) with deterministic tie-breaking, privacy-safe display names, and Redis caching (60s TTL).
 
+## 11. Phase 8 Architecture: Contests, Interview Mode, CP, SQL & OOP
+Phase 8 incorporates real-time arena competitions, simulated technical interviews, rating ladders, isolated SQL execution, and system design patterns:
+- **Contest Arena Engine**: Server-authoritative lifecycle state machine (`DRAFT`, `UPCOMING`, `LIVE`, `ENDED`, `ARCHIVED`) with UTC server synchronization. Strict ICPC scoring and penalty calculation with Redis standings caching. Anti-cheat heuristics enforce 5-second submission throttling and code similarity hashing.
+- **AI Interview Simulation System**: 7 realistic interview tracks (`MOCK_TECHNICAL`, `COMPANY_FAANG`, `COMPANY_STARTUP`, `SPEED_DSA`, `SYSTEM_DESIGN`, `PAIR_PROGRAMMING`, `BEHAVIORAL`) evaluated against a calibrated 5-dimensional rubric (Problem Solving, Communication, Code Quality, Complexity, Architecture) with PromptGuard injection defense.
+- **Competitive Programming (CP) Framework**: Problem catalog categorized by Codeforces rating bands (Div 4 [800–1199] to Div 1 [2000–2400+]) and an independent Elo-style competitive rating tracker with full historical auditing.
+- **Interactive SQL Learning Sandbox**: Isolated, ephemeral in-memory SQLite sandbox with an AST/lexical firewall rejecting multiple statements, DDL, DML, `PRAGMA`, `ATTACH`, and SQLite catalog access. Result matrix equality verification and gamification XP integration.
+- **OOP & Design Patterns Module**: In-depth coverage of the Four Pillars of OOP, SOLID design refactoring principles with before/after code diffs, and Gang-of-Four architectural patterns with multi-language implementations.
+

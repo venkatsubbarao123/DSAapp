@@ -10,15 +10,20 @@ from backend.app.api.v1.endpoints import (
     admin_judge,
     auth,
     content,
+    contests,
+    cp,
     gamification,
     health,
+    interview,
     leaderboards,
     mistakes,
+    oop,
     payments,
     practice,
     premium,
     progress,
     revision,
+    sql_learning,
     submissions,
     users,
 )
@@ -57,5 +62,13 @@ api_v1_router.include_router(ai_router, prefix="/ai", tags=["AI Learning System"
 api_v1_router.include_router(practice.router, prefix="/practice", tags=["Practice Engine"])
 api_v1_router.include_router(gamification.router, prefix="/gamification", tags=["Gamification & Profiles"])
 api_v1_router.include_router(leaderboards.router, prefix="/leaderboards", tags=["Leaderboards"])
+
+# 9. Contests, Interview, Competitive Programming, SQL & OOP (Phase 8 Implemented)
+api_v1_router.include_router(contests.router, prefix="/contests", tags=["Contest System"])
+api_v1_router.include_router(interview.router, prefix="/interview", tags=["Interview Mode"])
+api_v1_router.include_router(cp.router, prefix="/competitive", tags=["Competitive Programming"])
+api_v1_router.include_router(sql_learning.router, prefix="/sql", tags=["SQL Practice Engine"])
+api_v1_router.include_router(oop.router, prefix="/oop", tags=["OOP Module"])
+
 
 
