@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext.tsx";
 import { gamificationApi } from "../../services/gamificationApi.ts";
 import { UserGamificationProfile } from "../../types/gamification.ts";
+import { NotificationBell } from "./NotificationBell.tsx";
 
 interface HeaderProps {
   currentPath: string;
@@ -460,6 +461,26 @@ export const Header: React.FC<HeaderProps> = ({
                 System Status
               </button>
             </li>
+            {user?.role === "ADMIN" && (
+              <li>
+                <button
+                  onClick={() => onNavigate("/admin")}
+                  style={{
+                    background: currentPath.startsWith("/admin") ? "var(--bg-tertiary)" : "none",
+                    border: "none",
+                    color: currentPath.startsWith("/admin") ? "var(--brand-primary)" : "var(--text-secondary)",
+                    fontWeight: currentPath.startsWith("/admin") ? 700 : 500,
+                    fontSize: "0.875rem",
+                    padding: "var(--space-2) var(--space-4)",
+                    borderRadius: "var(--radius-md)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Admin
+                </button>
+              </li>
+            )}
           </ul>
         </nav>
       </div>
@@ -494,6 +515,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Auth State Actions */}
         {isAuthenticated ? (
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <NotificationBell onNavigate={onNavigate} />
             {/* User display badge */}
             <div
               style={{

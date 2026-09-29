@@ -30,6 +30,18 @@ import { InterviewReportPage } from "./pages/InterviewReportPage.tsx";
 import { CompetitivePage } from "./pages/CompetitivePage.tsx";
 import { SqlPracticePage } from "./pages/SqlPracticePage.tsx";
 import { OopPage } from "./pages/OopPage.tsx";
+import { NotificationsPage } from "./pages/NotificationsPage.tsx";
+import { NotificationPreferencesPage } from "./pages/NotificationPreferencesPage.tsx";
+import { AdminLayout } from "./pages/admin/AdminLayout.tsx";
+import { AdminOverviewPage } from "./pages/admin/AdminOverviewPage.tsx";
+import { AdminUsersPage } from "./pages/admin/AdminUsersPage.tsx";
+import { AdminProblemsPage } from "./pages/admin/AdminProblemsPage.tsx";
+import { AdminAnalyticsPage } from "./pages/admin/AdminAnalyticsPage.tsx";
+import { AdminSystemPage } from "./pages/admin/AdminSystemPage.tsx";
+import { AdminAuditPage } from "./pages/admin/AdminAuditPage.tsx";
+import { AdminBroadcastPage } from "./pages/admin/AdminBroadcastPage.tsx";
+import { InstallPrompt } from "./components/common/InstallPrompt.tsx";
+import { PwaUpdateToast } from "./components/common/PwaUpdateToast.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 
 import { AuthProvider } from "./context/AuthContext.tsx";
@@ -170,8 +182,34 @@ export const AppContent: React.FC = () => {
     if (currentPath === "/oop" || currentPath.startsWith("/oop?")) {
       return <OopPage onNavigate={navigate} />;
     }
+    if (currentPath === "/notifications") {
+      return <NotificationsPage onNavigate={navigate} />;
+    }
+    if (currentPath === "/notifications/preferences") {
+      return <NotificationPreferencesPage onNavigate={navigate} />;
+    }
+    if (currentPath.startsWith("/admin")) {
+      let adminContent = <AdminOverviewPage onNavigate={navigate} />;
+      if (currentPath === "/admin/users") {
+        adminContent = <AdminUsersPage />;
+      } else if (currentPath === "/admin/problems") {
+        adminContent = <AdminProblemsPage />;
+      } else if (currentPath === "/admin/analytics") {
+        adminContent = <AdminAnalyticsPage />;
+      } else if (currentPath === "/admin/system") {
+        adminContent = <AdminSystemPage />;
+      } else if (currentPath === "/admin/audit") {
+        adminContent = <AdminAuditPage />;
+      } else if (currentPath === "/admin/broadcast") {
+        adminContent = <AdminBroadcastPage />;
+      }
+      return (
+        <AdminLayout currentPath={currentPath} onNavigate={navigate}>
+          {adminContent}
+        </AdminLayout>
+      );
+    }
     return <NotFoundPage onNavigate={navigate} />;
-
   };
 
   return (
@@ -221,6 +259,8 @@ export const AppContent: React.FC = () => {
 
       <Footer />
       <AuthModal />
+      <InstallPrompt />
+      <PwaUpdateToast />
     </div>
   );
 };
