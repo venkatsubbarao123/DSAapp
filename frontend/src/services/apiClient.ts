@@ -19,12 +19,27 @@ export class APIClientError extends Error {
 }
 
 let inMemoryAccessToken: string | null = null;
+try {
+  inMemoryAccessToken = localStorage.getItem("dsaapp_access_token");
+} catch {}
 
 export function setAccessToken(token: string | null): void {
   inMemoryAccessToken = token;
+  try {
+    if (token) {
+      localStorage.setItem("dsaapp_access_token", token);
+    } else {
+      localStorage.removeItem("dsaapp_access_token");
+    }
+  } catch {}
 }
 
 export function getAccessToken(): string | null {
+  if (!inMemoryAccessToken) {
+    try {
+      inMemoryAccessToken = localStorage.getItem("dsaapp_access_token");
+    } catch {}
+  }
   return inMemoryAccessToken;
 }
 

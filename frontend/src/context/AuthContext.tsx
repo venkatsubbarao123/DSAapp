@@ -72,6 +72,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     async function initSession() {
       try {
+        const stored = localStorage.getItem("dsaapp_access_token");
+        if (stored) {
+          setAccessToken(stored);
+          if (isMounted) {
+            setTokenState(stored);
+            await fetchCurrentUser();
+          }
+        }
+      } catch {}
+
+      try {
         const refreshRes = await fetchApi<AuthResponseData>(
           "/api/v1/auth/refresh",
           { method: "POST" }
@@ -84,11 +95,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
       } catch {
-        // Not authenticated or session expired - safe silent ignore
-        setAccessToken(null);
-        if (isMounted) {
-          setUser(null);
-          setTokenState(null);
+        const stored = localStorage.getItem("dsaapp_access_token");
+        if (!stored) {
+          setAccessToken(null);
+          if (isMounted) {
+            setUser(null);
+            setTokenState(null);
+          }
         }
       } finally {
         if (isMounted) {
