@@ -45,6 +45,7 @@ import { PwaUpdateToast } from "./components/common/PwaUpdateToast.tsx";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 
 import { AuthProvider } from "./context/AuthContext.tsx";
+import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthModal } from "./components/auth/AuthModal.tsx";
 import { fetchApi } from "./services/apiClient.ts";
 import { HealthData } from "./types/api.ts";
@@ -268,9 +269,11 @@ export const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

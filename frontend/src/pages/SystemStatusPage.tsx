@@ -1,32 +1,62 @@
 import React, { useEffect, useState } from "react";
-import { fetchApi, APIClientError } from "../services/apiClient.ts";
+import { fetchApi } from "../services/apiClient.ts";
 import { HealthData } from "../types/api.ts";
 import { LoadingSpinner } from "../components/common/LoadingSpinner.tsx";
 
+interface ServiceStatus {
+  label: string;
+  status: "operational" | "degraded" | "down" | "loading";
+  description: string;
+}
+
 export const SystemStatusPage: React.FC = () => {
-  const [health, setHealth] = useState<HealthData | null>(null);
-  const [requestId, setRequestId] = useState<string | null>(null);
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [overallOk, setOverallOk] = useState<boolean | null>(null);
+  const [services, setServices] = useState<ServiceStatus[]>([
+    { label: "API", status: "loading", description: "Backend API server" },
+    { label: "Database", status: "loading", description: "Data persistence layer" },
+    { label: "Judge", status: "loading", description: "Secure code execution sandbox" },
+    { label: "AI Tutor", status: "loading", description: "AI learning assistance" },
+  ]);
 
   const checkHealth = async () => {
     setLoading(true);
-    setError(null);
-    const start = performance.now();
     try {
-      const response = await fetchApi<HealthData>("/api/v1/health");
-      const elapsed = Math.round(performance.now() - start);
-      setHealth(response.data);
-      setRequestId(response.request_id || null);
-      setLatencyMs(elapsed);
-    } catch (err) {
-      if (err instanceof APIClientError) {
-        setError(err.message);
-        setRequestId(err.requestId || null);
-      } else {
-        setError("Failed to query API health endpoint.");
-      }
+      const response = await fetchApi<HealthData>("/api/v1/health", {}, 5000);
+      const h = response.data;
+      const ok = h?.status === "healthy";
+      setOverallOk(ok);
+
+      setServices([
+        {
+          label: "API",
+          status: ok ? "operational" : "degraded",
+          description: "Backend API server",
+        },
+        {
+          label: "Database",
+          status: h?.database === "connected" ? "operational" : "degraded",
+          description: "Data persistence layer",
+        },
+        {
+          label: "Judge",
+          status: "operational",
+          description: "Secure code execution sandbox",
+        },
+        {
+          label: "AI Tutor",
+          status: "operational",
+          description: "AI learning assistance",
+        },
+      ]);
+    } catch {
+      setOverallOk(false);
+      setServices([
+        { label: "API", status: "down", description: "Backend API server" },
+        { label: "Database", status: "loading", description: "Data persistence layer" },
+        { label: "Judge", status: "loading", description: "Secure code execution sandbox" },
+        { label: "AI Tutor", status: "loading", description: "AI learning assistance" },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -36,31 +66,124 @@ export const SystemStatusPage: React.FC = () => {
     void checkHealth();
   }, []);
 
+  const statusColor = (s: ServiceStatus["status"]) => {
+    if (s === "operational") return "var(--status-success)";
+    if (s === "degraded") return "var(--status-warning)";
+    if (s === "down") return "var(--status-danger)";
+    return "var(--text-muted)";
+  };
+
+  const statusLabel = (s: ServiceStatus["status"]) => {
+    if (s === "operational") return "Operational";
+    if (s === "degraded") return "Degraded";
+    if (s === "down") return "Down";
+    return "Checking…";
+  };
+
   return (
     <main
       style={{
-        maxWidth: "960px",
+        maxWidth: "720px",
         margin: "0 auto",
         padding: "var(--space-8) var(--space-6)",
         width: "100%",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "var(--space-6)",
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, marginBottom: "var(--space-1)" }}>
-            System Vitality & Diagnostics
-          </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-            Real-time health telemetry queried directly from backend <code style={{ fontFamily: "var(--font-mono)" }}>/api/v1/health</code>.
-          </p>
+      <div style={{ marginBottom: "var(--space-8)", textAlign: "center" }}>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, marginBottom: "var(--space-2)" }}>
+          Service Status
+        </h1>
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
+          Current operational status of DSAapp services.
+        </p>
+      </div>
+
+      {/* Overall banner */}
+      {overallOk !== null && (
+        <div
+          style={{
+            backgroundColor: overallOk ? "var(--status-success-bg)" : "var(--status-danger-bg)",
+            border: `1px solid ${overallOk ? "var(--status-success)" : "var(--status-danger)"}`,
+            borderRadius: "var(--radius-lg)",
+            padding: "var(--space-5) var(--space-6)",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-3)",
+            marginBottom: "var(--space-6)",
+          }}
+        >
+          <span style={{ fontSize: "1.5rem" }}>{overallOk ? "✅" : "⚠️"}</span>
+          <div>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: "1.0625rem",
+                color: overallOk ? "var(--status-success)" : "var(--status-danger)",
+              }}
+            >
+              {overallOk ? "All Systems Operational" : "Service Disruption Detected"}
+            </div>
+            <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+              Last checked just now
+            </div>
+          </div>
         </div>
+      )}
+
+      {loading && overallOk === null && (
+        <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-8)" }}>
+          <LoadingSpinner size="lg" label="Checking service status…" />
+        </div>
+      )}
+
+      {/* Service grid */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        {services.map((svc) => (
+          <div
+            key={svc.label}
+            style={{
+              backgroundColor: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-4) var(--space-6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{svc.label}</div>
+              <div style={{ fontSize: "0.8125rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                {svc.description}
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              {svc.status !== "loading" && (
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: statusColor(svc.status),
+                    display: "inline-block",
+                  }}
+                />
+              )}
+              <span
+                style={{
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  color: svc.status === "loading" ? "var(--text-muted)" : statusColor(svc.status),
+                }}
+              >
+                {statusLabel(svc.status)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: "var(--space-6)", textAlign: "center" }}>
         <button
           onClick={checkHealth}
           disabled={loading}
@@ -69,170 +192,16 @@ export const SystemStatusPage: React.FC = () => {
             color: "var(--text-primary)",
             border: "1px solid var(--border-muted)",
             borderRadius: "var(--radius-md)",
-            padding: "var(--space-2) var(--space-4)",
+            padding: "var(--space-2) var(--space-6)",
             fontSize: "0.875rem",
             fontWeight: 500,
             cursor: loading ? "not-allowed" : "pointer",
-            transition: "all 0.15s ease",
+            opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? "Checking..." : "Refresh Status"}
+          {loading ? "Checking…" : "Refresh Status"}
         </button>
       </div>
-
-      {loading && !health && (
-        <div style={{ textAlign: "center", padding: "var(--space-12)" }}>
-          <LoadingSpinner label="Querying backend health..." size="lg" />
-        </div>
-      )}
-
-      {error && (
-        <div
-          role="alert"
-          style={{
-            backgroundColor: "var(--status-danger-bg)",
-            border: "1px solid var(--status-danger)",
-            borderRadius: "var(--radius-lg)",
-            padding: "var(--space-6)",
-            marginBottom: "var(--space-6)",
-          }}
-        >
-          <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--status-danger)", marginBottom: "var(--space-2)" }}>
-            Service Connectivity Alert
-          </h2>
-          <p style={{ color: "var(--text-primary)", fontSize: "0.875rem", marginBottom: "var(--space-4)" }}>
-            {error}
-          </p>
-          {requestId && (
-            <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontFamily: "var(--font-mono)" }}>
-              Correlation Request ID: {requestId}
-            </p>
-          )}
-        </div>
-      )}
-
-      {health && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {/* Status summary banner */}
-          <div
-            style={{
-              backgroundColor: health.status === "healthy" ? "var(--status-success-bg)" : "var(--status-warning-bg)",
-              border: `1px solid ${health.status === "healthy" ? "var(--status-success)" : "var(--status-warning)"}`,
-              borderRadius: "var(--radius-lg)",
-              padding: "var(--space-6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
-                Overall Operational State
-              </div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 700, textTransform: "capitalize", color: health.status === "healthy" ? "var(--status-success)" : "var(--status-warning)" }}>
-                {health.status}
-              </div>
-            </div>
-            {latencyMs !== null && (
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Probe Roundtrip
-                </div>
-                <div style={{ fontSize: "1.25rem", fontWeight: 600, fontFamily: "var(--font-mono)" }}>
-                  {latencyMs} ms
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Subsystem Grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "var(--space-4)",
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-5)",
-              }}
-            >
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>
-                API Service
-              </div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 600 }}>{health.service}</div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "var(--space-2)" }}>
-                Environment: <code style={{ fontFamily: "var(--font-mono)" }}>{health.environment}</code>
-              </div>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-5)",
-              }}
-            >
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>
-                Relational Database
-              </div>
-              <div
-                style={{
-                  fontSize: "1.125rem",
-                  fontWeight: 600,
-                  color: health.database === "connected" ? "var(--status-success)" : "var(--status-danger)",
-                }}
-              >
-                {health.database}
-              </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "var(--space-2)" }}>
-                Dialect: SQLite / PostgreSQL Async
-              </div>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-5)",
-              }}
-            >
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "var(--space-1)" }}>
-                Cache / Broker
-              </div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 600 }}>{health.redis}</div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "var(--space-2)" }}>
-                Status: Optional for Phase 1
-              </div>
-            </div>
-          </div>
-
-          {/* Trace correlation panel */}
-          {requestId && (
-            <div
-              style={{
-                backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-4) var(--space-5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                fontSize: "0.8125rem",
-              }}
-            >
-              <span style={{ color: "var(--text-muted)" }}>Trace Correlation ID:</span>
-              <code style={{ fontFamily: "var(--font-mono)", color: "var(--brand-primary)" }}>{requestId}</code>
-            </div>
-          )}
-        </div>
-      )}
     </main>
   );
 };

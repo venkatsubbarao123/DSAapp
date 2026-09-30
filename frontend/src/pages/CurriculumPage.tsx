@@ -56,7 +56,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onNavigate }) =>
             marginBottom: "var(--space-4)",
           }}
         >
-          CURRICULUM ARCHITECTURE
+          Learning Paths
         </div>
         <h1
           style={{
@@ -66,7 +66,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onNavigate }) =>
             marginBottom: "var(--space-3)",
           }}
         >
-          Structured Learning Pathways
+          Your DSA Learning Journey
         </h1>
         <p
           style={{
@@ -76,8 +76,8 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onNavigate }) =>
             lineHeight: 1.6,
           }}
         >
-          Master algorithms through hierarchical curricula designed to transition from fundamental
-          data structure principles to high-throughput systems and interview benchmarks.
+          Choose a structured path and go step-by-step from beginner to interview-ready.
+          Each curriculum includes lessons, examples, exercises, and real coding problems.
         </p>
       </section>
 
@@ -107,11 +107,31 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onNavigate }) =>
             backgroundColor: "var(--bg-secondary)",
             border: "1px solid var(--border-subtle)",
             borderRadius: "var(--radius-lg)",
-            padding: "var(--space-8)",
+            padding: "var(--space-10)",
             textAlign: "center",
           }}
         >
-          <p style={{ color: "var(--text-muted)" }}>No curricula published yet.</p>
+          <div style={{ fontSize: "3rem", marginBottom: "var(--space-4)" }}>📚</div>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "var(--space-2)" }}>
+            Curriculum coming soon
+          </h2>
+          <p style={{ color: "var(--text-muted)", marginBottom: "var(--space-6)" }}>
+            We're preparing structured learning paths. Start exploring topics in the meantime.
+          </p>
+          <button
+            onClick={() => onNavigate("/topics")}
+            style={{
+              backgroundColor: "var(--brand-primary)",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-2) var(--space-6)",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Explore Topics
+          </button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
