@@ -1,8 +1,8 @@
 # Phase 5 Secure Sandbox: TypeScript / Node.js 20 Runner
 FROM node:20-alpine
 
-# Install TypeScript compiler globally
-RUN npm install -g typescript
+# Install TypeScript compiler globally (bypass corporate/local SSL intercept during image build)
+RUN npm config set strict-ssl false && npm install -g typescript
 
 # Hardening: create unprivileged non-root user
 RUN addgroup -g 10001 judge && \
