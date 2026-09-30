@@ -92,6 +92,8 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
   const [isLocked, setIsLocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [revealedHints, setRevealedHints] = useState<Record<number, boolean>>({});
+  const [solutionRevealed, setSolutionRevealed] = useState(false);
+  const [showSolutionModal, setShowSolutionModal] = useState(false);
 
   // Code & Editor State
   const [language, setLanguage] = useState<string>("python");
@@ -787,7 +789,81 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
         </section>
       )}
 
-      {/* Solution Workspace & Execution Console */}
+      {/* Official Solution & Editorial Section */}
+      <section style={{ marginBottom: "var(--space-8)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
+            Official Solution & Editorial
+          </h2>
+          {!solutionRevealed && (
+            <button
+              onClick={() => setShowSolutionModal(true)}
+              style={{
+                backgroundColor: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-md)",
+                padding: "6px 14px",
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                color: "var(--brand-primary)",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <span>👁</span> View Solution
+            </button>
+          )}
+        </div>
+
+        {solutionRevealed ? (
+          <div
+            style={{
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-lg)",
+              padding: "var(--space-6)",
+            }}
+          >
+            <div style={{ display: "flex", gap: "var(--space-4)", marginBottom: "var(--space-4)", flexWrap: "wrap" }}>
+              <div style={{ backgroundColor: "var(--bg-tertiary)", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontSize: "0.8125rem" }}>
+                <span style={{ color: "var(--text-muted)" }}>Time Complexity: </span>
+                <strong style={{ color: "var(--brand-primary)", fontFamily: "var(--font-mono)" }}>
+                  {problem.expected_time_complexity || "O(n)"}
+                </strong>
+              </div>
+              <div style={{ backgroundColor: "var(--bg-tertiary)", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontSize: "0.8125rem" }}>
+                <span style={{ color: "var(--text-muted)" }}>Space Complexity: </span>
+                <strong style={{ color: "var(--brand-primary)", fontFamily: "var(--font-mono)" }}>
+                  {problem.expected_space_complexity || "O(1)"}
+                </strong>
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: "0.9375rem", fontWeight: 700, marginBottom: "var(--space-2)" }}>
+              Algorithmic Approach & Key Insights:
+            </h4>
+            <div style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+              {problem.explanation || "Apply optimal algorithmic design pattern. Break down into base cases, state transitions or two-pointer passes to reach target complexity without excessive space allocation."}
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px dashed var(--border-subtle)",
+              borderRadius: "var(--radius-lg)",
+              padding: "var(--space-6)",
+              textAlign: "center",
+              color: "var(--text-muted)",
+              fontSize: "0.875rem",
+            }}
+          >
+            Official solution is hidden to encourage independent problem solving. Click &quot;View Solution&quot; to reveal complexity analysis and reference approach.
+          </div>
+        )}
+      </section>
       <section style={{ marginBottom: "var(--space-8)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
           <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
@@ -1782,6 +1858,82 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* View Solution Confirmation Modal */}
+      {showSolutionModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "var(--space-4)",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-lg)",
+              maxWidth: "480px",
+              width: "100%",
+              padding: "var(--space-6)",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 var(--space-2) 0" }}>
+              Reveal Solution Approach?
+            </h3>
+            <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.5, margin: "0 0 var(--space-6) 0" }}>
+              Are you sure you want to reveal the solution? We recommend spending at least 15–20 minutes attempting the problem first or using progressive hints to build independent algorithmic problem-solving intuition.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)" }}>
+              <button
+                onClick={() => setShowSolutionModal(false)}
+                style={{
+                  backgroundColor: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "8px 16px",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Keep Trying
+              </button>
+              <button
+                onClick={() => {
+                  setSolutionRevealed(true);
+                  setShowSolutionModal(false);
+                }}
+                style={{
+                  backgroundColor: "var(--brand-primary)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "var(--radius-md)",
+                  padding: "8px 16px",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Reveal Solution
+              </button>
+            </div>
           </div>
         </div>
       )}

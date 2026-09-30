@@ -110,7 +110,7 @@ class AnalyticsService:
             select(func.sum(PaymentOrder.amount)).where(PaymentOrder.status == OrderStatus.SUCCESS)
         )
         cents_sum = rev_res.scalar() or 0
-        total_rev = round(cents_sum / 100.0, 2)
+        total_rev = round(float(cents_sum) / 100.0, 2)
 
         return PlatformOverviewMetrics(
             total_users=total_users,
@@ -449,7 +449,7 @@ class AnalyticsService:
             select(func.sum(PaymentOrder.amount)).where(PaymentOrder.status == OrderStatus.SUCCESS)
         )
         amount_cents = rev_res.scalar() or 0
-        total_revenue = round(amount_cents / 100.0, 2)
+        total_revenue = round(float(amount_cents) / 100.0, 2)
 
         prem_res = await self.db.execute(
             select(func.count(PremiumEntitlement.id)).where(

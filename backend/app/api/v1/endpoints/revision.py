@@ -21,6 +21,7 @@ router = APIRouter()
 
 
 @router.get("", response_model=dict)
+@router.get("/queue", response_model=dict)
 async def list_due_revisions(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
@@ -44,10 +45,14 @@ async def list_due_revisions(
         has_next=page < total_pages,
         has_prev=page > 1,
     )
-    return {"success": True, "data": paginated.model_dump()}
+    data = paginated.model_dump()
+    data["due_items_count"] = sum(1 for item in items if item.is_due_now or item.is_overdue)
+    data["total_active_items"] = total
+    return {"success": True, "data": data}
 
 
 @router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("/items", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_revision_item(
     payload: RevisionItemCreate,
     request: Request,
@@ -61,6 +66,7 @@ async def create_revision_item(
 
 
 @router.post("/{revision_item_id}/review", response_model=dict)
+@router.post("/items/{revision_item_id}/review", response_model=dict)
 async def review_revision_item(
     revision_item_id: str,
     payload: ReviewActionRequest,
@@ -76,4 +82,10 @@ async def review_revision_item(
     reviewed_item = await service.review_revision_item(
         revision_item_id, current_user.id, payload
     )
-    return {"success": True, "data": reviewed_item.model_dump()}
+    data = reviewed_item.model_dump()
+    if reviewed_item.schedule:
+        data["due_at"] = reviewed_item.schedule.due_at.isoformat()
+        data["interval_days"] = reviewed_item.schedule.interval_days
+        data["review_count"] = reviewed_item.schedule.review_count
+    return {"success": True, "data": data}
+

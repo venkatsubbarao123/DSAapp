@@ -226,10 +226,16 @@ class ContentRepository:
             count_stmt = count_stmt.join(Problem.patterns).where(ProblemPattern.slug == pattern_slug)
 
         if search:
-            # Safe parameterized search limited to title and slug
+            # Safe parameterized search across title, slug, topic title, and tags
             search_pattern = f"%{search.strip()}%"
-            stmt = stmt.where(or_(Problem.title.ilike(search_pattern), Problem.slug.ilike(search_pattern)))
-            count_stmt = count_stmt.where(or_(Problem.title.ilike(search_pattern), Problem.slug.ilike(search_pattern)))
+            search_filter = or_(
+                Problem.title.ilike(search_pattern),
+                Problem.slug.ilike(search_pattern),
+                Problem.topic.has(Topic.title.ilike(search_pattern)),
+                Problem.tags.any(Tag.name.ilike(search_pattern)),
+            )
+            stmt = stmt.where(search_filter)
+            count_stmt = count_stmt.where(search_filter)
 
         total_result = await self.session.execute(count_stmt)
         total = total_result.scalar_one()

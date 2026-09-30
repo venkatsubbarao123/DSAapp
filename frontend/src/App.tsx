@@ -52,7 +52,7 @@ import { HealthData } from "./types/api.ts";
 
 export const AppContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>(
-    window.location.pathname || "/"
+    window.location.pathname + window.location.search || "/"
   );
   const [serviceHealthy, setServiceHealthy] = useState<boolean | undefined>(
     undefined
@@ -66,7 +66,7 @@ export const AppContent: React.FC = () => {
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || "/");
+      setCurrentPath(window.location.pathname + window.location.search || "/");
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -116,7 +116,13 @@ export const AppContent: React.FC = () => {
       return <LessonPage lessonId={lessonId} onNavigate={navigate} />;
     }
     if (currentPath === "/problems" || currentPath.startsWith("/problems?")) {
-      return <ProblemsPage onNavigate={navigate} />;
+      let initialTopicSlug: string | undefined = undefined;
+      const qIdx = currentPath.indexOf("?");
+      if (qIdx !== -1) {
+        const params = new URLSearchParams(currentPath.substring(qIdx));
+        initialTopicSlug = params.get("topic_slug") || params.get("topic") || undefined;
+      }
+      return <ProblemsPage onNavigate={navigate} initialTopicSlug={initialTopicSlug} />;
     }
     if (currentPath.startsWith("/problems/")) {
       const problemId = currentPath.replace("/problems/", "");

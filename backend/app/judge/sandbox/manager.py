@@ -18,12 +18,19 @@ def get_sandbox(override_driver: Optional[str] = None) -> BaseSandbox:
     """Retrieves or instantiates the configured sandbox driver."""
     global _cached_sandbox
 
-    driver = override_driver or settings.JUDGE_SANDBOX_DRIVER
+    if override_driver:
+        if override_driver == "mock":
+            return MockSandbox()
+        return DockerSandbox()
+
+    if _cached_sandbox is not None:
+        return _cached_sandbox
+
+    driver = settings.JUDGE_SANDBOX_DRIVER
 
     if driver == "mock":
-        return MockSandbox()
-
-    if _cached_sandbox is None or not isinstance(_cached_sandbox, DockerSandbox):
+        _cached_sandbox = MockSandbox()
+    else:
         _cached_sandbox = DockerSandbox()
 
     return _cached_sandbox

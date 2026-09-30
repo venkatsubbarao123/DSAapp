@@ -9,7 +9,18 @@ interface ProblemsPageProps {
 }
 
 export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialTopicSlug }) => {
+  const getInitialTopic = () => {
+    if (initialTopicSlug) return initialTopicSlug;
+    if (typeof window !== "undefined" && window.location.search) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("topic_slug") || p.get("topic") || "";
+    }
+    return "";
+  };
+
   const [problems, setProblems] = useState<ProblemSummary[]>([]);
+  const [topics, setTopics] = useState<Array<{ id: string; slug: string; title: string }>>([]);
+  const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>(getInitialTopic());
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -18,6 +29,25 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
   const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync initialTopicSlug if prop changes
+  useEffect(() => {
+    if (initialTopicSlug !== undefined) {
+      setSelectedTopicSlug(initialTopicSlug);
+      setPage(1);
+    }
+  }, [initialTopicSlug]);
+
+  // Load topics list for the topic filter dropdown
+  useEffect(() => {
+    fetchApi<PaginatedData<{ id: string; slug: string; title: string }>>("/api/v1/topics?page=1&page_size=100")
+      .then((res) => {
+        if (res.data?.items) {
+          setTopics(res.data.items);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -32,7 +62,7 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
 
     const params = new URLSearchParams();
     params.set("page", String(page));
-    params.set("page_size", "15");
+    params.set("page_size", "20");
 
     if (difficultyFilter !== "ALL") {
       params.set("difficulty", difficultyFilter);
@@ -40,8 +70,8 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
     if (debouncedSearch.trim()) {
       params.set("search", debouncedSearch.trim());
     }
-    if (initialTopicSlug) {
-      params.set("topic_slug", initialTopicSlug);
+    if (selectedTopicSlug) {
+      params.set("topic_slug", selectedTopicSlug);
     }
 
     fetchApi<PaginatedData<ProblemSummary>>(`/api/v1/problems?${params.toString()}`)
@@ -62,7 +92,7 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
     return () => {
       isMounted = false;
     };
-  }, [page, difficultyFilter, debouncedSearch, initialTopicSlug]);
+  }, [page, difficultyFilter, debouncedSearch, selectedTopicSlug]);
 
   const difficultyColors = {
     EASY: "var(--status-success)",
@@ -98,35 +128,65 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
           display: "flex",
           gap: "var(--space-4)",
           flexWrap: "wrap",
-          marginBottom: "var(--space-6)",
+          marginBottom: "var(--space-4)",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
-        {/* Difficulty Filter Tabs */}
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          {["ALL", "EASY", "MEDIUM", "HARD"].map((diff) => (
-            <button
-              key={diff}
-              onClick={() => {
-                setDifficultyFilter(diff);
-                setPage(1);
-              }}
-              style={{
-                backgroundColor: difficultyFilter === diff ? "var(--brand-primary)" : "var(--bg-secondary)",
-                color: difficultyFilter === diff ? "#ffffff" : "var(--text-secondary)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: "6px 14px",
-                fontSize: "0.8125rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {diff}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Difficulty Filter Tabs */}
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            {["ALL", "EASY", "MEDIUM", "HARD"].map((diff) => (
+              <button
+                key={diff}
+                onClick={() => {
+                  setDifficultyFilter(diff);
+                  setPage(1);
+                }}
+                style={{
+                  backgroundColor: difficultyFilter === diff ? "var(--brand-primary)" : "var(--bg-secondary)",
+                  color: difficultyFilter === diff ? "#ffffff" : "var(--text-secondary)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "6px 14px",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {diff}
+              </button>
+            ))}
+          </div>
+
+          {/* Topic Dropdown Filter */}
+          <select
+            value={selectedTopicSlug}
+            onChange={(e) => {
+              setSelectedTopicSlug(e.target.value);
+              setPage(1);
+            }}
+            aria-label="Filter by Topic"
+            style={{
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-md)",
+              padding: "6px 12px",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              outline: "none",
+            }}
+          >
+            <option value="">All Topics (415)</option>
+            {topics.map((t) => (
+              <option key={t.id} value={t.slug}>
+                {t.title}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Search Input */}
@@ -137,9 +197,9 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
             setSearchQuery(e.target.value);
             setPage(1);
           }}
-          placeholder="Search problems by title..."
+          placeholder="Search problems by title, topic, or tag..."
           style={{
-            minWidth: "260px",
+            minWidth: "280px",
             backgroundColor: "var(--bg-secondary)",
             border: "1px solid var(--border-subtle)",
             borderRadius: "var(--radius-md)",
@@ -149,6 +209,124 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
             outline: "none",
           }}
         />
+      </div>
+
+      {/* Active Filter Chips & Result Counter */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "var(--space-2)",
+          marginBottom: "var(--space-4)",
+          fontSize: "0.8125rem",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+          <span style={{ color: "var(--text-muted)" }}>
+            Showing <strong>{problems.length}</strong> of <strong>{total}</strong> problems
+            {selectedTopicSlug ? ` in ${topics.find((t) => t.slug === selectedTopicSlug)?.title || selectedTopicSlug}` : ""}
+            {difficultyFilter !== "ALL" ? ` (${difficultyFilter})` : ""}
+          </span>
+
+          {selectedTopicSlug && (
+            <span
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-sm)",
+                padding: "2px 8px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              Topic: {topics.find((t) => t.slug === selectedTopicSlug)?.title || selectedTopicSlug}
+              <button
+                onClick={() => {
+                  setSelectedTopicSlug("");
+                  setPage(1);
+                }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
+              >
+                ✕
+              </button>
+            </span>
+          )}
+
+          {difficultyFilter !== "ALL" && (
+            <span
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-sm)",
+                padding: "2px 8px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              Difficulty: {difficultyFilter}
+              <button
+                onClick={() => {
+                  setDifficultyFilter("ALL");
+                  setPage(1);
+                }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
+              >
+                ✕
+              </button>
+            </span>
+          )}
+
+          {debouncedSearch && (
+            <span
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-sm)",
+                padding: "2px 8px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              Query: &quot;{debouncedSearch}&quot;
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setPage(1);
+                }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
+              >
+                ✕
+              </button>
+            </span>
+          )}
+        </div>
+
+        {(selectedTopicSlug || difficultyFilter !== "ALL" || debouncedSearch) && (
+          <button
+            onClick={() => {
+              setSelectedTopicSlug("");
+              setDifficultyFilter("ALL");
+              setSearchQuery("");
+              setPage(1);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--brand-primary)",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              padding: 0,
+            }}
+          >
+            Clear All Filters
+          </button>
+        )}
       </div>
 
       {error && (
@@ -181,7 +359,32 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
             textAlign: "center",
           }}
         >
-          <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>No matching problems found.</p>
+          <p style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: "1.125rem", marginBottom: "var(--space-2)" }}>
+            No matching problems found
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "var(--space-4)" }}>
+            Try relaxing your difficulty or topic filters, or searching with different keywords.
+          </p>
+          <button
+            onClick={() => {
+              setSelectedTopicSlug("");
+              setDifficultyFilter("ALL");
+              setSearchQuery("");
+              setPage(1);
+            }}
+            style={{
+              backgroundColor: "var(--brand-primary)",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              padding: "8px 16px",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+            }}
+          >
+            Clear Filters
+          </button>
         </div>
       ) : (
         <div

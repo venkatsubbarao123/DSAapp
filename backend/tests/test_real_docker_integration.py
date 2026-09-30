@@ -557,7 +557,7 @@ def test_docker_security_workspace_is_writable():
 
 def test_docker_sandbox_diagnostics_report_correct_flags():
     """Verify DockerSandbox.get_diagnostics() reports all security control flags."""
-    sandbox = DockerSandbox()
+    sandbox = get_docker_sandbox()
     diag = sandbox.get_diagnostics()
 
     assert diag["driver"] == "docker"
@@ -575,13 +575,12 @@ def test_docker_sandbox_diagnostics_report_correct_flags():
 
 def test_docker_container_cleanup_after_execution():
     """Verify no containers remain running after judge execution."""
+    sandbox = get_docker_sandbox()
     import docker as docker_sdk
     client = docker_sdk.from_env()
 
     # Snapshot of running containers before test
     before = set(c.id for c in client.containers.list())
-
-    sandbox = get_docker_sandbox()
     req = ExecutionRequest(
         language_id="python",
         source_code='print("cleanup test")\n',
