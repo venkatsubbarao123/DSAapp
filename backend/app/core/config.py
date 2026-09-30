@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env", "../backend/.env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
@@ -81,13 +81,13 @@ class Settings(BaseSettings):
     JUDGE_HEARTBEAT_INTERVAL_SECONDS: int = 5
 
     # AI Learning System & DSA Assistant (Phase 6)
-    AI_PROVIDER: Literal["mock", "openai", "gemini"] = "mock"
+    AI_PROVIDER: Literal["mock", "openai", "gemini"] = "gemini"
     AI_MODEL: str = "gpt-4o-mini"
     AI_API_KEY: str = ""
     AI_BASE_URL: str = "https://api.openai.com/v1"
     GOOGLE_AI_API_KEY: str = ""
-    GOOGLE_AI_MODEL: str = "gemini-1.5-flash"
-    AI_TIMEOUT_SECONDS: int = 15
+    GOOGLE_AI_MODEL: str = "gemini-flash-lite-latest"
+    AI_TIMEOUT_SECONDS: int = 30
     AI_MAX_INPUT_TOKENS: int = 2000
     AI_MAX_OUTPUT_TOKENS: int = 1500
     AI_RATE_LIMIT_PER_MINUTE: int = 20

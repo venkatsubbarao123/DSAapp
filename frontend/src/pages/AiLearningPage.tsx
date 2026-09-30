@@ -28,6 +28,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
 
   // 1. Tutor State
   const [tutorQuestion, setTutorQuestion] = useState("");
+  const [tutorProblemId, setTutorProblemId] = useState("find-maximum-in-array");
   const [tutorCode, setTutorCode] = useState("");
   const [tutorResponse, setTutorResponse] = useState<TutorResponseData | null>(null);
 
@@ -121,13 +122,18 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetchApi<TutorResponseData>("/api/v1/ai/tutor", {
-        method: "POST",
-        body: JSON.stringify({
-          question: tutorQuestion,
-          code_context: tutorCode || undefined,
-        }),
-      });
+      const res = await fetchApi<TutorResponseData>(
+        "/api/v1/ai/tutor",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            question: tutorQuestion,
+            problem_id: tutorProblemId.trim() || undefined,
+            code_context: tutorCode || undefined,
+          }),
+        },
+        35000
+      );
       const data = (res as any)?.data ?? res;
       if (data && data.explanation) {
         setTutorResponse(data);
@@ -149,13 +155,17 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
     setErrorMsg(null);
     setCurrentHintLevel(level);
     try {
-      const res = await fetchApi<HintResponseData>("/api/v1/ai/hint", {
-        method: "POST",
-        body: JSON.stringify({
-          problem_id: hintProblemId,
-          hint_level: level,
-        }),
-      });
+      const res = await fetchApi<HintResponseData>(
+        "/api/v1/ai/hint",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            problem_id: hintProblemId,
+            hint_level: level,
+          }),
+        },
+        35000
+      );
       const data = (res as any)?.data ?? res;
       if (data && data.hint_content) {
         setHintResponse(data);
@@ -176,13 +186,17 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetchApi<ExplainResponseData>("/api/v1/ai/explain", {
-        method: "POST",
-        body: JSON.stringify({
-          target_type: explainType,
-          context_text: explainInput,
-        }),
-      });
+      const res = await fetchApi<ExplainResponseData>(
+        "/api/v1/ai/explain",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            target_type: explainType,
+            context_text: explainInput,
+          }),
+        },
+        35000
+      );
       const data = (res as any)?.data ?? res;
       if (data && data.explanation) {
         setExplainResponse(data);
@@ -203,10 +217,14 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetchApi<ComplexityResponseData>("/api/v1/ai/complexity", {
-        method: "POST",
-        body: JSON.stringify({ code: complexityCode }),
-      });
+      const res = await fetchApi<ComplexityResponseData>(
+        "/api/v1/ai/complexity",
+        {
+          method: "POST",
+          body: JSON.stringify({ code: complexityCode }),
+        },
+        35000
+      );
       const data = (res as any)?.data ?? res;
       if (data && data.time_complexity) {
         setComplexityResponse(data);
@@ -227,10 +245,14 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetchApi<PatternResponseData>("/api/v1/ai/pattern", {
-        method: "POST",
-        body: JSON.stringify({ problem_description: patternInput }),
-      });
+      const res = await fetchApi<PatternResponseData>(
+        "/api/v1/ai/pattern",
+        {
+          method: "POST",
+          body: JSON.stringify({ problem_description: patternInput }),
+        },
+        35000
+      );
       const data = (res as any)?.data ?? res;
       if (data && data.primary_pattern) {
         setPatternResponse(data);
@@ -390,6 +412,28 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
                   borderRadius: "var(--radius-sm)",
                   color: "var(--text-primary)",
                   fontSize: "0.9rem",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                Coding Problem Context (Slug or ID):
+              </label>
+              <input
+                type="text"
+                value={tutorProblemId}
+                onChange={(e) => setTutorProblemId(e.target.value)}
+                placeholder="e.g. find-maximum-in-array, two-sum-seed..."
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  backgroundColor: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-muted)",
+                  borderRadius: "var(--radius-sm)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.85rem",
                   boxSizing: "border-box",
                 }}
               />

@@ -84,6 +84,7 @@ class AIService:
 
         problem_title = None
         problem_desc = None
+        resolved_problem_id = None
         if request.problem_id:
             prob_stmt = select(Problem).where(
                 or_(Problem.id == request.problem_id, Problem.slug == request.problem_id),
@@ -94,6 +95,7 @@ class AIService:
             if problem:
                 problem_title = problem.title
                 problem_desc = problem.statement
+                resolved_problem_id = problem.id
 
         start_time = time.monotonic()
         provider = get_ai_provider()
@@ -107,13 +109,12 @@ class AIService:
                 problem_description=problem_desc,
             )
 
-
             # Persist message to conversation if conversation_id provided or new
             conv_id = request.conversation_id
             if not conv_id:
                 conv = AIConversation(
                     user_id=user.id,
-                    problem_id=request.problem_id,
+                    problem_id=resolved_problem_id,
                     lesson_id=request.lesson_id,
                     title=f"Question: {request.question[:40]}...",
                 )
@@ -136,6 +137,20 @@ class AIService:
             return response
 
         except Exception as e:
+            if provider.get_diagnostics().get("provider") != "mock":
+                logger.warning(
+                    "Primary AI Provider (%s) failed: %s. Safely falling back to deterministic mock provider.",
+                    provider.get_diagnostics().get("provider"),
+                    e,
+                )
+                fallback = get_ai_provider(override_driver="mock")
+                response = await fallback.tutor(
+                    request,
+                    problem_title=problem_title,
+                    problem_description=problem_desc,
+                )
+                err_msg = f"Fallback activated due to primary failure: {str(e)}"
+                return response
             success = False
             err_msg = str(e)
             logger.error("AI Tutor call failed: %s", err_msg)
@@ -225,6 +240,15 @@ class AIService:
             return hint_res
 
         except Exception as e:
+            if provider.get_diagnostics().get("provider") != "mock":
+                logger.warning("Primary AI Provider failed: %s. Safely activating mock hint fallback.", e)
+                fallback = get_ai_provider(override_driver="mock")
+                return await fallback.hint(
+                    request=request,
+                    problem_title=problem.title,
+                    problem_description=problem.statement,
+                    problem_hints=sorted_hints,
+                )
             success = False
             err_msg = str(e)
             logger.error("AI Hint call failed: %s", err_msg)
@@ -303,6 +327,10 @@ class AIService:
                 )
             return await provider.explain(effective_request, problem_title=problem_title)
         except Exception as e:
+            if provider.get_diagnostics().get("provider") != "mock":
+                logger.warning("Primary AI Provider failed: %s. Safely falling back to mock explain.", e)
+                fallback = get_ai_provider(override_driver="mock")
+                return await fallback.explain(effective_request, problem_title=problem_title)
             success = False
             err_msg = str(e)
             logger.error("AI Explain call failed: %s", err_msg)
@@ -340,6 +368,10 @@ class AIService:
         try:
             return await provider.complexity(request)
         except Exception as e:
+            if provider.get_diagnostics().get("provider") != "mock":
+                logger.warning("Primary AI Provider failed: %s. Safely falling back to mock complexity.", e)
+                fallback = get_ai_provider(override_driver="mock")
+                return await fallback.complexity(request)
             success = False
             err_msg = str(e)
             logger.error("AI Complexity call failed: %s", err_msg)
@@ -372,15 +404,15 @@ class AIService:
         problem_title = None
         effective_request = request
         if request.problem_id:
-            p_stmt = select(Problem).where(
+            p_stmt = select(Problem.title, Problem.statement).where(
                 or_(Problem.id == request.problem_id, Problem.slug == request.problem_id)
             )
             prob_res = await db.execute(p_stmt)
-            problem = prob_res.scalars().first()
-            if problem:
-                problem_title = problem.title
+            row = prob_res.first()
+            if row:
+                problem_title = row[0]
                 if not request.problem_description:
-                    effective_request = request.model_copy(update={"problem_description": problem.statement})
+                    effective_request = request.model_copy(update={"problem_description": row[1]})
 
         start_time = time.monotonic()
         provider = get_ai_provider()
@@ -390,6 +422,10 @@ class AIService:
         try:
             return await provider.pattern(effective_request, problem_title=problem_title)
         except Exception as e:
+            if provider.get_diagnostics().get("provider") != "mock":
+                logger.warning("Primary AI Provider failed: %s. Safely falling back to mock pattern.", e)
+                fallback = get_ai_provider(override_driver="mock")
+                return await fallback.pattern(effective_request, problem_title=problem_title)
             success = False
             err_msg = str(e)
             logger.error("AI Pattern call failed: %s", err_msg)

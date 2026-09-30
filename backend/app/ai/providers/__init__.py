@@ -19,6 +19,8 @@ def get_ai_provider(override_driver: Optional[str] = None) -> AIProvider:
     global _cached_provider
 
     provider_name = override_driver or settings.AI_PROVIDER
+    if settings.ENVIRONMENT == "test" and override_driver is None:
+        provider_name = "mock"
 
     if provider_name == "openai":
         if _cached_provider is None or not isinstance(_cached_provider, OpenAIProvider):

@@ -5,6 +5,12 @@ import logging
 from typing import Any, Dict, List, Optional
 import httpx
 
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except Exception:
+    pass
+
 from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.prompts import (
     COMPLEXITY_SYSTEM_PROMPT,

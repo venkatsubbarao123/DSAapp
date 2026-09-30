@@ -275,13 +275,56 @@ async def test_ai_explain_with_submission_diagnostics(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_gemini_provider_diagnostics():
-    """Verifies GeminiProvider diagnostics reports honest status when API key is missing."""
+async def test_gemini_provider_diagnostics(monkeypatch):
+    """Verifies GeminiProvider diagnostics reports honest status when API key is missing or configured."""
     from backend.app.ai.providers.gemini_provider import GeminiProvider
+    from backend.app.core.config import settings
 
+    # Test when API key is missing
+    monkeypatch.setattr(settings, "GOOGLE_AI_API_KEY", "")
     provider = GeminiProvider()
     diag = provider.get_diagnostics()
     assert diag["provider"] == "gemini"
     assert "BLOCKED — GOOGLE_AI_API_KEY REQUIRED" in diag["status"]
     assert provider.is_available() is False
+
+    # Test when API key is configured
+    monkeypatch.setattr(settings, "GOOGLE_AI_API_KEY", "valid_test_api_key_12345")
+    provider_configured = GeminiProvider()
+    diag_configured = provider_configured.get_diagnostics()
+    assert diag_configured["status"] == "READY"
+    assert provider_configured.is_available() is True
+
+
+@pytest.mark.asyncio
+async def test_ai_safe_fallback_on_provider_error(client: AsyncClient):
+    """Verifies that if the live AI provider fails, AIService safely falls back to mock provider."""
+    from backend.app.ai.providers.gemini_provider import GeminiProvider
+    from backend.app.ai.providers import set_ai_provider_instance
+
+    token = await get_user_token(client, "fallback_test@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    class FailingGeminiProvider(GeminiProvider):
+        def get_diagnostics(self):
+            return {"provider": "gemini", "model": "failing-gemini", "status": "READY"}
+
+        async def tutor(self, *args, **kwargs):
+            raise RuntimeError("Simulated Gemini 503 / 429 spike outage")
+
+    set_ai_provider_instance(FailingGeminiProvider())
+
+    try:
+        res = await client.post(
+            "/api/v1/ai/tutor",
+            json={"question": "How does quicksort partition work?"},
+            headers=headers,
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert "explanation" in data
+        assert "key_idea" in data
+    finally:
+        set_ai_provider_instance(None)
+
 
