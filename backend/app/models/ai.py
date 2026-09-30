@@ -139,3 +139,34 @@ class AIMessage(Base):
         "AIConversation",
         back_populates="messages",
     )
+
+
+class AIHintUsage(Base):
+    """Tracking table for progressive hint disclosure per user and problem."""
+    __tablename__ = "ai_hint_usage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    problem_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("problems.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    hint_level: Mapped[int] = mapped_column(Integer, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    number_of_hints_used: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        Index("ix_ai_hint_usage_user_problem", "user_id", "problem_id"),
+    )
+

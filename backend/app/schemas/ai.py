@@ -14,7 +14,7 @@ class TutorRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question: str = Field(..., min_length=2, max_length=2000, description="The learner's question or topic of inquiry.")
-    problem_id: Optional[str] = Field(None, max_length=36, description="Optional problem context ID.")
+    problem_id: Optional[str] = Field(None, max_length=128, description="Optional problem context ID or slug.")
     lesson_id: Optional[str] = Field(None, max_length=36, description="Optional lesson context ID.")
     conversation_id: Optional[str] = Field(None, max_length=36, description="Optional conversation session ID.")
     code_context: Optional[str] = Field(None, max_length=10000, description="Optional source code snippet for context.")
@@ -47,7 +47,7 @@ class HintRequest(BaseModel):
     """Request for progressive tier of problem hints."""
     model_config = ConfigDict(extra="forbid")
 
-    problem_id: str = Field(..., min_length=1, max_length=36, description="ID of the problem.")
+    problem_id: str = Field(..., min_length=1, max_length=128, description="ID or slug of the problem.")
     hint_level: int = Field(..., ge=1, le=5, description="Requested hint tier (1 to 5).")
     current_code: Optional[str] = Field(None, max_length=10000, description="Optional current learner draft code.")
 
@@ -76,8 +76,8 @@ class ExplainRequest(BaseModel):
         ..., description="The type of entity to explain."
     )
     context_text: str = Field(..., min_length=2, max_length=12000, description="Code, error message, or concept query.")
-    problem_id: Optional[str] = Field(None, max_length=36)
-    submission_id: Optional[str] = Field(None, max_length=36)
+    problem_id: Optional[str] = Field(None, max_length=128)
+    submission_id: Optional[str] = Field(None, max_length=128)
     language: Optional[str] = Field(None, max_length=32)
 
 
@@ -101,7 +101,7 @@ class ComplexityRequest(BaseModel):
 
     code: str = Field(..., min_length=5, max_length=15000, description="Student code or pseudocode to analyze.")
     language: Optional[str] = Field("python", max_length=32)
-    problem_id: Optional[str] = Field(None, max_length=36)
+    problem_id: Optional[str] = Field(None, max_length=128)
 
 
 class ComplexityResponse(BaseModel):
@@ -126,7 +126,7 @@ class PatternRequest(BaseModel):
 
     code: Optional[str] = Field(None, max_length=15000, description="Optional implementation to detect pattern in.")
     problem_description: Optional[str] = Field(None, max_length=5000, description="Optional problem text to detect patterns for.")
-    problem_id: Optional[str] = Field(None, max_length=36)
+    problem_id: Optional[str] = Field(None, max_length=128)
 
 
 class PatternEvidence(BaseModel):

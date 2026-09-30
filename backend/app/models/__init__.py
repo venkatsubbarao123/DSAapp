@@ -53,6 +53,7 @@ from backend.app.models.judge import (
 )
 from backend.app.models.ai import (
     AIConversation,
+    AIHintUsage,
     AIMessage,
     AIRequestType,
     AIUsage,
@@ -152,6 +153,7 @@ __all__ = [
     "Verdict",
     "AIRequestType",
     "AIUsage",
+    "AIHintUsage",
     "AIConversation",
     "AIMessage",
     "PracticeMode",

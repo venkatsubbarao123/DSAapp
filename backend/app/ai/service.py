@@ -9,7 +9,7 @@ import logging
 import time
 from typing import List, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,7 +17,7 @@ from backend.app.ai.providers import get_ai_provider
 from backend.app.ai.security.prompt_guard import PromptGuard
 from backend.app.ai.usage import AIUsageTracker
 from backend.app.core.config import settings
-from backend.app.models.ai import AIConversation, AIMessage, AIRequestType
+from backend.app.models.ai import AIConversation, AIHintUsage, AIMessage, AIRequestType
 from backend.app.models.content import Problem, Topic, ContentStatus
 from backend.app.models.progress import (
     Mistake,
@@ -85,7 +85,10 @@ class AIService:
         problem_title = None
         problem_desc = None
         if request.problem_id:
-            prob_stmt = select(Problem).where(Problem.id == request.problem_id, Problem.status == ContentStatus.PUBLISHED)
+            prob_stmt = select(Problem).where(
+                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id),
+                Problem.status == ContentStatus.PUBLISHED,
+            )
             prob_res = await db.execute(prob_stmt)
             problem = prob_res.scalars().first()
             if problem:
@@ -165,7 +168,10 @@ class AIService:
         # 1. Fetch problem metadata (NEVER expose hidden test cases!)
         stmt = (
             select(Problem)
-            .where(Problem.id == request.problem_id, Problem.status == ContentStatus.PUBLISHED)
+            .where(
+                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id),
+                Problem.status == ContentStatus.PUBLISHED,
+            )
             .options(selectinload(Problem.hints))
         )
         result = await db.execute(stmt)
@@ -176,6 +182,28 @@ class AIService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Problem '{request.problem_id}' not found.",
             )
+
+        # Record hint usage in AIHintUsage
+        try:
+            count_stmt = select(func.count(AIHintUsage.id)).where(
+                AIHintUsage.user_id == user.id,
+                AIHintUsage.problem_id == problem.id,
+            )
+            prev_hints_count = (await db.execute(count_stmt)).scalar_one_or_none() or 0
+            new_hints_count = prev_hints_count + 1
+
+            hint_log = AIHintUsage(
+                user_id=user.id,
+                problem_id=problem.id,
+                hint_level=request.hint_level,
+                timestamp=datetime.now(timezone.utc),
+                number_of_hints_used=new_hints_count,
+            )
+            db.add(hint_log)
+            await db.commit()
+        except Exception as log_err:
+            logger.warning("Could not record AIHintUsage: %s", log_err)
+            await db.rollback()
 
         # Extract pre-authored hint contents sorted by order
         sorted_hints = [
@@ -228,9 +256,39 @@ class AIService:
 
         problem_title = None
         if request.problem_id:
-            p_stmt = select(Problem.title).where(Problem.id == request.problem_id)
+            p_stmt = select(Problem.title).where(
+                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id)
+            )
             prob_res = await db.execute(p_stmt)
             problem_title = prob_res.scalar_one_or_none()
+
+        submission_context = ""
+        if request.submission_id:
+            sub_stmt = (
+                select(Submission)
+                .where(or_(Submission.id == request.submission_id, Submission.public_id == request.submission_id))
+                .options(selectinload(Submission.problem), selectinload(Submission.result))
+            )
+            sub_res = await db.execute(sub_stmt)
+            sub = sub_res.scalars().first()
+            if sub:
+                if not problem_title and sub.problem:
+                    problem_title = sub.problem.title
+                verdict_str = (
+                    sub.result.verdict.value
+                    if (sub.result and hasattr(sub.result.verdict, "value"))
+                    else str(sub.status.value if hasattr(sub.status, "value") else sub.status)
+                )
+                comp_out = (sub.result.compiler_output_safe or "") if sub.result else ""
+                run_out = (sub.result.runtime_output_safe or "") if sub.result else ""
+                submission_context = (
+                    f"\n[Execution Diagnostics for Submission {sub.public_id}]\n"
+                    f"Verdict: {verdict_str}\n"
+                    f"Language: {sub.language}\n"
+                    f"Compiler Diagnostic: {comp_out or 'None'}\n"
+                    f"Runtime Diagnostic: {run_out or 'None'}\n"
+                    f"Source Code:\n{sub.source_code[:4000]}"
+                )
 
         start_time = time.monotonic()
         provider = get_ai_provider()
@@ -238,7 +296,12 @@ class AIService:
         err_msg = None
 
         try:
-            return await provider.explain(request, problem_title=problem_title)
+            effective_request = request
+            if submission_context:
+                effective_request = request.model_copy(
+                    update={"context_text": f"{request.context_text}\n{submission_context}"}
+                )
+            return await provider.explain(effective_request, problem_title=problem_title)
         except Exception as e:
             success = False
             err_msg = str(e)
@@ -307,10 +370,17 @@ class AIService:
         await AIService._enforce_quota_and_track(db, user, AIRequestType.PATTERN.value)
 
         problem_title = None
+        effective_request = request
         if request.problem_id:
-            p_stmt = select(Problem.title).where(Problem.id == request.problem_id)
+            p_stmt = select(Problem).where(
+                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id)
+            )
             prob_res = await db.execute(p_stmt)
-            problem_title = prob_res.scalar_one_or_none()
+            problem = prob_res.scalars().first()
+            if problem:
+                problem_title = problem.title
+                if not request.problem_description:
+                    effective_request = request.model_copy(update={"problem_description": problem.statement})
 
         start_time = time.monotonic()
         provider = get_ai_provider()
@@ -318,7 +388,7 @@ class AIService:
         err_msg = None
 
         try:
-            return await provider.pattern(request, problem_title=problem_title)
+            return await provider.pattern(effective_request, problem_title=problem_title)
         except Exception as e:
             success = False
             err_msg = str(e)

@@ -81,10 +81,12 @@ class Settings(BaseSettings):
     JUDGE_HEARTBEAT_INTERVAL_SECONDS: int = 5
 
     # AI Learning System & DSA Assistant (Phase 6)
-    AI_PROVIDER: Literal["mock", "openai"] = "mock"
+    AI_PROVIDER: Literal["mock", "openai", "gemini"] = "mock"
     AI_MODEL: str = "gpt-4o-mini"
     AI_API_KEY: str = ""
     AI_BASE_URL: str = "https://api.openai.com/v1"
+    GOOGLE_AI_API_KEY: str = ""
+    GOOGLE_AI_MODEL: str = "gemini-1.5-flash"
     AI_TIMEOUT_SECONDS: int = 15
     AI_MAX_INPUT_TOKENS: int = 2000
     AI_MAX_OUTPUT_TOKENS: int = 1500
@@ -189,6 +191,9 @@ class Settings(BaseSettings):
         if self.AI_PROVIDER == "openai":
             if not self.AI_API_KEY or self.AI_API_KEY.startswith("test_") or len(self.AI_API_KEY) < 8:
                 missing.append("AI_API_KEY (valid OpenAI API key required for live AI provider)")
+        elif self.AI_PROVIDER == "gemini":
+            if not self.GOOGLE_AI_API_KEY or self.GOOGLE_AI_API_KEY.startswith("test_") or len(self.GOOGLE_AI_API_KEY) < 8:
+                missing.append("GOOGLE_AI_API_KEY (valid Google Gemini API key required for live AI provider)")
         return len(missing) == 0, missing
 
     def get_ai_config_diagnostic(self) -> str:
@@ -196,8 +201,9 @@ class Settings(BaseSettings):
         is_valid, missing = self.validate_ai_config()
         if self.AI_PROVIDER == "mock":
             return "AI CONFIGURATION: MOCK (DETERMINISTIC TEST/DEVELOPMENT PROVIDER)"
+        active_model = self.GOOGLE_AI_MODEL if self.AI_PROVIDER == "gemini" else self.AI_MODEL
         if is_valid:
-            return f"AI CONFIGURATION VALID (Provider: {self.AI_PROVIDER}, Model: {self.AI_MODEL})"
+            return f"AI CONFIGURATION VALID (Provider: {self.AI_PROVIDER}, Model: {active_model})"
         else:
             return f"AI CONFIGURATION INVALID (Provider: {self.AI_PROVIDER})\nMissing:\n" + "\n".join(f"- {m}" for m in missing)
 

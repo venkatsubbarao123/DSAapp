@@ -32,7 +32,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
   const [tutorResponse, setTutorResponse] = useState<TutorResponseData | null>(null);
 
   // 2. Hint State
-  const [hintProblemId, setHintProblemId] = useState("two-sum-seed");
+  const [hintProblemId, setHintProblemId] = useState("find-maximum-in-array");
   const [currentHintLevel, setCurrentHintLevel] = useState(1);
   const [hintResponse, setHintResponse] = useState<HintResponseData | null>(null);
 
@@ -61,7 +61,10 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
     if (isAuthenticated) {
       fetchApi<AIUsageSummaryData>("/api/v1/ai/usage")
         .then((res) => {
-          if (res.data) setUsage(res.data);
+          const data = (res as any)?.data ?? res;
+          if (data && (data.daily_quota !== undefined || data.daily_used !== undefined)) {
+            setUsage(data);
+          }
         })
         .catch(() => {});
     }
@@ -73,7 +76,10 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
       setLoading(true);
       fetchApi<RecommendationResponseData>("/api/v1/ai/recommendations")
         .then((res) => {
-          if (res.data) setRecommendations(res.data);
+          const data = (res as any)?.data ?? res;
+          if (data && data.recommendations) {
+            setRecommendations(data);
+          }
         })
         .catch((err) => setErrorMsg(err.message))
         .finally(() => setLoading(false));
@@ -122,10 +128,14 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
           code_context: tutorCode || undefined,
         }),
       });
-      if (res.data) {
-        setTutorResponse(res.data);
+      const data = (res as any)?.data ?? res;
+      if (data && data.explanation) {
+        setTutorResponse(data);
         // Refresh usage telemetry
-        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => u.data && setUsage(u.data));
+        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => {
+          const uData = (u as any)?.data ?? u;
+          if (uData && (uData.daily_quota !== undefined || uData.daily_used !== undefined)) setUsage(uData);
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to contact AI Tutor.");
@@ -146,9 +156,13 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
           hint_level: level,
         }),
       });
-      if (res.data) {
-        setHintResponse(res.data);
-        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => u.data && setUsage(u.data));
+      const data = (res as any)?.data ?? res;
+      if (data && data.hint_content) {
+        setHintResponse(data);
+        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => {
+          const uData = (u as any)?.data ?? u;
+          if (uData && (uData.daily_quota !== undefined || uData.daily_used !== undefined)) setUsage(uData);
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to fetch progressive hint.");
@@ -169,9 +183,13 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
           context_text: explainInput,
         }),
       });
-      if (res.data) {
-        setExplainResponse(res.data);
-        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => u.data && setUsage(u.data));
+      const data = (res as any)?.data ?? res;
+      if (data && data.explanation) {
+        setExplainResponse(data);
+        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => {
+          const uData = (u as any)?.data ?? u;
+          if (uData && (uData.daily_quota !== undefined || uData.daily_used !== undefined)) setUsage(uData);
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to generate explanation.");
@@ -189,9 +207,13 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         method: "POST",
         body: JSON.stringify({ code: complexityCode }),
       });
-      if (res.data) {
-        setComplexityResponse(res.data);
-        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => u.data && setUsage(u.data));
+      const data = (res as any)?.data ?? res;
+      if (data && data.time_complexity) {
+        setComplexityResponse(data);
+        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => {
+          const uData = (u as any)?.data ?? u;
+          if (uData && (uData.daily_quota !== undefined || uData.daily_used !== undefined)) setUsage(uData);
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to analyze complexity.");
@@ -209,9 +231,13 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         method: "POST",
         body: JSON.stringify({ problem_description: patternInput }),
       });
-      if (res.data) {
-        setPatternResponse(res.data);
-        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => u.data && setUsage(u.data));
+      const data = (res as any)?.data ?? res;
+      if (data && data.primary_pattern) {
+        setPatternResponse(data);
+        fetchApi<AIUsageSummaryData>("/api/v1/ai/usage").then((u) => {
+          const uData = (u as any)?.data ?? u;
+          if (uData && (uData.daily_quota !== undefined || uData.daily_used !== undefined)) setUsage(uData);
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to detect pattern.");
@@ -525,17 +551,48 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
             </p>
           </div>
 
-          {/* Problem Identifier Input */}
-          <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
-            <label htmlFor="hint-problem-input" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              Problem Identifier:
+          {/* Problem Identifier Input & Quick Presets */}
+          <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center", flexWrap: "wrap" }}>
+            <label htmlFor="hint-problem-select" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+              Select Problem:
             </label>
+            <select
+              id="hint-problem-select"
+              value={hintProblemId}
+              onChange={(e) => {
+                setHintProblemId(e.target.value);
+                setHintResponse(null);
+              }}
+              style={{
+                padding: "8px 12px",
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-sm)",
+                color: "var(--text-primary)",
+                fontSize: "0.85rem",
+              }}
+            >
+              <option value="find-maximum-in-array">Find Maximum in Array (Easy)</option>
+              <option value="reverse-an-array">Reverse an Array (Easy)</option>
+              <option value="two-number-sum">Two Number Sum (Easy)</option>
+              <option value="valid-parentheses">Valid Parentheses (Easy)</option>
+              <option value="find-element-in-sorted-array">Binary Search (Easy)</option>
+              <option value="three-number-sum">Three Number Sum (Medium)</option>
+              <option value="container-with-maximum-area">Container with Maximum Area (Medium)</option>
+              <option value="longest-substring-no-repeat">Longest Substring No Repeat (Medium)</option>
+              <option value="climbing-stairs">Climbing Stairs (Medium)</option>
+              <option value="two-sum-seed">Two Sum Seed (Fundamentals)</option>
+            </select>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>or custom slug/ID:</span>
             <input
               id="hint-problem-input"
               type="text"
               value={hintProblemId}
-              onChange={(e) => setHintProblemId(e.target.value)}
-              placeholder="e.g. two-sum-seed"
+              onChange={(e) => {
+                setHintProblemId(e.target.value);
+                setHintResponse(null);
+              }}
+              placeholder="e.g. reverse-an-array"
               style={{
                 padding: "6px 12px",
                 backgroundColor: "var(--bg-tertiary)",
@@ -543,6 +600,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
                 borderRadius: "var(--radius-sm)",
                 color: "var(--text-primary)",
                 fontSize: "0.85rem",
+                width: "200px",
               }}
             />
           </div>
