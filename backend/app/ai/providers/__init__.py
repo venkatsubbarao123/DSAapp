@@ -2,6 +2,7 @@
 
 from typing import Optional
 from backend.app.ai.providers.base import AIProvider
+from backend.app.ai.providers.gemini_provider import GeminiProvider
 from backend.app.ai.providers.mock_provider import MockAIProvider
 from backend.app.ai.providers.openai_provider import OpenAIProvider
 from backend.app.core.config import settings
@@ -24,6 +25,11 @@ def get_ai_provider(override_driver: Optional[str] = None) -> AIProvider:
             _cached_provider = OpenAIProvider()
         return _cached_provider
 
+    if provider_name == "gemini":
+        if _cached_provider is None or not isinstance(_cached_provider, GeminiProvider):
+            _cached_provider = GeminiProvider()
+        return _cached_provider
+
     # Default to deterministic mock provider
     if _cached_provider is None or not isinstance(_cached_provider, MockAIProvider):
         _cached_provider = MockAIProvider(model_name=settings.AI_MODEL)
@@ -39,6 +45,7 @@ def set_ai_provider_instance(provider: Optional[AIProvider]) -> None:
 
 __all__ = [
     "AIProvider",
+    "GeminiProvider",
     "MockAIProvider",
     "OpenAIProvider",
     "get_ai_provider",

@@ -6,8 +6,9 @@ from sqlalchemy import select
 
 from backend.app.db.seed_data import seed_development_content
 from backend.app.db.session import async_session_factory
+from backend.app.models.ai import AIHintUsage
 from backend.app.models.content import Problem
-from backend.app.models.progress import Mistake, MistakeType, ProblemProgressStatus, UserProblemProgress
+from backend.app.models.progress import Mistake, MistakeType, ProblemProgressStatus, Submission, SubmissionStatus, UserProblemProgress
 from backend.app.models.user import User
 
 
@@ -207,3 +208,80 @@ async def test_ai_usage_and_quota_tracking(client: AsyncClient):
     assert u["daily_quota"] > 0
     assert u["daily_remaining"] > 0
     assert u["can_request"] is True
+
+
+@pytest.mark.asyncio
+async def test_ai_hint_by_slug_and_tracking(client: AsyncClient):
+    """Verifies requesting hints via problem slug works and records AIHintUsage."""
+    token = await get_user_token(client, "student_slug_hint@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Request hint using problem slug directly
+    res = await client.post(
+        "/api/v1/ai/hint",
+        json={"problem_id": "two-sum-seed", "hint_level": 2},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    hint_data = res.json()
+    assert hint_data["hint_level"] == 2
+    assert "hint_content" in hint_data
+
+    # Verify AIHintUsage record was persisted in database
+    async with async_session_factory() as session:
+        user_obj = (await session.execute(select(User).where(User.email == "student_slug_hint@example.com"))).scalar_one()
+        logs = (await session.execute(select(AIHintUsage).where(AIHintUsage.user_id == user_obj.id))).scalars().all()
+        assert len(logs) >= 1
+        assert logs[-1].hint_level == 2
+        assert logs[-1].number_of_hints_used >= 1
+
+
+@pytest.mark.asyncio
+async def test_ai_explain_with_submission_diagnostics(client: AsyncClient):
+    """Verifies that explain_content enriches diagnostic explanations with real submission records."""
+    token = await get_user_token(client, "student_explain_sub@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    async with async_session_factory() as session:
+        user_obj = (await session.execute(select(User).where(User.email == "student_explain_sub@example.com"))).scalar_one()
+        prob_obj = (await session.execute(select(Problem).where(Problem.slug == "two-sum-seed"))).scalar_one()
+
+        sub = Submission(
+            user_id=user_obj.id,
+            problem_id=prob_obj.id,
+            language="python",
+            source_code="def two_sum():\n    return []",
+            status=SubmissionStatus.WRONG_ANSWER,
+        )
+        session.add(sub)
+        await session.commit()
+        await session.refresh(sub)
+        sub_id = sub.id
+
+    res = await client.post(
+        "/api/v1/ai/explain",
+        json={
+            "target_type": "judge_error",
+            "context_text": "Code returned [] instead of expected pair indices [0, 1].",
+            "submission_id": sub_id,
+            "problem_id": prob_obj.id,
+        },
+        headers=headers,
+    )
+    assert res.status_code == 200
+    exp = res.json()
+    assert "explanation" in exp
+    assert len(exp["breakdown_points"]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_gemini_provider_diagnostics():
+    """Verifies GeminiProvider diagnostics reports honest status when API key is missing."""
+    from backend.app.ai.providers.gemini_provider import GeminiProvider
+
+    provider = GeminiProvider()
+    diag = provider.get_diagnostics()
+    assert diag["provider"] == "gemini"
+    assert "BLOCKED — GOOGLE_AI_API_KEY REQUIRED" in diag["status"]
+    assert provider.is_available() is False
+
