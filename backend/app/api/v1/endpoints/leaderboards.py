@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.api.deps import get_current_user, get_db
+from backend.app.api.deps import get_current_user, get_current_user_optional, get_db
 from backend.app.models.user import User
 from backend.app.services.gamification.leaderboard_service import (
     LeaderboardResponse,
@@ -22,7 +22,7 @@ async def get_leaderboard(
     category: str = Query("weekly_xp", description="Leaderboard category: weekly_xp, monthly_xp, all_time_xp, streak"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Returns paginated privacy-safe competitive leaderboard rankings with deterministic tie-breaking."""

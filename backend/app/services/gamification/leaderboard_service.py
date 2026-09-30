@@ -33,6 +33,8 @@ class LeaderboardEntry(BaseModel):
     score: int
     level: int
     streak: int
+    current_level: int = 1
+    current_streak: int = 0
 
 
 class LeaderboardResponse(BaseModel):
@@ -47,11 +49,21 @@ class LeaderboardService:
     """Manages multi-category competitive ranking calculations."""
 
     @staticmethod
+    def _sanitize_name(user_id: str, display_name: Optional[str]) -> str:
+        """Returns privacy-safe public handle for a learner without email leakage."""
+        if display_name and display_name.strip():
+            cleaned = display_name.strip()
+            if "@" in cleaned:
+                cleaned = cleaned.split("@")[0]
+            if cleaned:
+                return cleaned
+        return f"Coder-{user_id[:6]}"
+
+    @staticmethod
     def _mask_display_name(user_id: str, profile: Optional[UserProfile]) -> str:
         """Returns privacy-safe public handle for a learner."""
         if profile and profile.display_name and profile.display_name.strip():
-            return profile.display_name.strip()
-        # Fallback to masked anonymized identifier
+            return LeaderboardService._sanitize_name(user_id, profile.display_name)
         return f"Coder-{user_id[:6]}"
 
     @classmethod
@@ -118,14 +130,18 @@ class LeaderboardService:
 
             for idx, r in enumerate(rows[offset : offset + limit], start=offset + 1):
                 name = r.display_name.strip() if r.display_name else f"Coder-{r.user_id[:6]}"
+                lvl = int(r.current_level or 1)
+                strk = int(r.current_streak or 0)
                 entries.append(
                     LeaderboardEntry(
                         rank=idx,
                         user_id=r.user_id,
                         display_name=name,
                         score=int(r.score or 0),
-                        level=int(r.current_level or 1),
-                        streak=int(r.current_streak or 0),
+                        level=lvl,
+                        streak=strk,
+                        current_level=lvl,
+                        current_streak=strk,
                     )
                 )
 
@@ -147,14 +163,18 @@ class LeaderboardService:
 
             for idx, r in enumerate(rows[offset : offset + limit], start=offset + 1):
                 name = r.display_name.strip() if r.display_name else f"Coder-{r.user_id[:6]}"
+                lvl = int(r.current_level or 1)
+                strk = int(r.current_streak or 0)
                 entries.append(
                     LeaderboardEntry(
                         rank=idx,
                         user_id=r.user_id,
                         display_name=name,
                         score=int(r.score or 0),
-                        level=int(r.current_level or 1),
-                        streak=int(r.current_streak or 0),
+                        level=lvl,
+                        streak=strk,
+                        current_level=lvl,
+                        current_streak=strk,
                     )
                 )
 
@@ -176,14 +196,18 @@ class LeaderboardService:
 
             for idx, r in enumerate(rows[offset : offset + limit], start=offset + 1):
                 name = r.display_name.strip() if r.display_name else f"Coder-{r.user_id[:6]}"
+                lvl = int(r.current_level or 1)
+                strk = int(r.current_streak or 0)
                 entries.append(
                     LeaderboardEntry(
                         rank=idx,
                         user_id=r.user_id,
                         display_name=name,
                         score=int(r.score or 0),
-                        level=int(r.current_level or 1),
-                        streak=int(r.current_streak or 0),
+                        level=lvl,
+                        streak=strk,
+                        current_level=lvl,
+                        current_streak=strk,
                     )
                 )
 

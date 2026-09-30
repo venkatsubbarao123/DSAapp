@@ -42,7 +42,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate: _o
   }, [category, isAuthenticated]);
 
   const currentUnit = CATEGORIES.find((c) => c.id === category)?.scoreUnit || "XP";
-  const currentUserEntry = userRanks[category];
+  const currentUserEntry = userRanks && typeof userRanks === "object" ? userRanks[category] : undefined;
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "var(--space-8) var(--space-4)", width: "100%" }}>
@@ -83,7 +83,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate: _o
             <div style={{ borderLeft: "1px solid var(--border-subtle)", paddingLeft: "var(--space-6)" }}>
               <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Level</span>
               <div style={{ fontSize: "1.25rem", fontWeight: 800 }}>
-                Lv {currentUserEntry.current_level}
+                Lv {currentUserEntry.current_level ?? (currentUserEntry as any).level ?? 1}
               </div>
             </div>
           </div>
@@ -217,11 +217,13 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate: _o
                           border: "1px solid var(--border-muted)",
                         }}
                       >
-                        Lv {entry.current_level}
+                        Lv {entry.current_level ?? (entry as any).level ?? 1}
                       </span>
                     </td>
                     <td style={{ padding: "14px 20px", fontWeight: 600 }}>
-                      {entry.current_streak > 0 ? `🔥 ${entry.current_streak}d` : "—"}
+                      {(entry.current_streak ?? (entry as any).streak ?? 0) > 0
+                        ? `🔥 ${entry.current_streak ?? (entry as any).streak}d`
+                        : "—"}
                     </td>
                     <td
                       style={{

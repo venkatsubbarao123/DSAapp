@@ -141,6 +141,6 @@ export const gamificationApi = {
 
   getUserRank: async (): Promise<Record<string, LeaderboardEntry>> => {
     const res = await fetchApi<Record<string, LeaderboardEntry>>("/api/v1/leaderboards/me");
-    return res.data;
+    return res.data || {};
   },
 };

@@ -97,7 +97,15 @@ export async function fetchApi<T>(
       });
     }
 
-    return jsonPayload as APIResponse<T>;
+    const payload = jsonPayload as any;
+    if (payload && typeof payload === "object" && "data" in payload && payload.data !== undefined) {
+      return payload as APIResponse<T>;
+    }
+    return {
+      success: true,
+      data: payload as T,
+      request_id: responseRequestId,
+    };
   } catch (error: unknown) {
     if (error instanceof APIClientError) {
       throw error;
