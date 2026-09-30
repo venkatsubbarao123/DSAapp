@@ -37,6 +37,17 @@ class StreakService:
         return (dt - timedelta(days=2)).strftime("%Y-%m-%d")
 
     @classmethod
+    async def record_activity(
+        cls,
+        db: AsyncSession,
+        user_id: str,
+        activity_type: str = "INTERVIEW",
+        now: Optional[datetime] = None,
+    ) -> Tuple[int, int, bool]:
+        """Convenience alias for recording learning activity."""
+        return await cls.record_qualifying_activity(db, user_id, activity_type, now)
+
+    @classmethod
     async def record_qualifying_activity(
         cls,
         db: AsyncSession,

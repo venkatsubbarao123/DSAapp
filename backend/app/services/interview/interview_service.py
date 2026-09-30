@@ -338,10 +338,18 @@ class InterviewService:
                 question_type=q.question_type,
                 question_title=q.question_title,
                 question_prompt=q.question_prompt,
+                title=q.question_title,
+                question_text=q.question_prompt,
                 options=q.options,
                 difficulty=q.difficulty,
+                category=getattr(q, "category", None) or q.question_type,
+                time_limit_minutes=15,
                 user_answer=q.user_answer,
+                user_response=q.user_answer,
+                code_language=None,
                 is_answered=bool(q.user_answer),
+                score=q.score,
+                feedback=q.evaluation_reason,
             )
             for q in sorted(session.questions, key=lambda x: x.sequence)
         ]
@@ -353,12 +361,16 @@ class InterviewService:
             status=session.status,
             started_at=session.started_at,
             duration_seconds=session.duration_seconds,
+            duration_minutes=session.duration_seconds // 60,
             remaining_seconds=session.remaining_seconds,
             is_expired=session.is_expired,
             total_questions=session.total_questions,
             answered_questions=session.answered_questions,
             score=session.score,
+            overall_score=session.score,
+            verdict="PASSED" if session.score >= 70 else "NEEDS_PRACTICE",
             evaluation_status=session.evaluation_status,
+            feedback_summary=f"Interview {session.mode} status: {session.status}",
             questions=q_responses,
         )
 
@@ -395,8 +407,9 @@ class InterviewService:
         if not q:
             return None, "Question not found in this interview session."
 
+        ans = payload.answer if payload.answer is not None else payload.user_response
         was_empty = not bool(q.user_answer)
-        q.user_answer = payload.answer
+        q.user_answer = ans
         q.answered_at = datetime.now(timezone.utc)
 
         if was_empty:
@@ -409,6 +422,9 @@ class InterviewService:
             answered=True,
             remaining_seconds=session.remaining_seconds,
             is_expired=session.is_expired,
+            message="Answer submitted successfully",
+            score=q.score,
+            feedback=q.evaluation_reason,
         ), None
 
     @classmethod
@@ -601,6 +617,11 @@ class InterviewService:
         started = session.started_at if session.started_at.tzinfo else session.started_at.replace(tzinfo=timezone.utc)
         time_spent = int((completed - started).total_seconds())
 
+        verdict = "HIRE" if session.score >= 80 else ("LEANING_HIRE" if session.score >= 60 else "NEEDS_PRACTICE")
+        rubric_breakdown = {c["category"]: c["score"] for c in fb.get("category_scores", [])}
+        feedback_summary = f"Performance in {session.mode} interview: scored {session.score}/100. Verdict: {verdict}."
+        areas = fb.get("areas_to_improve", [])
+
         return InterviewReportResponse(
             session_id=session.id,
             mode=session.mode,
@@ -609,13 +630,18 @@ class InterviewService:
             duration_seconds=session.duration_seconds,
             time_spent_seconds=time_spent,
             overall_score=session.score,
+            verdict=verdict,
             total_questions=session.total_questions,
             correct_questions=correct_count,
             category_scores=cat_scores,
+            rubric_breakdown=rubric_breakdown,
             time_management_feedback=fb.get("time_management_feedback", "Normal completion."),
+            feedback_summary=feedback_summary,
             strengths=fb.get("strengths", []),
-            areas_to_improve=fb.get("areas_to_improve", []),
+            areas_to_improve=areas,
+            improvement_areas=areas,
             recommended_topics=fb.get("recommended_topics", []),
+            recommended_problems=[],
             ai_debrief=fb.get("ai_debrief"),
         )
 

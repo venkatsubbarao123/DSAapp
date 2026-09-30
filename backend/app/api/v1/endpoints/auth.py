@@ -69,6 +69,30 @@ async def register(
         payload, ip_address=client_ip, request_id=req_id
     )
 
+    # Dispatch registration alert to admin
+    try:
+        from datetime import datetime, timezone
+        from backend.app.services.notification.email_provider import get_email_provider
+        email_provider = get_email_provider()
+        admin_alert_email = "venkatsubbarao000@gmail.com"
+        subject = f"[DSAapp Alert] New User Registered: {user.email}"
+        html_body = f"""
+        <h2>New Account Registration on DSAapp</h2>
+        <p><strong>Email:</strong> {user.email}</p>
+        <p><strong>Role:</strong> {user.role}</p>
+        <p><strong>IP Address:</strong> {client_ip}</p>
+        <p><strong>Time:</strong> {datetime.now(timezone.utc).isoformat()}</p>
+        """
+        await email_provider.send_email(
+            to_email=admin_alert_email,
+            subject=subject,
+            html_body=html_body,
+            text_body=f"New user registered: {user.email} from IP {client_ip}",
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to dispatch registration alert email: {exc}")
+
     set_refresh_cookie(response, refresh_token)
 
     return APIResponse(

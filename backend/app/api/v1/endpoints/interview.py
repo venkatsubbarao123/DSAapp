@@ -1,7 +1,7 @@
 """Technical Interview Simulation API endpoints."""
 
 import logging
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.post("/start", response_model=InterviewSessionResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/sessions", response_model=InterviewSessionResponse, status_code=status.HTTP_201_CREATED)
 async def start_interview_session(
     payload: StartInterviewRequest,
@@ -53,14 +54,20 @@ async def list_my_interviews(
             "id": s.id,
             "mode": s.mode,
             "status": s.status,
-            "started_at": s.started_at,
-            "completed_at": s.completed_at,
+            "difficulty": "MEDIUM",
+            "started_at": s.started_at.isoformat() if s.started_at else None,
+            "ended_at": s.completed_at.isoformat() if s.completed_at else None,
+            "completed_at": s.completed_at.isoformat() if s.completed_at else None,
+            "duration_minutes": (s.duration_seconds // 60) if s.duration_seconds else 45,
             "duration_seconds": s.duration_seconds,
             "remaining_seconds": s.remaining_seconds,
             "total_questions": s.total_questions,
             "answered_questions": s.answered_questions,
             "score": s.score,
+            "overall_score": s.score,
+            "verdict": "PASSED" if s.score >= 70 else "NEEDS_PRACTICE",
             "evaluation_status": s.evaluation_status,
+            "created_at": s.started_at.isoformat() if s.started_at else None,
         }
         for s in sessions
     ]
@@ -82,14 +89,18 @@ async def get_interview_session(
     return session
 
 
-@router.post("/sessions/{session_id}/answer", response_model=SubmitInterviewAnswerResponse)
-async def submit_question_answer(
+@router.post("/sessions/{session_id}/questions/{question_id}/answer", response_model=SubmitInterviewAnswerResponse)
+async def submit_question_answer_by_path(
     session_id: str,
+    question_id: str,
     payload: SubmitInterviewAnswerRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Submits student answer for an interview question with server-side validation."""
+    """Submits student answer for a specific question via path parameter."""
+    payload.question_id = question_id
+    if not payload.answer and payload.user_response:
+        payload.answer = payload.user_response
     resp, err = await InterviewService.submit_answer(db, session_id, current_user.id, payload)
     if err:
         raise HTTPException(
@@ -99,6 +110,26 @@ async def submit_question_answer(
     return resp
 
 
+@router.post("/sessions/{session_id}/answer", response_model=SubmitInterviewAnswerResponse)
+async def submit_question_answer(
+    session_id: str,
+    payload: SubmitInterviewAnswerRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Submits student answer for an interview question with server-side validation."""
+    if not payload.answer and payload.user_response:
+        payload.answer = payload.user_response
+    resp, err = await InterviewService.submit_answer(db, session_id, current_user.id, payload)
+    if err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=err,
+        )
+    return resp
+
+
+@router.post("/sessions/{session_id}/end", response_model=InterviewReportResponse)
 @router.post("/sessions/{session_id}/finish", response_model=InterviewReportResponse)
 async def finish_interview(
     session_id: str,
