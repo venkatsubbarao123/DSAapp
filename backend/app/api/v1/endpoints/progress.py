@@ -3,11 +3,16 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Request, status
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.app.api.deps import (
     get_current_user,
+    get_db,
     get_progress_service,
     require_premium,
 )
+from backend.app.models.content import ContentStatus, Topic
 from backend.app.models.user import User
 from backend.app.schemas.progress import (
     MasteryInsightsRead,
@@ -30,6 +35,23 @@ async def get_progress_overview(
     """Calculates comprehensive learning progress across all published educational material."""
     overview = await service.get_overview(current_user.id)
     return {"success": True, "data": overview.model_dump()}
+
+
+@router.get("/topics", response_model=dict)
+async def list_topics_progress(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    service: ProgressService = Depends(get_progress_service),
+):
+    """Returns aggregated topic progress for all published topics."""
+    stmt = select(Topic).where(Topic.status == ContentStatus.PUBLISHED).order_by(Topic.display_order.asc())
+    topics = (await db.execute(stmt)).scalars().all()
+    results = []
+    for t in topics:
+        prog = await service.repo.get_topic_progress(current_user.id, t.id)
+        if prog:
+            results.append(prog)
+    return {"success": True, "data": results}
 
 
 @router.get("/topics/{topic_id}", response_model=dict)
@@ -55,6 +77,7 @@ async def get_problem_progress(
 
 
 @router.get("/mastery", response_model=dict)
+@router.get("/insights/mastery", response_model=dict)
 async def get_mastery_insights(
     current_user: User = Depends(require_premium),
     service: ProgressService = Depends(get_progress_service),

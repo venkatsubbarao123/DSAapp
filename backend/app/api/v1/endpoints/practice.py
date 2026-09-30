@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.api.deps import get_current_user, get_db
+from backend.app.api.deps import get_current_user, get_current_user_optional, get_db
 from backend.app.models.content import ContentStatus, Problem
 from backend.app.models.gamification import PracticeSession
 from backend.app.models.progress import ProblemProgressStatus, UserProblemProgress
@@ -247,10 +247,10 @@ async def explain_problem_recommendation(
 
 @router.get("/daily", response_model=DailyChallengeResponse)
 async def get_daily_challenge(
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retrieves today's calendar daily challenge and user completion status."""
+    """Retrieves today's calendar daily challenge and user completion status (supports guests)."""
     today_str = StreakService.get_today_str()
     challenge = await DailyChallengeService.get_or_create_daily_challenge(db, today_str)
     if not challenge:
@@ -259,19 +259,28 @@ async def get_daily_challenge(
             detail="No daily challenge configured for today.",
         )
 
-    # Check user solve status
-    prog_stmt = select(UserProblemProgress).where(
-        UserProblemProgress.user_id == current_user.id,
-        UserProblemProgress.problem_id == challenge.problem_id,
-    )
-    user_prog = (await db.execute(prog_stmt)).scalar_one_or_none()
-    is_solved = bool(user_prog and user_prog.status == ProblemProgressStatus.SOLVED)
-    first_attempt = bool(user_prog and user_prog.attempts_count == 1)
+    # Check user solve status if authenticated
+    is_solved = False
+    first_attempt = False
+    has_claimed = False
+    can_claim = False
+    xp_awarded = 0
+    user_challenge = None
 
-    # Check if reward claimed
-    user_challenge = await DailyChallengeService.get_user_challenge_status(db, current_user.id, challenge)
-    has_claimed = bool(user_challenge and user_challenge.solved)
-    can_claim = is_solved and not has_claimed
+    if current_user:
+        prog_stmt = select(UserProblemProgress).where(
+            UserProblemProgress.user_id == current_user.id,
+            UserProblemProgress.problem_id == challenge.problem_id,
+        )
+        user_prog = (await db.execute(prog_stmt)).scalar_one_or_none()
+        is_solved = bool(user_prog and user_prog.status == ProblemProgressStatus.SOLVED)
+        first_attempt = bool(user_prog and user_prog.attempts_count == 1)
+
+        # Check if reward claimed
+        user_challenge = await DailyChallengeService.get_user_challenge_status(db, current_user.id, challenge)
+        has_claimed = bool(user_challenge and user_challenge.solved)
+        can_claim = is_solved and not has_claimed
+        xp_awarded = user_challenge.xp_awarded if user_challenge else 0
 
     problem = await db.get(Problem, challenge.problem_id)
     return DailyChallengeResponse(

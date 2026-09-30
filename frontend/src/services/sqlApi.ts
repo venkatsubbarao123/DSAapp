@@ -13,28 +13,32 @@ import {
 export const sqlApi = {
   async getProblems(category?: string): Promise<SQLProblemSummary[]> {
     const q = category ? `?category=${category}` : "";
-    const res = await fetchApi<SQLProblemSummary[]>(`/api/v1/sql/problems${q}`);
-    return res.data || [];
+    const res: any = await fetchApi<any>(`/api/v1/sql/problems${q}`);
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    return [];
   },
 
   async getProblemDetail(slug: string): Promise<SQLProblemDetail> {
-    const res = await fetchApi<SQLProblemDetail>(`/api/v1/sql/problems/${slug}`);
-    if (!res.data) throw new Error("SQL problem not found");
-    return res.data;
+    const res: any = await fetchApi<any>(`/api/v1/sql/problems/${slug}`);
+    const data = res?.data ?? res;
+    if (!data || (!data.title && !data.id)) throw new Error("SQL problem not found");
+    return data;
   },
 
   async submitQuery(
     slug: string,
     payload: SQLSubmissionPayload
   ): Promise<SQLSubmissionResult> {
-    const res = await fetchApi<SQLSubmissionResult>(
+    const res: any = await fetchApi<any>(
       `/api/v1/sql/problems/${slug}/submit`,
       {
         method: "POST",
         body: JSON.stringify(payload),
       }
     );
-    if (!res.data) throw new Error("Query submission failed");
-    return res.data;
+    const data = res?.data ?? res;
+    if (!data) throw new Error("Query submission failed");
+    return data;
   },
 };

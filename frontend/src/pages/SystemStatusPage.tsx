@@ -91,7 +91,7 @@ export const SystemStatusPage: React.FC = () => {
     >
       <div style={{ marginBottom: "var(--space-8)", textAlign: "center" }}>
         <h1 style={{ fontSize: "1.75rem", fontWeight: 700, marginBottom: "var(--space-2)" }}>
-          Service Status
+          System Vitality & Diagnostics
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
           Current operational status of DSAapp services.

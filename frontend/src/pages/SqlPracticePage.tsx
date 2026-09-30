@@ -201,30 +201,36 @@ export const SqlPracticePage: React.FC<SqlPracticePageProps> = () => {
                   <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>
                     Table Schemas & Sample Rows
                   </div>
-                  {problemDetail.parsed_schemas.map((schema) => (
-                    <div key={schema.table_name} style={{ marginBottom: 10 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b", marginBottom: 4 }}>
-                        Table: <span style={{ fontFamily: "monospace", color: "#2563eb" }}>{schema.table_name}</span>
+                  {problemDetail.parsed_schemas && problemDetail.parsed_schemas.length > 0 ? (
+                    problemDetail.parsed_schemas.map((schema) => (
+                      <div key={schema.table_name} style={{ marginBottom: 10 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b", marginBottom: 4 }}>
+                          Table: <span style={{ fontFamily: "monospace", color: "#2563eb" }}>{schema.table_name}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {schema.columns?.map((col) => (
+                            <span
+                              key={col.name}
+                              style={{
+                                fontSize: 11,
+                                padding: "2px 6px",
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: 4,
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {col.name}: <strong>{col.type}</strong> {col.is_pk ? "(PK)" : ""}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {schema.columns.map((col) => (
-                          <span
-                            key={col.name}
-                            style={{
-                              fontSize: 11,
-                              padding: "2px 6px",
-                              backgroundColor: "#ffffff",
-                              border: "1px solid #cbd5e1",
-                              borderRadius: 4,
-                              fontFamily: "monospace",
-                            }}
-                          >
-                            {col.name}: <strong>{col.type}</strong> {col.is_pk ? "(PK)" : ""}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : problemDetail.schema_ddl ? (
+                    <pre style={{ margin: 0, fontSize: 12, fontFamily: "monospace", color: "#334155", whiteSpace: "pre-wrap" }}>
+                      {problemDetail.schema_ddl}
+                    </pre>
+                  ) : null}
                 </div>
 
                 {/* Hints Toggle */}

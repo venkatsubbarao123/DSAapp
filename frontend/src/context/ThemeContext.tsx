@@ -18,7 +18,14 @@ export const useTheme = () => useContext(ThemeContext);
 
 function getResolved(theme: Theme): 'light' | 'dark' {
   if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      try {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      } catch {
+        return 'dark';
+      }
+    }
+    return 'dark';
   }
   return theme;
 }
@@ -26,7 +33,10 @@ function getResolved(theme: Theme): 'light' | 'dark' {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      return (localStorage.getItem('dsaapp-theme') as Theme) || 'system';
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return (localStorage.getItem('dsaapp-theme') as Theme) || 'system';
+      }
+      return 'system';
     } catch { return 'system'; }
   });
 
@@ -35,25 +45,45 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const resolved = getResolved(theme);
     setResolvedTheme(resolved);
-    document.documentElement.setAttribute('data-theme', resolved);
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.setAttribute('data-theme', resolved);
+    }
   }, [theme]);
 
   // Listen for system preference changes when in 'system' mode
   useEffect(() => {
     if (theme !== 'system') return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      const r = getResolved('system');
-      setResolvedTheme(r);
-      document.documentElement.setAttribute('data-theme', r);
-    };
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = () => {
+        const r = getResolved('system');
+        setResolvedTheme(r);
+        if (typeof document !== 'undefined' && document.documentElement) {
+          document.documentElement.setAttribute('data-theme', r);
+        }
+      };
+
+      if (mq.addEventListener) {
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+      } else if ('addListener' in mq) {
+        (mq as any).addListener(handler);
+        return () => (mq as any).removeListener(handler);
+      }
+    } catch {
+      return;
+    }
   }, [theme]);
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    try { localStorage.setItem('dsaapp-theme', t); } catch {}
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('dsaapp-theme', t);
+      }
+    } catch {}
   };
 
   return (

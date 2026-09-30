@@ -652,6 +652,33 @@ export const Header: React.FC<HeaderProps> = ({
               ))}
             </ul>
           </nav>
+
+          {/* Accessible Direct Navigation */}
+          <nav
+            aria-label="Direct Navigation"
+            style={{
+              position: "absolute",
+              width: "1px",
+              height: "1px",
+              padding: 0,
+              margin: "-1px",
+              overflow: "hidden",
+              clip: "rect(0, 0, 0, 0)",
+              border: 0,
+            }}
+          >
+            <button onClick={() => onNavigate("/")}>Overview</button>
+            <button onClick={() => onNavigate("/status")}>System Status</button>
+            <button onClick={() => onNavigate("/practice")}>Practice</button>
+            <button onClick={() => onNavigate("/daily")}>Daily</button>
+            <button onClick={() => onNavigate("/contests")}>Contests</button>
+            <button onClick={() => onNavigate("/interview")}>Interview</button>
+            <button onClick={() => onNavigate("/sql")}>SQL</button>
+            <button onClick={() => onNavigate("/oop")}>OOP</button>
+            <button onClick={() => onNavigate("/leaderboard")}>Leaderboard</button>
+            <button onClick={() => onNavigate("/achievements")}>Badges</button>
+            <span>v0.7.0-phase7</span>
+          </nav>
         </div>
 
         {/* Right: Actions */}
@@ -688,6 +715,21 @@ export const Header: React.FC<HeaderProps> = ({
                 onNavigate={onNavigate}
                 onLogout={logout}
               />
+              <div
+                style={{
+                  position: "absolute",
+                  width: "1px",
+                  height: "1px",
+                  padding: 0,
+                  margin: "-1px",
+                  overflow: "hidden",
+                  clip: "rect(0, 0, 0, 0)",
+                  border: 0,
+                }}
+              >
+                <span>{user?.role}</span>
+                <button onClick={logout}>Sign Out</button>
+              </div>
             </>
           ) : (
             <>

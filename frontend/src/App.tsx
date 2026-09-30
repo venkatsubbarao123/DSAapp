@@ -150,7 +150,7 @@ export const AppContent: React.FC = () => {
     if (currentPath === "/daily" || currentPath.startsWith("/daily?")) {
       return <DailyChallengePage onNavigate={navigate} />;
     }
-    if (currentPath === "/achievements" || currentPath.startsWith("/achievements?")) {
+    if (currentPath === "/achievements" || currentPath === "/badges" || currentPath.startsWith("/achievements?")) {
       return <AchievementsPage onNavigate={navigate} />;
     }
     if (currentPath === "/leaderboard" || currentPath === "/leaderboards" || currentPath.startsWith("/leaderboard")) {

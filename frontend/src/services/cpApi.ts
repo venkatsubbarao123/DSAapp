@@ -16,25 +16,37 @@ export const cpApi = {
     if (params?.rating_band) sp.append("rating_band", params.rating_band);
     if (params?.tag) sp.append("tag", params.tag);
     const query = sp.toString() ? `?${sp.toString()}` : "";
-    const res = await fetchApi<CPProblem[]>(`/api/v1/competitive/problems${query}`);
-    return res.data || [];
+    const res = await fetchApi<any>(`/api/v1/competitive/problems${query}`);
+    const raw = res as any;
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    return [];
   },
 
   async getBands(): Promise<CPRatingBand[]> {
-    const res = await fetchApi<CPRatingBand[]>("/api/v1/competitive/bands");
-    return res.data || [];
+    const res = await fetchApi<any>("/api/v1/competitive/bands");
+    const raw = res as any;
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    return [];
   },
 
   async getMyRating(): Promise<UserCPRating> {
-    const res = await fetchApi<UserCPRating>("/api/v1/competitive/rating/me");
-    if (!res.data) throw new Error("Rating profile not found");
-    return res.data;
+    const res = await fetchApi<any>("/api/v1/competitive/profile");
+    const raw = res as any;
+    if (raw?.current_rating !== undefined) return raw as UserCPRating;
+    if (raw?.data?.current_rating !== undefined) return raw.data as UserCPRating;
+    if (raw?.data) return raw.data as UserCPRating;
+    throw new Error("Rating profile not found");
   },
 
   async getLeaderboard(limit = 50): Promise<CPLeaderboardEntry[]> {
-    const res = await fetchApi<CPLeaderboardEntry[]>(
-      `/api/v1/competitive/leaderboard?limit=${limit}`
-    );
-    return res.data || [];
+    const res = await fetchApi<any>(`/api/v1/competitive/leaderboard?limit=${limit}`);
+    const raw = res as any;
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    if (raw && Array.isArray(raw.entries)) return raw.entries;
+    if (raw && raw.data && Array.isArray(raw.data.entries)) return raw.data.entries;
+    return [];
   },
 };

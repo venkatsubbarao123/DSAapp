@@ -66,7 +66,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onNavigate }) =>
             marginBottom: "var(--space-3)",
           }}
         >
-          Your DSA Learning Journey
+          Structured Learning Pathways
         </h1>
         <p
           style={{
