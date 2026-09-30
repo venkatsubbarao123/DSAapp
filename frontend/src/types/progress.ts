@@ -46,6 +46,29 @@ export interface SubmissionResult {
   created_at: string;
 }
 
+export interface TestCaseRunResult {
+  case_number: number;
+  input: string;
+  expected_output?: string | null;
+  actual_output?: string | null;
+  stderr?: string | null;
+  passed: boolean;
+  execution_time_ms: number;
+  status: string;
+}
+
+export interface RunCodeResult {
+  status: string;
+  all_passed: boolean;
+  passed_count: number;
+  total_count: number;
+  peak_runtime_ms: number;
+  peak_memory_bytes: number;
+  compiler_output?: string | null;
+  test_cases: TestCaseRunResult[];
+}
+
+
 export type MistakeType =
   | "CONCEPT_GAP"
   | "LOGIC_ERROR"

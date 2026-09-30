@@ -3,7 +3,8 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request
 
-from backend.app.api.deps import get_content_service, get_current_user_optional
+from backend.app.api.deps import get_content_service, get_current_user_optional, get_db
+from backend.app.judge.runner import run_sample_test_cases
 from backend.app.models.content import ContentAccessLevel, ContentLevel, ProblemDifficulty
 from backend.app.models.user import User
 from backend.app.schemas.content import (
@@ -18,7 +19,10 @@ from backend.app.schemas.content import (
     TopicSummary,
     TrackSummary,
 )
+from backend.app.schemas.judge import RunCodeRequest
 from backend.app.services.content_service import ContentService
+from backend.app.services.rate_limiter import rate_limiter
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -145,3 +149,31 @@ async def get_problem(
         current_user=current_user,
     )
     return {"success": True, "data": problem.model_dump()}
+
+
+@router.post("/problems/{slug_or_id}/run", response_model=dict)
+async def run_problem_code(
+    slug_or_id: str,
+    payload: RunCodeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """Executes code against sample test cases in an isolated sandbox.
+    
+    CRITICAL NON-GOALS & SECURITY INVARIANTS:
+    1. NEVER writes to the `submissions` table or alters `UserProblemProgress`.
+    2. NEVER evaluates against hidden test cases.
+    3. Strictly enforces 64KB source code cap and language allowlist.
+    """
+    rate_key = f"run:{current_user.id}" if current_user else "run:guest"
+    await rate_limiter.check_rate_limit(rate_key, max_requests=60, window_seconds=60)
+
+    result = await run_sample_test_cases(
+        db=db,
+        problem_id_or_slug=slug_or_id,
+        language=payload.language,
+        source_code=payload.source_code,
+        custom_input=payload.custom_input,
+    )
+    return {"success": True, "data": result.model_dump()}
+

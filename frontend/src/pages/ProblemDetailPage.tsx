@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import { fetchApi, APIClientError } from "../services/apiClient.ts";
 import { useAuth } from "../context/AuthContext.tsx";
 import { ProblemDetail, ProblemDifficulty } from "../types/curriculum.ts";
-import { ProblemProgress, SubmissionDetail, SubmissionResult, SubmissionStatus, MistakeType } from "../types/progress.ts";
+import {
+  ProblemProgress,
+  SubmissionDetail,
+  SubmissionResult,
+  SubmissionStatus,
+  MistakeType,
+  RunCodeResult,
+} from "../types/progress.ts";
 import { LoadingSpinner } from "../components/common/LoadingSpinner.tsx";
 import { PremiumGate } from "../components/common/PremiumGate.tsx";
 
@@ -12,11 +19,66 @@ interface ProblemDetailPageProps {
 }
 
 const DEFAULT_STARTER_CODE: Record<string, string> = {
-  python: `# Solution for problem in Python 3\nclass Solution:\n    def solve(self, *args):\n        # Your solution here\n        pass\n`,
-  javascript: `// Solution in JavaScript (Node.js)\nfunction solve(...args) {\n  // Your solution here\n}\n`,
-  typescript: `// Solution in TypeScript\nfunction solve(...args: any[]): any {\n  // Your solution here\n}\n`,
-  java: `// Solution in Java\nclass Solution {\n    public void solve() {\n        // Your solution here\n    }\n}\n`,
-  cpp: `// Solution in C++\n#include <iostream>\nusing namespace std;\n\nclass Solution {\npublic:\n    void solve() {\n        // Your solution here\n    }\n};\n`,
+  python: `# Solution in Python 3
+# Read input from standard input and print output to standard output
+import sys
+
+def solve():
+    data = sys.stdin.read().split()
+    if not data:
+        return
+    # Process data and print result
+    # Example: nums = [int(x) for x in data]
+    # print(result)
+
+if __name__ == "__main__":
+    solve()
+`,
+  javascript: `// Solution in JavaScript (Node.js)
+const fs = require('fs');
+
+function solve() {
+  const input = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/);
+  if (!input || input[0] === '') return;
+  // Process input and output with console.log
+}
+
+solve();
+`,
+  typescript: `// Solution in TypeScript
+import * as fs from 'fs';
+
+function solve(): void {
+  const input = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/);
+  if (!input || input[0] === '') return;
+  // Process input and output with console.log
+}
+
+solve();
+`,
+  java: `// Solution in Java 17
+import java.util.Scanner;
+
+public class Solution {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        if (!sc.hasNext()) return;
+        // Read input with sc and print with System.out.println
+    }
+}
+`,
+  cpp: `// Solution in C++20
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    // Read with cin, write with cout
+    return 0;
+}
+`,
 };
 
 export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
@@ -31,9 +93,20 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [revealedHints, setRevealedHints] = useState<Record<number, boolean>>({});
 
-  // Submission State
+  // Code & Editor State
   const [language, setLanguage] = useState<string>("python");
   const [sourceCode, setSourceCode] = useState<string>(DEFAULT_STARTER_CODE.python);
+
+  // Run State
+  const [isRunning, setIsRunning] = useState(false);
+  const [runResult, setRunResult] = useState<RunCodeResult | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [activeConsoleTab, setActiveConsoleTab] = useState<"testcase" | "run" | "submission">("testcase");
+  const [selectedCaseIdx, setSelectedCaseIdx] = useState(0);
+  const [useCustomInput, setUseCustomInput] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+
+  // Submission State
   const [submitting, setSubmitting] = useState(false);
   const [submissionFeedback, setSubmissionFeedback] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -101,8 +174,50 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
     setSourceCode(DEFAULT_STARTER_CODE[newLang] || "");
   };
 
-  const handleSubmitCode = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleResetCode = () => {
+    if (window.confirm("Reset code to default starter template? Your current changes will be discarded.")) {
+      setSourceCode(DEFAULT_STARTER_CODE[language] || "");
+    }
+  };
+
+  const handleRunCode = async () => {
+    if (!isAuthenticated) {
+      openAuthModal("login");
+      return;
+    }
+    if (!problem) return;
+
+    const utf8Bytes = new TextEncoder().encode(sourceCode);
+    if (utf8Bytes.length > 65536) {
+      setRunError("Source code exceeds maximum allowed size of 64KB.");
+      return;
+    }
+
+    setIsRunning(true);
+    setRunError(null);
+    setActiveConsoleTab("run");
+
+    try {
+      const res = await fetchApi<RunCodeResult>(`/api/v1/problems/${problem.id}/run`, {
+        method: "POST",
+        body: JSON.stringify({
+          language,
+          source_code: sourceCode,
+          custom_input: useCustomInput ? customInput : null,
+        }),
+      });
+      setRunResult(res.data);
+      setSelectedCaseIdx(0);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to run code in sandbox.";
+      setRunError(msg);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleSubmitCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!isAuthenticated) {
       openAuthModal("login");
       return;
@@ -119,8 +234,9 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
     setSubmitting(true);
     setSubmissionError(null);
     setSubmissionFeedback(null);
-    setJudgingStatus(null);
+    setJudgingStatus("QUEUED");
     setSubmissionResult(null);
+    setActiveConsoleTab("submission");
 
     const idempotencyKey = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
@@ -671,288 +787,834 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
         </section>
       )}
 
-      {/* Phase 4 Solution Submission Box */}
+      {/* Solution Workspace & Execution Console */}
       <section style={{ marginBottom: "var(--space-8)" }}>
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "var(--space-3)" }}>
-          Submit Solution Code
-        </h2>
-
-        {/* Security invariant explanation */}
-        <div
-          style={{
-            backgroundColor: "rgba(59, 130, 246, 0.08)",
-            border: "1px solid rgba(59, 130, 246, 0.3)",
-            borderRadius: "var(--radius-md)",
-            padding: "var(--space-3) var(--space-4)",
-            marginBottom: "var(--space-4)",
-            fontSize: "0.8125rem",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <strong>Notice:</strong> Submissions in Phase 4 are securely stored and queued for future judge execution.
-          In-process code execution is disabled. Attempting a problem automatically updates your progress status.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
+            Submit Solution Code
+          </h2>
+          <span style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
+            ⚡ Docker Sandbox Active
+          </span>
         </div>
 
-        {submissionFeedback && (
+        {/* Editor Box */}
+        <div
+          style={{
+            backgroundColor: "#161b22",
+            border: "1px solid #30363d",
+            borderRadius: "var(--radius-lg)",
+            overflow: "hidden",
+            boxShadow: "var(--shadow-md)",
+          }}
+        >
+          {/* Editor Header Bar */}
           <div
-            role="region"
-            aria-label="Submission Result"
             style={{
-              backgroundColor:
-                submissionResult?.verdict === "ACCEPTED"
-                  ? "rgba(35, 134, 54, 0.15)"
-                  : submissionResult?.verdict
-                  ? "rgba(218, 54, 51, 0.15)"
-                  : "var(--status-success-bg)",
-              border: `1px solid ${
-                submissionResult?.verdict === "ACCEPTED"
-                  ? "#238636"
-                  : submissionResult?.verdict
-                  ? "#da3633"
-                  : "var(--status-success)"
-              }`,
-              color:
-                submissionResult?.verdict === "ACCEPTED"
-                  ? "#3fb950"
-                  : submissionResult?.verdict
-                  ? "#f85149"
-                  : "var(--status-success)",
-              padding: "var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              marginBottom: "var(--space-4)",
-              fontSize: "0.875rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "var(--space-2) var(--space-4)",
+              backgroundColor: "#0d1117",
+              borderBottom: "1px solid #30363d",
+              flexWrap: "wrap",
+              gap: "var(--space-2)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-2)" }}>
-              <div>
-                <div style={{ fontWeight: 700, marginBottom: "4px" }}>
-                  ✓ Submission Received & Queued!
-                </div>
-                {submissionResult ? (
-                  <div
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              <label style={{ fontSize: "0.75rem", color: "#8b949e", fontWeight: 600 }}>Language:</label>
+              <select
+                value={language}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                style={{
+                  backgroundColor: "#21262d",
+                  color: "#c9d1d9",
+                  border: "1px solid #30363d",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 10px",
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                }}
+                aria-label="Select programming language"
+              >
+                <option value="python">Python 3.12</option>
+                <option value="javascript">JavaScript (Node.js 20)</option>
+                <option value="typescript">TypeScript 5.x</option>
+                <option value="java">Java 17 (OpenJDK)</option>
+                <option value="cpp">C++20 (GCC 13)</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={handleResetCode}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#8b949e",
+                  fontSize: "0.75rem",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                title="Reset to default starter template"
+              >
+                Reset Code
+              </button>
+            </div>
+
+            <span style={{ fontSize: "0.75rem", color: "#8b949e", fontFamily: "var(--font-mono)" }}>
+              {new TextEncoder().encode(sourceCode).length} / 65536 bytes
+            </span>
+          </div>
+
+          {/* Textarea Code Editor */}
+          <textarea
+            value={sourceCode}
+            onChange={(e) => setSourceCode(e.target.value)}
+            rows={14}
+            spellCheck={false}
+            style={{
+              width: "100%",
+              padding: "var(--space-4)",
+              backgroundColor: "#0d1117",
+              color: "#c9d1d9",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.875rem",
+              lineHeight: 1.6,
+              border: "none",
+              outline: "none",
+              resize: "vertical",
+              boxSizing: "border-box",
+            }}
+            placeholder="Write your solution here..."
+            aria-label="Code editor"
+          />
+
+          {/* Action Toolbar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "var(--space-3) var(--space-4)",
+              backgroundColor: "#161b22",
+              borderTop: "1px solid #30363d",
+              flexWrap: "wrap",
+              gap: "var(--space-3)",
+            }}
+          >
+            {/* Console Tab Switches */}
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <button
+                type="button"
+                onClick={() => setActiveConsoleTab("testcase")}
+                style={{
+                  backgroundColor: activeConsoleTab === "testcase" ? "#21262d" : "transparent",
+                  color: activeConsoleTab === "testcase" ? "#ffffff" : "#8b949e",
+                  border: activeConsoleTab === "testcase" ? "1px solid #30363d" : "1px solid transparent",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 10px",
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                📋 Testcases
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveConsoleTab("run")}
+                style={{
+                  backgroundColor: activeConsoleTab === "run" ? "#21262d" : "transparent",
+                  color: activeConsoleTab === "run" ? "#ffffff" : "#8b949e",
+                  border: activeConsoleTab === "run" ? "1px solid #30363d" : "1px solid transparent",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 10px",
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <span>💻 Run Output</span>
+                {runResult && (
+                  <span
                     style={{
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      color: submissionResult.verdict === "ACCEPTED" ? "#3fb950" : "#f85149",
+                      display: "inline-block",
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      backgroundColor: runResult.all_passed ? "var(--status-success)" : "var(--status-danger)",
+                    }}
+                  />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveConsoleTab("submission")}
+                style={{
+                  backgroundColor: activeConsoleTab === "submission" ? "#21262d" : "transparent",
+                  color: activeConsoleTab === "submission" ? "#ffffff" : "#8b949e",
+                  border: activeConsoleTab === "submission" ? "1px solid #30363d" : "1px solid transparent",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 10px",
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <span>🏆 Submission Result</span>
+                {submissionResult && (
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      backgroundColor: submissionResult.verdict === "ACCEPTED" ? "var(--status-success)" : "var(--status-danger)",
+                    }}
+                  />
+                )}
+              </button>
+            </div>
+
+            {/* Run and Submit Action Buttons */}
+            <div style={{ display: "flex", gap: "var(--space-3)" }}>
+              <button
+                type="button"
+                onClick={handleRunCode}
+                disabled={isRunning || submitting}
+                style={{
+                  backgroundColor: "#21262d",
+                  color: "#c9d1d9",
+                  border: "1px solid #30363d",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  fontWeight: 600,
+                  cursor: isRunning || submitting ? "not-allowed" : "pointer",
+                  fontSize: "0.875rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  opacity: isRunning || submitting ? 0.6 : 1,
+                }}
+              >
+                {isRunning ? "⏳ Running..." : "▶ Run Sample Code"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSubmitCode()}
+                disabled={submitting || isRunning}
+                style={{
+                  backgroundColor: "var(--brand-primary)",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "var(--space-2) var(--space-5)",
+                  borderRadius: "var(--radius-md)",
+                  fontWeight: 600,
+                  cursor: submitting || isRunning ? "not-allowed" : "pointer",
+                  fontSize: "0.875rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  opacity: submitting || isRunning ? 0.6 : 1,
+                }}
+              >
+                {submitting || isPolling ? "⏳ Judging..." : "Submit Code (Queue for Judge)"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Console / Output Panel */}
+        <div
+          style={{
+            marginTop: "var(--space-4)",
+            backgroundColor: "var(--bg-secondary)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-lg)",
+            padding: "var(--space-4)",
+            minHeight: "160px",
+          }}
+        >
+          {/* TAB 1: TESTCASES */}
+          {activeConsoleTab === "testcase" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                  {problem.sample_test_cases?.map((tc, idx) => (
+                    <button
+                      key={tc.id || idx}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCaseIdx(idx);
+                        setUseCustomInput(false);
+                      }}
+                      style={{
+                        backgroundColor: !useCustomInput && selectedCaseIdx === idx ? "var(--brand-primary)" : "var(--bg-tertiary)",
+                        color: !useCustomInput && selectedCaseIdx === idx ? "#ffffff" : "var(--text-primary)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: "var(--radius-sm)",
+                        padding: "4px 12px",
+                        fontSize: "0.8125rem",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Case {idx + 1}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setUseCustomInput(!useCustomInput)}
+                    style={{
+                      backgroundColor: useCustomInput ? "var(--brand-primary)" : "var(--bg-tertiary)",
+                      color: useCustomInput ? "#ffffff" : "var(--text-primary)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "4px 12px",
+                      fontSize: "0.8125rem",
+                      cursor: "pointer",
+                      fontWeight: 600,
                     }}
                   >
-                    {submissionResult.verdict === "ACCEPTED" ? "✓ Accepted" : `✗ ${submissionResult.verdict.replace(/_/g, " ")}`}
-                  </div>
-                ) : isPolling ? (
-                  <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
-                    ⏳ Judging in Progress ({judgingStatus || "QUEUED"})...
-                  </div>
-                ) : null}
-              </div>
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  padding: "2px 8px",
-                  borderRadius: "var(--radius-full)",
-                  backgroundColor:
-                    submissionResult?.verdict === "ACCEPTED"
-                      ? "rgba(35, 134, 54, 0.3)"
-                      : "rgba(255, 255, 255, 0.1)",
-                  color: "#ffffff",
-                }}
-              >
-                {judgingStatus || submissionFeedback.status}
-              </span>
-            </div>
-
-            <div style={{ fontSize: "0.8125rem", color: "var(--text-primary)", marginBottom: "var(--space-2)" }}>
-              ID: <span style={{ fontFamily: "var(--font-mono)" }}>{submissionFeedback.public_id}</span> • Status:{" "}
-              <strong>{judgingStatus || submissionFeedback.status}</strong>
-            </div>
-
-            {/* Execution Metrics Grid */}
-            {submissionResult && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                  gap: "var(--space-3)",
-                  margin: "var(--space-3) 0",
-                  padding: "var(--space-3)",
-                  backgroundColor: "rgba(0, 0, 0, 0.2)",
-                  borderRadius: "var(--radius-sm)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.8125rem",
-                }}
-              >
-                <div>
-                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Test Cases</span>
-                  <strong style={{ fontSize: "1rem" }}>
-                    {submissionResult.tests_passed} / {submissionResult.tests_total}
-                  </strong>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Runtime</span>
-                  <strong style={{ fontSize: "1rem" }}>{submissionResult.execution_time_ms ?? 0} ms</strong>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Memory</span>
-                  <strong style={{ fontSize: "1rem" }}>
-                    {Math.round((submissionResult.memory_used_bytes ?? 0) / (1024 * 1024))} MB
-                  </strong>
+                    Custom Stdin ✍️
+                  </button>
                 </div>
               </div>
-            )}
 
-            {/* Error logs */}
-            {(submissionResult?.compiler_output_safe || submissionResult?.runtime_output_safe) && (
-              <div style={{ marginTop: "var(--space-3)" }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                  Execution Details / Logs:
-                </span>
-                <pre
+              {useCustomInput ? (
+                <div>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                    Standard Input (stdin):
+                  </span>
+                  <textarea
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                    rows={4}
+                    placeholder="Enter custom input to pass into stdin..."
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#0d1117",
+                      color: "#c9d1d9",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "0.8125rem",
+                      padding: "var(--space-3)",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid var(--border-subtle)",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              ) : (
+                problem.sample_test_cases && problem.sample_test_cases[selectedCaseIdx] && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                    <div>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                        Input:
+                      </span>
+                      <pre
+                        style={{
+                          margin: 0,
+                          backgroundColor: "#0d1117",
+                          color: "#c9d1d9",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "0.8125rem",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid var(--border-subtle)",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {problem.sample_test_cases[selectedCaseIdx].input}
+                      </pre>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                        Expected Output:
+                      </span>
+                      <pre
+                        style={{
+                          margin: 0,
+                          backgroundColor: "#0d1117",
+                          color: "#3fb950",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "0.8125rem",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid var(--border-subtle)",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {problem.sample_test_cases[selectedCaseIdx].expected_output}
+                      </pre>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: RUN OUTPUT */}
+          {activeConsoleTab === "run" && (
+            <div>
+              {isRunning ? (
+                <div style={{ textAlign: "center", padding: "var(--space-8)" }}>
+                  <LoadingSpinner />
+                  <p style={{ marginTop: "var(--space-3)", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+                    Executing code against sample cases in Docker container...
+                  </p>
+                </div>
+              ) : runError ? (
+                <div
                   style={{
-                    backgroundColor: "#0d1117",
-                    border: "1px solid #30363d",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "var(--space-3)",
-                    fontSize: "0.75rem",
-                    color: "#f85149",
-                    maxHeight: "150px",
-                    overflowY: "auto",
-                    whiteSpace: "pre-wrap",
-                    marginTop: "4px",
+                    backgroundColor: "var(--status-danger-bg)",
+                    border: "1px solid var(--status-danger)",
+                    color: "var(--status-danger)",
+                    padding: "var(--space-3) var(--space-4)",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: "0.875rem",
                   }}
                 >
-                  {submissionResult.compiler_output_safe || submissionResult.runtime_output_safe}
-                </pre>
-              </div>
-            )}
+                  <strong>Execution Error:</strong> {runError}
+                </div>
+              ) : runResult ? (
+                <div>
+                  {/* Status Banner */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingBottom: "var(--space-3)",
+                      borderBottom: "1px solid var(--border-subtle)",
+                      marginBottom: "var(--space-4)",
+                      flexWrap: "wrap",
+                      gap: "var(--space-2)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                      <span
+                        style={{
+                          fontSize: "1.125rem",
+                          fontWeight: 700,
+                          color: runResult.all_passed ? "#3fb950" : "#f85149",
+                        }}
+                      >
+                        {runResult.status === "ACCEPTED" ? "✓ Accepted (Sample Tests)" : `✗ ${runResult.status.replace(/_/g, " ")}`}
+                      </span>
+                      <span style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
+                        {runResult.passed_count} / {runResult.total_count} sample testcases passed
+                      </span>
+                    </div>
 
-            <div style={{ fontSize: "0.75rem", marginTop: "var(--space-2)", color: "var(--text-secondary)" }}>
-              {submissionFeedback.execution_notice}
+                    <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
+                      <span>Runtime: <strong style={{ color: "var(--text-primary)" }}>{runResult.peak_runtime_ms} ms</strong></span>
+                      <span>Memory: <strong style={{ color: "var(--text-primary)" }}>{Math.round(runResult.peak_memory_bytes / (1024 * 1024))} MB</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Compiler error display if any */}
+                  {runResult.compiler_output && (
+                    <div style={{ marginBottom: "var(--space-4)" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#f85149", display: "block", marginBottom: "4px" }}>
+                        Compilation Error:
+                      </span>
+                      <pre
+                        style={{
+                          backgroundColor: "#0d1117",
+                          color: "#f85149",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "0.8125rem",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid #da3633",
+                          whiteSpace: "pre-wrap",
+                          overflowX: "auto",
+                        }}
+                      >
+                        {runResult.compiler_output}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Testcase selector tabs */}
+                  {runResult.test_cases && runResult.test_cases.length > 0 && (
+                    <>
+                      <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
+                        {runResult.test_cases.map((tc, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSelectedCaseIdx(idx)}
+                            style={{
+                              backgroundColor: selectedCaseIdx === idx ? "#21262d" : "var(--bg-tertiary)",
+                              color: tc.passed ? "#3fb950" : "#f85149",
+                              border: selectedCaseIdx === idx ? "1px solid #30363d" : "1px solid var(--border-subtle)",
+                              borderRadius: "var(--radius-sm)",
+                              padding: "4px 12px",
+                              fontSize: "0.8125rem",
+                              cursor: "pointer",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                            }}
+                          >
+                            <span>{tc.passed ? "✓" : "✗"}</span>
+                            <span>Case {tc.case_number}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Details of selected case */}
+                      {runResult.test_cases[selectedCaseIdx] && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                          <div>
+                            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                              Input:
+                            </span>
+                            <pre
+                              style={{
+                                margin: 0,
+                                backgroundColor: "#0d1117",
+                                color: "#c9d1d9",
+                                fontFamily: "var(--font-mono)",
+                                fontSize: "0.8125rem",
+                                padding: "var(--space-3)",
+                                borderRadius: "var(--radius-sm)",
+                                border: "1px solid var(--border-subtle)",
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {runResult.test_cases[selectedCaseIdx].input}
+                            </pre>
+                          </div>
+
+                          {runResult.test_cases[selectedCaseIdx].expected_output && (
+                            <div>
+                              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                                Expected Output:
+                              </span>
+                              <pre
+                                style={{
+                                  margin: 0,
+                                  backgroundColor: "#0d1117",
+                                  color: "#3fb950",
+                                  fontFamily: "var(--font-mono)",
+                                  fontSize: "0.8125rem",
+                                  padding: "var(--space-3)",
+                                  borderRadius: "var(--radius-sm)",
+                                  border: "1px solid var(--border-subtle)",
+                                  whiteSpace: "pre-wrap",
+                                }}
+                              >
+                                {runResult.test_cases[selectedCaseIdx].expected_output}
+                              </pre>
+                            </div>
+                          )}
+
+                          <div>
+                            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                              Your Output:
+                            </span>
+                            <pre
+                              style={{
+                                margin: 0,
+                                backgroundColor: "#0d1117",
+                                color: runResult.test_cases[selectedCaseIdx].passed ? "#3fb950" : "#f85149",
+                                fontFamily: "var(--font-mono)",
+                                fontSize: "0.8125rem",
+                                padding: "var(--space-3)",
+                                borderRadius: "var(--radius-sm)",
+                                border: `1px solid ${runResult.test_cases[selectedCaseIdx].passed ? "#238636" : "#da3633"}`,
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {runResult.test_cases[selectedCaseIdx].actual_output || "<No stdout output produced>"}
+                            </pre>
+                          </div>
+
+                          {runResult.test_cases[selectedCaseIdx].stderr && (
+                            <div>
+                              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#f85149", display: "block", marginBottom: "4px" }}>
+                                Stderr / Error Output:
+                              </span>
+                              <pre
+                                style={{
+                                  margin: 0,
+                                  backgroundColor: "#0d1117",
+                                  color: "#f85149",
+                                  fontFamily: "var(--font-mono)",
+                                  fontSize: "0.75rem",
+                                  padding: "var(--space-3)",
+                                  borderRadius: "var(--radius-sm)",
+                                  border: "1px solid #da3633",
+                                  whiteSpace: "pre-wrap",
+                                }}
+                              >
+                                {runResult.test_cases[selectedCaseIdx].stderr}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text-muted)" }}>
+                  Click <strong>▶ Run Sample Code</strong> above to execute your solution against sample testcases.
+                </div>
+              )}
             </div>
+          )}
 
-            <button
-              onClick={() => onNavigate(`/submissions/${submissionFeedback.public_id}`)}
-              style={{
-                marginTop: "var(--space-2)",
-                background: "none",
-                border: "none",
-                padding: 0,
-                color: "var(--brand-primary)",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: "0.8125rem",
-              }}
-            >
-              View in Submission History →
-            </button>
-          </div>
-        )}
-
-        {submissionError && (
-          <div
-            role="alert"
-            style={{
-              backgroundColor: "var(--status-danger-bg)",
-              border: "1px solid var(--status-danger)",
-              color: "var(--status-danger)",
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              marginBottom: "var(--space-4)",
-              fontSize: "0.8125rem",
-            }}
-          >
-            {submissionError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmitCode}>
-          <div
-            style={{
-              backgroundColor: "#161b22",
-              border: "1px solid #30363d",
-              borderRadius: "var(--radius-lg)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "var(--space-2) var(--space-4)",
-                backgroundColor: "#0d1117",
-                borderBottom: "1px solid #30363d",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                <label style={{ fontSize: "0.75rem", color: "#8b949e", fontWeight: 600 }}>Language:</label>
-                <select
-                  value={language}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
+          {/* TAB 3: SUBMISSION RESULT */}
+          {activeConsoleTab === "submission" && (
+            <div>
+              {submitting ? (
+                <div style={{ textAlign: "center", padding: "var(--space-8)" }}>
+                  <LoadingSpinner />
+                  <p style={{ marginTop: "var(--space-3)", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+                    Submitting solution to judge...
+                  </p>
+                </div>
+              ) : submissionError ? (
+                <div
                   style={{
-                    backgroundColor: "#21262d",
-                    color: "#c9d1d9",
-                    border: "1px solid #30363d",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "2px 8px",
-                    fontSize: "0.8125rem",
+                    backgroundColor: "var(--status-danger-bg)",
+                    border: "1px solid var(--status-danger)",
+                    color: "var(--status-danger)",
+                    padding: "var(--space-3) var(--space-4)",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: "0.875rem",
                   }}
-                  aria-label="Select programming language"
                 >
-                  <option value="python">Python 3</option>
-                  <option value="javascript">JavaScript (Node.js)</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="java">Java 17</option>
-                  <option value="cpp">C++20</option>
-                </select>
-              </div>
+                  <strong>Submission Error:</strong> {submissionError}
+                </div>
+              ) : submissionFeedback ? (
+                <div>
+                  {/* Verdict Banner */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "var(--space-4)",
+                      borderRadius: "var(--radius-md)",
+                      backgroundColor:
+                        submissionResult?.verdict === "ACCEPTED"
+                          ? "rgba(35, 134, 54, 0.15)"
+                          : submissionResult?.verdict
+                          ? "rgba(218, 54, 51, 0.15)"
+                          : "rgba(5, 150, 105, 0.1)",
+                      border: `1px solid ${
+                        submissionResult?.verdict === "ACCEPTED"
+                          ? "#238636"
+                          : submissionResult?.verdict
+                          ? "#da3633"
+                          : "var(--status-success)"
+                      }`,
+                      marginBottom: "var(--space-4)",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "1.25rem",
+                          fontWeight: 700,
+                          color:
+                            submissionResult?.verdict === "ACCEPTED"
+                              ? "#3fb950"
+                              : submissionResult?.verdict
+                              ? "#f85149"
+                              : "var(--status-success)",
+                        }}
+                      >
+                        {submissionResult
+                          ? submissionResult.verdict === "ACCEPTED"
+                            ? "✓ Accepted"
+                            : `✗ ${submissionResult.verdict.replace(/_/g, " ")}`
+                          : "✓ Submission Received & Queued!"}
+                      </div>
+                      <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                        ID: <span style={{ fontFamily: "var(--font-mono)" }}>{submissionFeedback.public_id}</span>
+                      </div>
+                    </div>
 
-              <span style={{ fontSize: "0.75rem", color: "#8b949e", fontFamily: "var(--font-mono)" }}>
-                {new TextEncoder().encode(sourceCode).length} / 65536 bytes
-              </span>
+                    <span
+                      style={{
+                        fontSize: "0.8125rem",
+                        fontWeight: 700,
+                        padding: "4px 12px",
+                        borderRadius: "var(--radius-full)",
+                        backgroundColor:
+                          submissionResult?.verdict === "ACCEPTED"
+                            ? "rgba(35, 134, 54, 0.3)"
+                            : "rgba(255, 255, 255, 0.1)",
+                        color:
+                          submissionResult?.verdict === "ACCEPTED"
+                            ? "#3fb950"
+                            : "var(--text-primary)",
+                      }}
+                    >
+                      {judgingStatus || submissionFeedback.status}
+                    </span>
+                  </div>
+
+                  {isPolling && !submissionResult && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3) var(--space-4)", marginBottom: "var(--space-4)", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}>
+                      <LoadingSpinner />
+                      <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+                        Evaluating test cases in Docker sandbox...
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Stat Grid */}
+                  {submissionResult && (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                        gap: "var(--space-3)",
+                        marginBottom: "var(--space-4)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          backgroundColor: "var(--bg-tertiary)",
+                          border: "1px solid var(--border-subtle)",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-md)",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block" }}>Test Cases</span>
+                        <strong style={{ fontSize: "1.125rem", color: "var(--text-primary)" }}>
+                          {submissionResult.tests_passed} / {submissionResult.tests_total}
+                        </strong>
+                      </div>
+
+                      <div
+                        style={{
+                          backgroundColor: "var(--bg-tertiary)",
+                          border: "1px solid var(--border-subtle)",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-md)",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block" }}>Runtime</span>
+                        <strong style={{ fontSize: "1.125rem", color: "var(--text-primary)" }}>
+                          {submissionResult.execution_time_ms ?? 0} ms
+                        </strong>
+                      </div>
+
+                      <div
+                        style={{
+                          backgroundColor: "var(--bg-tertiary)",
+                          border: "1px solid var(--border-subtle)",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-md)",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block" }}>Memory</span>
+                        <strong style={{ fontSize: "1.125rem", color: "var(--text-primary)" }}>
+                          {Math.round((submissionResult.memory_used_bytes ?? 0) / (1024 * 1024))} MB
+                        </strong>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Logs & Error message */}
+                  {(submissionResult?.compiler_output_safe || submissionResult?.runtime_output_safe) && (
+                    <div style={{ marginBottom: "var(--space-4)" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#f85149", display: "block", marginBottom: "4px" }}>
+                        Execution Output / Diagnostics:
+                      </span>
+                      <pre
+                        style={{
+                          backgroundColor: "#0d1117",
+                          color: "#f85149",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "0.8125rem",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid #da3633",
+                          whiteSpace: "pre-wrap",
+                          maxHeight: "160px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {submissionResult.compiler_output_safe || submissionResult.runtime_output_safe}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "center", flexWrap: "wrap", marginTop: "var(--space-3)" }}>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(`/submissions/${submissionFeedback.public_id}`)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--brand-primary)",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        padding: 0,
+                      }}
+                    >
+                      View in Submission History →
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowMistakeModal(true)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-secondary)",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      📝 Log Mistake in Notebook
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleAddToRevision}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: revisionAdded ? "var(--status-success)" : "var(--text-secondary)",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      {revisionAdded ? "✓ Added to Revision!" : "🔄 Schedule for Spaced Revision"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text-muted)" }}>
+                  Click <strong>🚀 Submit Code</strong> above to test your code against the complete test suite.
+                </div>
+              )}
             </div>
-
-            <textarea
-              value={sourceCode}
-              onChange={(e) => setSourceCode(e.target.value)}
-              rows={12}
-              spellCheck={false}
-              style={{
-                width: "100%",
-                padding: "var(--space-4)",
-                backgroundColor: "#0d1117",
-                color: "#c9d1d9",
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.875rem",
-                lineHeight: 1.6,
-                border: "none",
-                outline: "none",
-                resize: "vertical",
-                boxSizing: "border-box",
-              }}
-              placeholder="Write your code here..."
-              aria-label="Code editor"
-            />
-          </div>
-
-          <div style={{ marginTop: "var(--space-4)", display: "flex", justifyContent: "flex-end" }}>
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                backgroundColor: "var(--brand-primary)",
-                color: "#ffffff",
-                border: "none",
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: "0.875rem",
-              }}
-            >
-              {submitting ? "Queuing Submission..." : "Submit Code (Queue for Judge)"}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </section>
 
       {/* Mistake Modal */}

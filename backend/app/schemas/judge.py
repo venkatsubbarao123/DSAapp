@@ -40,3 +40,34 @@ class JudgeHealthRead(BaseModel):
     """Diagnostic health status for admin monitoring."""
     queue: Dict[str, Any]
     sandbox: Dict[str, Any]
+
+
+class RunCodeRequest(BaseModel):
+    """Payload for executing code against sample test cases (non-persistent)."""
+    language: str
+    source_code: str
+    custom_input: Optional[str] = None
+
+
+class TestCaseRunResult(BaseModel):
+    """Result of running code against a single sample test case."""
+    case_number: int
+    input: str
+    expected_output: Optional[str] = None
+    actual_output: Optional[str] = None
+    stderr: Optional[str] = None
+    passed: bool
+    execution_time_ms: int
+    status: str
+
+
+class RunCodeResponse(BaseModel):
+    """Aggregate response for sample code execution."""
+    status: str
+    all_passed: bool
+    passed_count: int
+    total_count: int
+    peak_runtime_ms: int
+    peak_memory_bytes: int
+    compiler_output: Optional[str] = None
+    test_cases: list[TestCaseRunResult]

@@ -1,5 +1,6 @@
 """DSAapp Production-Grade FastAPI Application Entrypoint."""
 
+import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request, status
@@ -48,10 +49,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Redis Connection (Optional in dev, mandatory in production if configured)
     await redis_service.connect()
 
+    # Online Judge Background Worker Loop (Active in development/production, disabled in test)
+    judge_worker_task = None
+    if settings.ENVIRONMENT != "test":
+        from backend.app.judge.runner import run_judge_worker_loop
+        judge_worker_task = asyncio.create_task(run_judge_worker_loop())
+
     yield
 
     # Clean Shutdown
     logger.info(f"Shutting down {settings.APP_NAME}...")
+    if judge_worker_task:
+        judge_worker_task.cancel()
+        try:
+            await judge_worker_task
+        except asyncio.CancelledError:
+            pass
     await redis_service.disconnect()
     logger.info("Shutdown completed cleanly.")
 

@@ -20,6 +20,11 @@ from backend.app.judge.sandbox.manager import (
     get_sandbox_diagnostics,
     set_sandbox_instance,
 )
+from backend.app.judge.runner import (
+    execute_submission_now,
+    run_judge_worker_loop,
+    run_sample_test_cases,
+)
 from backend.app.judge.sandbox.mock import MockSandbox
 from backend.app.judge.service import JudgeService
 from backend.app.judge.worker import JudgeWorker
@@ -44,4 +49,7 @@ __all__ = [
     "set_sandbox_instance",
     "JudgeService",
     "JudgeWorker",
+    "run_sample_test_cases",
+    "execute_submission_now",
+    "run_judge_worker_loop",
 ]
