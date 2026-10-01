@@ -71,11 +71,26 @@ interface ProblemCount {
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const [problemCounts, setProblemCounts] = useState<ProblemCount | null>(null);
+  const [userSolvedCount, setUserSolvedCount] = useState<number | null>(null);
   const [diffColor] = useState({
     Beginner: { color: "var(--status-success)", bg: "var(--status-success-bg)" },
     Intermediate: { color: "var(--status-warning)", bg: "var(--status-warning-bg)" },
     Advanced: { color: "var(--status-danger)", bg: "var(--status-danger-bg)" },
   });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUserSolvedCount(null);
+      return;
+    }
+    fetchApi<{ problems_solved: number }>("/api/v1/progress/overview")
+      .then((res) => {
+        if (res.data?.problems_solved !== undefined) {
+          setUserSolvedCount(res.data.problems_solved);
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Fetch real problem counts — no fake stats
@@ -222,6 +237,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               Practice Problems
             </button>
             <button
+              onClick={() => onNavigate("/interview")}
+              style={{
+                backgroundColor: "transparent",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-md)",
+                padding: "12px 24px",
+                fontSize: "0.9375rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "border-color 0.15s ease",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget).style.borderColor = "var(--brand-primary)"; }}
+              onMouseLeave={(e) => { (e.currentTarget).style.borderColor = "var(--border-subtle)"; }}
+            >
+              🎯 Mock Interview
+            </button>
+            <button
               onClick={() => onNavigate("/visualizers")}
               style={{
                 backgroundColor: "transparent",
@@ -234,7 +267,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 cursor: "pointer",
                 transition: "border-color 0.15s ease",
               }}
-              onMouseEnter={(e) => { (e.currentTarget).style.borderColor = "var(--border-muted)"; }}
+              onMouseEnter={(e) => { (e.currentTarget).style.borderColor = "var(--brand-primary)"; }}
               onMouseLeave={(e) => { (e.currentTarget).style.borderColor = "var(--border-subtle)"; }}
             >
               🎬 Visualizers
@@ -253,6 +286,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               }}
             >
               {[
+                ...(userSolvedCount !== null
+                  ? [{ label: "Completed by You", value: `${userSolvedCount} / ${problemCounts.total}`, color: "var(--status-success)" }]
+                  : []),
                 { label: "Problems", value: problemCounts.total, color: "var(--text-primary)" },
                 { label: "Easy", value: problemCounts.easy, color: "var(--status-success)" },
                 { label: "Medium", value: problemCounts.medium, color: "var(--status-warning)" },
