@@ -65,6 +65,7 @@ class UserRepository:
             display_name=display_name or normalized_email.split("@")[0],
         )
         self.session.add(profile)
+        user.profile = profile
         await self.session.flush()
         return user
 

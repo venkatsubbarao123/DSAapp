@@ -45,6 +45,17 @@ def clear_refresh_cookie(response: Response) -> None:
     )
 
 
+def _extract_display_name(user_obj: User, fallback_display_name: str | None = None) -> str:
+    """Safely extracts display name from loaded profile or fallback without triggering async lazy loads."""
+    if fallback_display_name:
+        return fallback_display_name
+    prof = user_obj.__dict__.get("profile")
+    if prof and getattr(prof, "display_name", None):
+        return prof.display_name
+    return user_obj.email.split("@")[0]
+
+
+
 @router.post(
     "/register",
     response_model=APIResponse[TokenResponse],
@@ -108,9 +119,7 @@ async def register(
         id=user.id,
         email=user.email,
         role=user.role.value,
-        display_name=user.profile.display_name
-        if user.profile
-        else user.email.split("@")[0],
+        display_name=_extract_display_name(user, payload.display_name),
         plan="FREE",
         premium_active=False,
         created_at=user.created_at,
@@ -163,9 +172,7 @@ async def login(
         id=user.id,
         email=user.email,
         role=user.role.value,
-        display_name=user.profile.display_name
-        if user.profile
-        else user.email.split("@")[0],
+        display_name=_extract_display_name(user),
         plan="PREMIUM" if is_premium else "FREE",
         premium_active=is_premium,
         created_at=user.created_at,
@@ -233,9 +240,7 @@ async def refresh_tokens(
                 id=u.id,
                 email=u.email,
                 role=u.role.value,
-                display_name=u.profile.display_name
-                if u.profile
-                else u.email.split("@")[0],
+                display_name=_extract_display_name(u),
                 plan="PREMIUM" if is_prem else "FREE",
                 premium_active=is_prem,
                 created_at=u.created_at,
