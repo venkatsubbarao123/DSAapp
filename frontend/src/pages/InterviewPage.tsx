@@ -403,7 +403,7 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ onNavigate }) => {
             {pastSessions.map((s) => (
               <div
                 key={s.id}
-                onClick={() => onNavigate(s.status === "COMPLETED" ? `/interview/${s.id}/report` : `/interview/${s.id}`)}
+                onClick={() => onNavigate(s.status !== "IN_PROGRESS" ? `/interview/${s.id}/report` : `/interview/${s.id}`)}
                 style={{
                   padding: "16px 20px",
                   borderRadius: 8,
@@ -426,8 +426,8 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ onNavigate }) => {
                         fontSize: 11,
                         padding: "1px 6px",
                         borderRadius: 4,
-                        backgroundColor: s.status === "COMPLETED" ? "#ecfdf5" : "#f1f5f9",
-                        color: s.status === "COMPLETED" ? "#065f46" : "#475569",
+                        backgroundColor: s.status === "COMPLETED" ? "#ecfdf5" : s.status === "EXPIRED" ? "#fffbeb" : "#f1f5f9",
+                        color: s.status === "COMPLETED" ? "#065f46" : s.status === "EXPIRED" ? "#b45309" : "#475569",
                       }}
                     >
                       {s.status}

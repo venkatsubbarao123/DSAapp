@@ -26,6 +26,8 @@ from backend.app.models.progress import (
     SubmissionStatus,
     UserProblemProgress,
 )
+from backend.app.services.gamification.streak_service import StreakService
+from backend.app.services.gamification.xp_service import XPService, XP_REWARDS
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +247,9 @@ class JudgeWorker:
         progress = p_res.scalars().first()
 
         now_utc = datetime.now(timezone.utc)
+        is_first_solve = False
         if not progress:
+            is_first_solve = (final_verdict == Verdict.ACCEPTED)
             progress = UserProblemProgress(
                 user_id=submission.user_id,
                 problem_id=submission.problem_id,
@@ -263,12 +267,36 @@ class JudgeWorker:
             progress.attempts_count += 1
             progress.last_attempted_at = now_utc
             if final_verdict == Verdict.ACCEPTED:
+                if progress.status != ProblemProgressStatus.SOLVED:
+                    is_first_solve = True
                 progress.successful_attempts += 1
                 progress.status = ProblemProgressStatus.SOLVED
                 if not progress.solved_at:
                     progress.solved_at = now_utc
             elif progress.status != ProblemProgressStatus.SOLVED:
                 progress.status = ProblemProgressStatus.ATTEMPTED
+
+        if is_first_solve:
+            try:
+                async with db.begin_nested():
+                    diff_name = str(problem.difficulty).upper() if problem.difficulty else "EASY"
+                    reward_key = f"PROBLEM_SOLVE_{diff_name}"
+                    amount = XP_REWARDS.get(reward_key, 20)
+                    await XPService.record_xp_event(
+                        db=db,
+                        user_id=submission.user_id,
+                        event_type="PROBLEM_SOLVE",
+                        source_id=f"problem:{submission.problem_id}",
+                        amount=amount,
+                        metadata={"difficulty": diff_name, "problem_id": submission.problem_id},
+                    )
+                    profile = await XPService.get_or_create_profile(db, submission.user_id)
+                    profile.total_solves += 1
+                    await StreakService.record_activity(
+                        db=db, user_id=submission.user_id, activity_type="PROBLEM_SOLVE"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not record gamification for solve: {e}")
 
         # 9. Mark Job Completed
         job.status = JudgeJobStatus.COMPLETED

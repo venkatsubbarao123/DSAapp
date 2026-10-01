@@ -26,14 +26,16 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endingRef = useRef<boolean>(false);
 
   const loadSession = async () => {
     try {
       const data = await interviewApi.getSessionDetail(sessionId);
       setSession(data);
       setRemainingSec(data.remaining_seconds);
-      if (data.status === "COMPLETED") {
+      if (data.status !== "IN_PROGRESS") {
         onNavigate(`/interview/${sessionId}/report`);
+        return;
       }
       if (data.questions && data.questions.length > 0) {
         setUserResponse(data.questions[currentIdx]?.user_response || "");
@@ -49,13 +51,23 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
     loadSession();
   }, [sessionId]);
 
-  // Local ticker for interview countdown
+  // Local ticker for interview countdown - only run when session is active and loaded
   useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (loading || !session || session.status !== "IN_PROGRESS" || remainingSec <= 0) {
+      return;
+    }
+
     timerRef.current = setInterval(() => {
       setRemainingSec((prev) => {
         if (prev <= 1) {
-          handleEndSession();
+          if (!endingRef.current) {
+            handleEndSession(true);
+          }
           return 0;
         }
         return prev - 1;
@@ -63,9 +75,12 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
     }, 1000);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [session?.status]);
+  }, [loading, session?.status, session?.id, remainingSec > 0]);
 
   const currentQuestion: InterviewQuestionItem | undefined = session?.questions[currentIdx];
 
@@ -88,7 +103,14 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
     }
   };
 
-  const handleEndSession = async () => {
+  const handleEndSession = async (isAutoTimeout = false) => {
+    if (endingRef.current) return;
+    if (!isAutoTimeout) {
+      if (!window.confirm("Are you sure you want to finish this interview and submit your answers for evaluation?")) {
+        return;
+      }
+    }
+    endingRef.current = true;
     setEnding(true);
     try {
       await interviewApi.endSession(sessionId);
@@ -96,6 +118,7 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to complete interview");
       setEnding(false);
+      endingRef.current = false;
     }
   };
 
@@ -253,7 +276,7 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
           </button>
 
           <button
-            onClick={handleEndSession}
+            onClick={() => handleEndSession(false)}
             disabled={ending}
             style={{
               padding: "8px 16px",
