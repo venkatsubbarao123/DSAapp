@@ -1,8 +1,10 @@
-# Phase 5 Secure Sandbox: TypeScript / Node.js 20 Runner
-FROM node:24-alpine3.22
+# Phase 5 Secure Sandbox: TypeScript / Node.js Runner
+FROM node:current-alpine
 
-# Install TypeScript compiler globally (bypass corporate/local SSL intercept during image build)
-RUN npm config set strict-ssl false && npm install -g typescript
+# Install TypeScript compiler globally and strip package managers/cache to eliminate CVE attack surface
+RUN npm config set strict-ssl false && \
+    npm install -g typescript@5.7.3 && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn* /root/.npm /root/.cache
 
 # Hardening: create unprivileged non-root user
 RUN addgroup -g 10001 judge && \
