@@ -44,6 +44,8 @@ export interface RegisterRequest {
 export interface AuthResponseData {
   access_token: string;
   token_type: string;
+  expires_in_seconds?: number;
+  refresh_token?: string;
   user?: User;
 }
 

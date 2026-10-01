@@ -23,6 +23,11 @@ try {
   inMemoryAccessToken = localStorage.getItem("dsaapp_access_token");
 } catch {}
 
+let inMemoryRefreshToken: string | null = null;
+try {
+  inMemoryRefreshToken = localStorage.getItem("dsaapp_refresh_token");
+} catch {}
+
 export function setAccessToken(token: string | null): void {
   inMemoryAccessToken = token;
   try {
@@ -43,7 +48,79 @@ export function getAccessToken(): string | null {
   return inMemoryAccessToken;
 }
 
+export function setRefreshToken(token: string | null): void {
+  inMemoryRefreshToken = token;
+  try {
+    if (token) {
+      localStorage.setItem("dsaapp_refresh_token", token);
+    } else {
+      localStorage.removeItem("dsaapp_refresh_token");
+    }
+  } catch {}
+}
+
+export function getRefreshToken(): string | null {
+  if (!inMemoryRefreshToken) {
+    try {
+      inMemoryRefreshToken = localStorage.getItem("dsaapp_refresh_token");
+    } catch {}
+  }
+  return inMemoryRefreshToken;
+}
+
 const DEFAULT_TIMEOUT_MS = 10000;
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+async function attemptTokenRefresh(): Promise<string | null> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const storedRefresh = getRefreshToken();
+      const headers: Record<string, string> = { Accept: "application/json" };
+      let body: string | undefined = undefined;
+      if (storedRefresh) {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify({ refresh_token: storedRefresh });
+      }
+
+      const res = await fetch("/api/v1/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body,
+      });
+
+      if (!res.ok) {
+        setAccessToken(null);
+        setRefreshToken(null);
+        return null;
+      }
+
+      const data = await res.json();
+      const newAccess = data?.data?.access_token;
+      const newRefresh = data?.data?.refresh_token;
+      if (newAccess) {
+        setAccessToken(newAccess);
+        if (newRefresh) setRefreshToken(newRefresh);
+        return newAccess;
+      }
+      return null;
+    } catch {
+      setAccessToken(null);
+      setRefreshToken(null);
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
 
 export async function fetchApi<T>(
   endpoint: string,
@@ -88,6 +165,35 @@ export async function fetchApi<T>(
     }
 
     if (!response.ok) {
+      // Automatic transparent token refresh and retry on 401 Unauthorized
+      if (response.status === 401 && !endpoint.includes("/api/v1/auth/")) {
+        const refreshedToken = await attemptTokenRefresh();
+        if (refreshedToken) {
+          const retryHeaders = {
+            ...headers,
+            Authorization: `Bearer ${refreshedToken}`,
+          };
+          const retryResp = await fetch(endpoint, {
+            credentials: options.credentials ?? "include",
+            ...options,
+            headers: retryHeaders,
+            signal: controller.signal,
+          });
+          if (retryResp.ok) {
+            const retryJson = await retryResp.json();
+            const retryPayload = retryJson as any;
+            if (retryPayload && typeof retryPayload === "object" && "data" in retryPayload && retryPayload.data !== undefined) {
+              return retryPayload as APIResponse<T>;
+            }
+            return {
+              success: true,
+              data: retryPayload as T,
+              request_id: retryResp.headers.get("x-request-id") ?? undefined,
+            };
+          }
+        }
+      }
+
       const err = jsonPayload as { error?: APIErrorDetail };
       throw new APIClientError({
         code: err?.error?.code ?? `HTTP_${response.status}`,
