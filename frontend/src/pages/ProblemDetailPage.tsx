@@ -564,36 +564,46 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
 
           {/* User Progress Status Pill */}
           {isAuthenticated && progress ? (
-            <span
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                padding: "3px 10px",
-                borderRadius: "var(--radius-full, 9999px)",
-                backgroundColor:
-                  progress.status === "SOLVED"
-                    ? "#dcfce7"
-                    : progress.status === "ATTEMPTED"
-                    ? "#fef3c7"
-                    : "var(--bg-tertiary)",
-                color:
-                  progress.status === "SOLVED"
-                    ? "#15803d"
-                    : progress.status === "ATTEMPTED"
-                    ? "#b45309"
-                    : "var(--text-muted)",
-                border: "1px solid currentColor",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              {progress.status === "SOLVED"
-                ? `✓ Completed (${progress.attempts_count} try${progress.attempts_count === 1 ? "" : "s"})`
-                : progress.status === "ATTEMPTED"
-                ? `• Attempted (${progress.attempts_count} tries)`
-                : "Not Completed"}
-            </span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              {progress.status === "SOLVED" && (
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    padding: "3px 8px",
+                    borderRadius: "var(--radius-sm, 4px)",
+                    backgroundColor: "#dcfce7",
+                    color: "#15803d",
+                    border: "1px solid #86efac",
+                  }}
+                >
+                  ✓ Completed
+                </span>
+              )}
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "var(--radius-full, 9999px)",
+                  backgroundColor:
+                    progress.status === "SOLVED"
+                      ? "var(--status-success-bg)"
+                      : progress.status === "ATTEMPTED"
+                      ? "rgba(59, 130, 246, 0.15)"
+                      : "var(--bg-tertiary)",
+                  color:
+                    progress.status === "SOLVED"
+                      ? "var(--status-success)"
+                      : progress.status === "ATTEMPTED"
+                      ? "var(--brand-primary)"
+                      : "var(--text-muted)",
+                  border: "1px solid currentColor",
+                }}
+              >
+                Status: {progress.status} (Attempts: {progress.attempts_count})
+              </span>
+            </div>
           ) : (
             <span
               style={{
