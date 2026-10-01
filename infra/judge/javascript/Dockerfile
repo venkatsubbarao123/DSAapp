@@ -1,5 +1,5 @@
 # Phase 5 Secure Sandbox: JavaScript / Node.js 20 Runner
-FROM node:20-alpine
+FROM node:24-alpine3.22
 
 # Hardening: create unprivileged non-root user
 RUN addgroup -g 10001 judge && \
