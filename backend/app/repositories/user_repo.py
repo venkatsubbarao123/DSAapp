@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -30,10 +30,11 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
-        """Fetches user by normalized email."""
+        """Fetches user by normalized email (strictly case-insensitive)."""
+        normalized = email.strip().lower()
         stmt = (
             select(User)
-            .where(User.email == email.strip().lower())
+            .where(func.lower(User.email) == normalized)
             .options(
                 selectinload(User.profile),
                 selectinload(User.entitlements),

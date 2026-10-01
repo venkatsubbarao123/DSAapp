@@ -56,14 +56,6 @@ class RefreshTokenRequest(BaseModel):
     )
 
 
-class TokenResponse(BaseModel):
-    """Authentication token response payload."""
-
-    access_token: str = Field(..., description="Short-lived JWT access token")
-    token_type: str = Field(default="bearer", description="Token scheme type")
-    expires_in_seconds: int = Field(..., description="Access token lifespan in seconds")
-
-
 class UserResponse(BaseModel):
     """Safe public user information model without exposing password hashes or tokens."""
 
@@ -79,6 +71,20 @@ class UserResponse(BaseModel):
         description="True if an active unexpired premium entitlement exists",
     )
     created_at: datetime = Field(..., description="Account creation timestamp")
+
+
+class TokenResponse(BaseModel):
+    """Authentication token response payload."""
+
+    access_token: str = Field(..., description="Short-lived JWT access token")
+    token_type: str = Field(default="bearer", description="Token scheme type")
+    expires_in_seconds: int = Field(..., description="Access token lifespan in seconds")
+    refresh_token: str | None = Field(
+        default=None, description="Optional refresh token string for clients"
+    )
+    user: UserResponse | None = Field(
+        default=None, description="Current authenticated user profile"
+    )
 
 
 class UserProfileUpdateRequest(BaseModel):

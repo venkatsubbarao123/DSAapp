@@ -68,3 +68,17 @@ class AuthRepository:
             .values(is_revoked=True)
         )
         await self.session.execute(stmt)
+
+    async def get_active_token_in_family(self, family_id: str) -> RefreshToken | None:
+        """Finds any unrevoked token in the specified family."""
+        stmt = (
+            select(RefreshToken)
+            .where(
+                RefreshToken.family_id == family_id,
+                RefreshToken.is_revoked == False,  # noqa: E712
+            )
+            .order_by(RefreshToken.created_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
