@@ -452,21 +452,38 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
         boxSizing: "border-box",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-6)" }}>
-        <button
-          onClick={() => onNavigate("/problems")}
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--brand-primary)",
-            fontWeight: 600,
-            fontSize: "0.875rem",
-            cursor: "pointer",
-            padding: 0,
-          }}
-        >
-          ← Back to Problem Directory
-        </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-6)", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => onNavigate("/")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-secondary)",
+              fontWeight: 500,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            🏠 Home
+          </button>
+          <span style={{ color: "var(--border-muted)" }}>/</span>
+          <button
+            onClick={() => onNavigate("/problems")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--brand-primary)",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            ← Problems
+          </button>
+        </div>
 
         {/* Action buttons */}
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
@@ -546,29 +563,49 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
           )}
 
           {/* User Progress Status Pill */}
-          {isAuthenticated && progress && (
+          {isAuthenticated && progress ? (
             <span
               style={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                padding: "2px 8px",
-                borderRadius: "var(--radius-full)",
+                padding: "3px 10px",
+                borderRadius: "var(--radius-full, 9999px)",
                 backgroundColor:
                   progress.status === "SOLVED"
-                    ? "var(--status-success-bg)"
+                    ? "#dcfce7"
                     : progress.status === "ATTEMPTED"
-                    ? "rgba(59, 130, 246, 0.15)"
+                    ? "#fef3c7"
                     : "var(--bg-tertiary)",
                 color:
                   progress.status === "SOLVED"
-                    ? "var(--status-success)"
+                    ? "#15803d"
                     : progress.status === "ATTEMPTED"
-                    ? "var(--brand-primary)"
+                    ? "#b45309"
                     : "var(--text-muted)",
                 border: "1px solid currentColor",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              Status: {progress.status} (Attempts: {progress.attempts_count})
+              {progress.status === "SOLVED"
+                ? `✓ Completed (${progress.attempts_count} try${progress.attempts_count === 1 ? "" : "s"})`
+                : progress.status === "ATTEMPTED"
+                ? `• Attempted (${progress.attempts_count} tries)`
+                : "Not Completed"}
+            </span>
+          ) : (
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-sm, 4px)",
+                backgroundColor: "var(--bg-tertiary)",
+                color: "var(--text-muted)",
+              }}
+            >
+              👥 Solved by 150+ learners
             </span>
           )}
         </div>
