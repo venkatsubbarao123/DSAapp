@@ -15,6 +15,8 @@ import {
 import {
   fetchApi,
   setAccessToken,
+  setRefreshToken,
+  getRefreshToken,
 } from "../services/apiClient.ts";
 
 interface AuthContextType {
@@ -66,47 +68,64 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await fetchCurrentUser();
   }, [fetchCurrentUser]);
 
-  // Attempt silent session refresh on initialization using httpOnly cookie
+  // Attempt silent session refresh on initialization using stored tokens or httpOnly cookie
   useEffect(() => {
     let isMounted = true;
 
     async function initSession() {
+      let authenticated = false;
+
+      // 1. Try currently stored access token
       try {
-        const stored = localStorage.getItem("dsaapp_access_token");
-        if (stored) {
-          setAccessToken(stored);
-          if (isMounted) {
-            setTokenState(stored);
-            await fetchCurrentUser();
+        const storedAccess = localStorage.getItem("dsaapp_access_token");
+        if (storedAccess) {
+          setAccessToken(storedAccess);
+          if (isMounted) setTokenState(storedAccess);
+          const currentUser = await fetchCurrentUser();
+          if (currentUser) {
+            authenticated = true;
           }
         }
       } catch {}
 
-      try {
-        const refreshRes = await fetchApi<AuthResponseData>(
-          "/api/v1/auth/refresh",
-          { method: "POST" }
-        );
-        if (refreshRes?.data?.access_token) {
-          setAccessToken(refreshRes.data.access_token);
-          if (isMounted) {
-            setTokenState(refreshRes.data.access_token);
-            await fetchCurrentUser();
+      // 2. If access token is missing or expired, attempt refresh
+      if (!authenticated) {
+        try {
+          const storedRefresh = getRefreshToken();
+          const refreshRes = await fetchApi<AuthResponseData>(
+            "/api/v1/auth/refresh",
+            {
+              method: "POST",
+              body: storedRefresh ? JSON.stringify({ refresh_token: storedRefresh }) : undefined,
+            }
+          );
+          if (refreshRes?.data?.access_token) {
+            setAccessToken(refreshRes.data.access_token);
+            if (refreshRes.data.refresh_token) {
+              setRefreshToken(refreshRes.data.refresh_token);
+            }
+            if (isMounted) {
+              setTokenState(refreshRes.data.access_token);
+              if (refreshRes.data.user) {
+                setUser(refreshRes.data.user);
+              } else {
+                await fetchCurrentUser();
+              }
+            }
+            authenticated = true;
           }
-        }
-      } catch {
-        const stored = localStorage.getItem("dsaapp_access_token");
-        if (!stored) {
+        } catch {
           setAccessToken(null);
+          setRefreshToken(null);
           if (isMounted) {
             setUser(null);
             setTokenState(null);
           }
         }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      }
+
+      if (isMounted) {
+        setIsLoading(false);
       }
     }
 
@@ -126,8 +145,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (res.data?.access_token) {
         setAccessToken(res.data.access_token);
+        if (res.data.refresh_token) {
+          setRefreshToken(res.data.refresh_token);
+        }
         setTokenState(res.data.access_token);
-        await fetchCurrentUser();
+        if (res.data.user) {
+          setUser(res.data.user);
+        } else {
+          await fetchCurrentUser();
+        }
         closeAuthModal();
       }
     },
@@ -143,8 +169,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (res.data?.access_token) {
         setAccessToken(res.data.access_token);
+        if (res.data.refresh_token) {
+          setRefreshToken(res.data.refresh_token);
+        }
         setTokenState(res.data.access_token);
-        await fetchCurrentUser();
+        if (res.data.user) {
+          setUser(res.data.user);
+        } else {
+          await fetchCurrentUser();
+        }
         closeAuthModal();
       }
     },
@@ -153,11 +186,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = useCallback(async () => {
     try {
-      await fetchApi("/api/v1/auth/logout", { method: "POST" });
+      const storedRefresh = getRefreshToken();
+      await fetchApi("/api/v1/auth/logout", {
+        method: "POST",
+        body: storedRefresh ? JSON.stringify({ refresh_token: storedRefresh }) : undefined,
+      });
     } catch {
       // Best-effort logout notification
     } finally {
       setAccessToken(null);
+      setRefreshToken(null);
       setTokenState(null);
       setUser(null);
     }
