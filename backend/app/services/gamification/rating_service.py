@@ -35,7 +35,7 @@ class RatingService:
         source_id: Optional[str] = None,
     ) -> int:
         """Applies a rating delta and logs the transaction in RatingHistory.
-        
+
         Returns:
             The new rating value.
         """

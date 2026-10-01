@@ -9,17 +9,16 @@ Ensures:
 import json
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from backend.app.models.gamification import (
     UserGamificationProfile,
     XPTransaction,
 )
-from backend.app.models.user import User, UserProfile
+from backend.app.models.user import UserProfile
 from backend.app.services.redis import redis_service
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 """Technical Interview Simulation API endpoints."""
 
 import logging
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -12,7 +12,7 @@ _cached_provider: Optional[AIProvider] = None
 
 def get_ai_provider(override_driver: Optional[str] = None) -> AIProvider:
     """Retrieves or instantiates the configured AI provider.
-    
+
     Guarantees that test environments can run deterministically using the MockAIProvider
     without requiring third-party API keys or internet access.
     """

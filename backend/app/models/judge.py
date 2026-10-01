@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from sqlalchemy import (
-    Column,
     DateTime,
     Enum,
     ForeignKey,
@@ -14,7 +13,6 @@ from sqlalchemy import (
     JSON,
     String,
     Text,
-    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, backref, mapped_column, relationship
 

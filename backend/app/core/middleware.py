@@ -83,7 +83,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        
+
         # Baseline Content-Security-Policy
         # Restricts frame ancestors, scripts, objects, and base URI
         response.headers["Content-Security-Policy"] = (

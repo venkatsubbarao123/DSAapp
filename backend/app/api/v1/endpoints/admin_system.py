@@ -1,7 +1,7 @@
 """Administrative endpoints for system diagnostics and security audit log inspection."""
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 
 from backend.app.api.deps import get_admin_service, require_admin
 from backend.app.models.user import User
@@ -20,7 +20,7 @@ async def get_system_diagnostics(
     admin_service: AdminService = Depends(get_admin_service),
 ):
     """Admin-only: Live health inspection of DB, Redis, Docker Sandbox, Queue, and AI Provider.
-    
+
     Zero secret exposure guaranteed.
     """
     return await admin_service.get_system_diagnostics()

@@ -1,6 +1,5 @@
 """Pydantic schemas for Phase 6 AI Learning System."""
 
-from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 

@@ -12,7 +12,6 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from backend.app.models.content import Problem
 from backend.app.models.gamification import (
     PracticeMode,
     PracticeSession,
@@ -158,7 +157,7 @@ class PracticeSessionService:
         submission_id: Optional[str] = None,
     ) -> Tuple[PracticeSession, int]:
         """Records the outcome of a problem attempted within the session.
-        
+
         Returns:
             Tuple[PracticeSession, xp_awarded_for_solve]
         """

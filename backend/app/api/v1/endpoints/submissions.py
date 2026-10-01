@@ -17,7 +17,6 @@ from backend.app.schemas.content import PaginatedData
 from backend.app.schemas.judge import RunCodeRequest, SubmissionResultRead
 from backend.app.schemas.progress import (
     SubmissionCreate,
-    SubmissionDetail,
     SubmissionSummary,
 )
 from backend.app.services.progress_service import ProgressService
@@ -36,7 +35,7 @@ async def submit_code(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Submits student source code for a problem.
-    
+
     CRITICAL NON-GOAL & SECURITY INVARIANT:
     Phase 4 does NOT execute student code synchronously in-process.
     This endpoint verifies problem validity, enforces source code length caps (64KB),
@@ -90,7 +89,7 @@ async def list_submissions(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Returns paginated list of current authenticated user's submissions.
-    
+
     Source code is excluded from summary payloads for performance and privacy.
     """
     items, total = await service.list_submissions(
@@ -122,7 +121,7 @@ async def get_submission_detail(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Retrieves full submission record including source code.
-    
+
     STRICT IDOR DEFENSE: Strictly owner-only.
     """
     submission = await service.get_submission_detail(submission_id, current_user.id)
@@ -136,7 +135,7 @@ async def get_submission_result(
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieves online judge execution result for a submission.
-    
+
     STRICT IDOR DEFENSE: Strictly owner-only or staff.
     """
     result = await JudgeService.get_submission_result_safe(db, submission_id, current_user)

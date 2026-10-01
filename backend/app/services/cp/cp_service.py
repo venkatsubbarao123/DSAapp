@@ -8,12 +8,12 @@ Manages:
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from backend.app.models.content import ContentStatus, Problem, Tag
+from backend.app.models.content import ContentStatus, Problem
 from backend.app.models.cp import (
     CPProblemMetadata,
     CompetitiveRating,

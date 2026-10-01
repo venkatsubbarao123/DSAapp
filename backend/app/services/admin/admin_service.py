@@ -4,9 +4,9 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, select, update, or_
+from sqlalchemy import func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -577,7 +577,7 @@ class AdminService:
 
     async def get_system_diagnostics(self) -> SystemDiagnosticsResponse:
         """Runs health diagnostics across all core subsystems.
-        
+
         CRITICAL SECURITY INVARIANT:
         Strictly zero sensitive configuration, secrets, DB passwords, or credentials exposed.
         """

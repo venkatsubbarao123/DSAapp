@@ -20,7 +20,7 @@ def register_error_handlers(app: FastAPI) -> None:
     async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         req_id = get_request_id(request)
         error_code = f"HTTP_{exc.status_code}"
-        
+
         # Determine code based on common status codes
         if exc.status_code == status.HTTP_404_NOT_FOUND:
             error_code = "NOT_FOUND"

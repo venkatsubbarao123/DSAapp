@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class OrderCreateRequest(BaseModel):
     """Order creation request.
-    
+
     CRITICAL SECURITY INVARIANT:
     Clients are strictly forbidden from specifying order amount or currency.
     The server calculates authoritative pricing from settings.

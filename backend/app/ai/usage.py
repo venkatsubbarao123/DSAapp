@@ -26,7 +26,7 @@ class AIUsageTracker:
         is_premium: bool,
     ) -> Tuple[bool, int, int]:
         """Checks if learner has remaining daily AI quota.
-        
+
         Returns:
             Tuple of (can_proceed, daily_used, daily_remaining)
         """

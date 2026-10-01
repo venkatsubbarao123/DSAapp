@@ -1,6 +1,5 @@
 """Endpoints for user notifications, read states, channel preferences, and admin broadcasts."""
 
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from backend.app.api.deps import (

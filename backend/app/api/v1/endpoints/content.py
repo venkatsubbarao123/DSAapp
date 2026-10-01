@@ -1,24 +1,12 @@
 """Student read-only API endpoints for curricula, tracks, topics, lessons, and problems."""
 
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, Request
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 
 from backend.app.api.deps import get_content_service, get_current_user_optional, get_db
 from backend.app.judge.runner import run_sample_test_cases
 from backend.app.models.content import ContentAccessLevel, ContentLevel, ProblemDifficulty
 from backend.app.models.user import User
-from backend.app.schemas.content import (
-    CurriculumDetail,
-    CurriculumSummary,
-    LessonDetail,
-    PaginatedData,
-    ProblemDetail,
-    ProblemSummary,
-    SubtopicDetail,
-    TopicDetail,
-    TopicSummary,
-    TrackSummary,
-)
 from backend.app.schemas.judge import RunCodeRequest
 from backend.app.services.content_service import ContentService
 from backend.app.services.rate_limiter import rate_limiter
@@ -139,7 +127,7 @@ async def get_problem(
     content_service: ContentService = Depends(get_content_service),
 ):
     """Fetches problem specification.
-    
+
     SECURITY INVARIANTS:
     1. Premium Gate: Free users without active entitlement receive 403 Forbidden.
     2. Hidden Test Case Suppression: Hidden test cases are strictly excluded from output.
@@ -159,7 +147,7 @@ async def run_problem_code(
     current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """Executes code against sample test cases in an isolated sandbox.
-    
+
     CRITICAL NON-GOALS & SECURITY INVARIANTS:
     1. NEVER writes to the `submissions` table or alters `UserProblemProgress`.
     2. NEVER evaluates against hidden test cases.

@@ -1,7 +1,6 @@
 """Progress tracking API endpoints for lessons, problems, topics, and overview."""
 
-from typing import Optional
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,13 +13,6 @@ from backend.app.api.deps import (
 )
 from backend.app.models.content import ContentStatus, Topic
 from backend.app.models.user import User
-from backend.app.schemas.progress import (
-    MasteryInsightsRead,
-    ProgressOverviewRead,
-    TopicProgressRead,
-    UserLessonProgressRead,
-    UserProblemProgressRead,
-)
 from backend.app.services.progress_service import ProgressService
 from backend.app.services.rate_limiter import rate_limiter
 
@@ -83,7 +75,7 @@ async def get_mastery_insights(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Returns advanced learning mastery analytics and retention forecasting.
-    
+
     CRITICAL ACCESS CONTROL:
     Server-authoritatively gated by require_premium.
     """

@@ -34,7 +34,7 @@ class OutputGuard:
     @staticmethod
     def inspect_output(text: Optional[str]) -> Tuple[bool, Optional[str]]:
         """Scans response text for credential or secret leakage.
-        
+
         Returns:
             Tuple of (is_safe, leak_description_if_unsafe)
         """

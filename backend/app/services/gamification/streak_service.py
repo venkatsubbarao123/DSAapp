@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.gamification import UserGamificationProfile
 from backend.app.services.gamification.xp_service import XPService
 
 logger = logging.getLogger(__name__)
@@ -56,7 +55,7 @@ class StreakService:
         now: Optional[datetime] = None,
     ) -> Tuple[int, int, bool]:
         """Records a qualifying learning activity (solve, daily challenge, revision).
-        
+
         Returns:
             Tuple[current_streak, longest_streak, is_streak_incremented]
         """

@@ -73,7 +73,7 @@ class XPService:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Optional[XPTransaction], bool, int]:
         """Atomically records an XP event in the ledger if not already granted.
-        
+
         Returns:
             Tuple[transaction_or_none, is_new_reward, new_level]
         """

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import (
     Boolean,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -19,8 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.db.base import Base
 
 if TYPE_CHECKING:
-    from backend.app.models.user import User
-    from backend.app.models.content import Problem, Lesson
+    pass
 
 
 class AIRequestType(str, enum.Enum):

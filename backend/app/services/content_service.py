@@ -2,7 +2,7 @@
 
 import json
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +16,6 @@ from backend.app.models.content import (
     ProblemDifficulty,
     Subtopic,
     Topic,
-    Track,
 )
 from backend.app.models.user import User, UserRole
 from backend.app.repositories.audit_repo import AuditRepository
@@ -28,7 +27,6 @@ from backend.app.schemas.content import (
     HintResponse,
     LessonBlock,
     LessonDetail,
-    LessonSummary,
     PaginatedData,
     PatternResponse,
     ProblemDetail,
@@ -284,7 +282,7 @@ class ContentService:
         current_user: Optional[User] = None,
     ) -> ProblemDetail:
         """Fetches problem specification with strict Premium verification and test case security.
-        
+
         SECURITY INVARIANTS:
         1. Premium Gate: Free users without active entitlement receive 403 Forbidden.
         2. Hidden Test Protection: Test cases with is_hidden == True are strictly excluded.

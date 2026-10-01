@@ -15,7 +15,7 @@ class ComparisonMode(str, Enum):
 
 def normalize_output(text: str) -> str:
     """Normalizes line endings and trailing whitespace.
-    
+
     1. Normalizes CRLF / CR to LF
     2. Strips trailing whitespace from each line
     3. Strips trailing newlines from the entire string
@@ -38,7 +38,7 @@ def compare_outputs(
     mode: str = ComparisonMode.NORMALIZED.value
 ) -> Tuple[bool, str]:
     """Compares actual output against expected output.
-    
+
     Returns:
         (is_match, diff_message)
     """

@@ -16,7 +16,7 @@ DEFAULT_SESSION_TTL = 86400   # 24 hours
 
 class RedisService:
     """Abstraction layer over Redis client with graceful in-memory fallback.
-    
+
     Provides key namespacing (dsaapp:{namespace}:{key}) and prevents
     system outages if Redis becomes temporarily unreachable.
     """
@@ -31,7 +31,7 @@ class RedisService:
 
     def make_key(self, namespace: str, identifier: str) -> str:
         """Constructs standardized namespaced Redis key.
-        
+
         Format: dsaapp:<namespace>:<identifier>
         """
         clean_ns = namespace.strip().replace(" ", "_")
@@ -102,7 +102,7 @@ class RedisService:
                 return await self._client.get(key)
             except Exception as e:
                 logger.warning(f"Redis get failed for key {key}: {e}. Checking in-memory fallback.")
-        
+
         # Check in-memory fallback
         if key in self._memory_fallback:
             val, expiry = self._memory_fallback[key]

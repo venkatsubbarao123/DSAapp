@@ -1,7 +1,7 @@
 """Administrative endpoints for user listing, in-depth inspection, role updates, and suspension."""
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request
 
 from backend.app.api.deps import get_admin_service, require_admin
 from backend.app.models.user import User, UserRole

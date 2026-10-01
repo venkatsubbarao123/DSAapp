@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.db.base import Base
@@ -12,7 +12,6 @@ from backend.app.db.base import Base
 if TYPE_CHECKING:
     from backend.app.models.auth import RefreshToken
     from backend.app.models.payment import PaymentOrder, PremiumEntitlement
-    from backend.app.models.audit import AuditLog
 
 
 class UserRole(str, enum.Enum):

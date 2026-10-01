@@ -108,7 +108,7 @@ class MasteryInsightsRead(BaseModel):
 
 class SubmissionCreate(BaseModel):
     """Client submission payload.
-    
+
     CRITICAL: Strict language allowlist and 64KB UTF-8 source limit.
     """
     model_config = ConfigDict(extra="forbid")

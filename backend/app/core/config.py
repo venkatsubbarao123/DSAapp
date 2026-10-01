@@ -131,7 +131,7 @@ class Settings(BaseSettings):
 
     def validate_production_config(self) -> Tuple[bool, List[str]]:
         """Validates configuration for production deployment without revealing secrets.
-        
+
         Returns:
             Tuple of (is_valid, list of missing or invalid setting descriptions).
         """

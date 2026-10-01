@@ -57,7 +57,7 @@ class SQLSandbox:
     @classmethod
     def validate_query_safety(cls, query: str) -> Tuple[bool, Optional[str]]:
         """Validates that query contains only safe read-only SELECT or WITH statements.
-        
+
         Enforces:
         1. Non-empty string within length limit
         2. Must start with SELECT or WITH (CTE)

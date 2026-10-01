@@ -1,7 +1,6 @@
 """Gamification Profile, XP Ledger, Streak, and Achievement Endpoints."""
 
 import logging
-from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession

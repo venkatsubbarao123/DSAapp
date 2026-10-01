@@ -8,11 +8,10 @@ Provides:
 - Integration with Phase 6 AIProvider for educational debrief and interview coaching
 """
 
-import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import func, select
+from typing import Dict, Optional, Tuple
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 

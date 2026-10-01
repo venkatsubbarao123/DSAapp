@@ -21,7 +21,7 @@ from backend.app.judge.queue import JudgeQueue
 from backend.app.judge.sandbox.base import ExecutionRequest
 from backend.app.judge.sandbox.manager import get_sandbox
 from backend.app.judge.worker import JudgeWorker
-from backend.app.models.content import ContentStatus, Problem, TestCase
+from backend.app.models.content import ContentStatus, Problem
 from backend.app.models.judge import JudgeJob, JudgeJobStatus
 from backend.app.schemas.judge import RunCodeResponse, TestCaseRunResult
 
@@ -36,7 +36,7 @@ async def run_sample_test_cases(
     custom_input: Optional[str] = None,
 ) -> RunCodeResponse:
     """Executes code against public/sample test cases without mutating submission history.
-    
+
     CRITICAL NON-GOALS & SECURITY INVARIANTS:
     1. NEVER writes to the `submissions` table or alters `UserProblemProgress`.
     2. NEVER executes against hidden test cases.

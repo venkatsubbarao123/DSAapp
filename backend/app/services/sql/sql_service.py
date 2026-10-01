@@ -8,7 +8,7 @@ Manages:
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

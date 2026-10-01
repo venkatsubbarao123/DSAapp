@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
-    Column,
     DateTime,
     Enum,
     Float,

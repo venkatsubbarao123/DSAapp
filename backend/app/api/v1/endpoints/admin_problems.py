@@ -3,7 +3,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from backend.app.api.deps import get_admin_service, require_admin, require_role
+from backend.app.api.deps import get_admin_service, require_role
 from backend.app.models.content import ContentAccessLevel, ContentStatus, ProblemDifficulty
 from backend.app.models.user import User, UserRole
 from backend.app.schemas.admin import (

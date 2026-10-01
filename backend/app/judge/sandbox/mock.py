@@ -1,6 +1,5 @@
 """Mock Sandbox for testing the Judge lifecycle and error conditions."""
 
-import time
 from typing import Any, Dict, List, Optional
 
 from backend.app.judge.sandbox.base import (

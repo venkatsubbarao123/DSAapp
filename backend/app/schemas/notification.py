@@ -1,10 +1,10 @@
 """Pydantic schemas for Notifications and Notification Preferences."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.app.models.notification import NotificationType, NotificationChannel, DeliveryStatus
+from backend.app.models.notification import NotificationType, NotificationChannel
 
 
 class NotificationItem(BaseModel):

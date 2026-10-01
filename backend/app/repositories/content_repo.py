@@ -1,31 +1,23 @@
 """Content repository managing parameterized database operations for curricula, topics, lessons, and problems."""
 
-import json
-import math
 from typing import Any, Dict, List, Optional, Tuple, Type
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from backend.app.models.content import (
-    Concept,
     ContentAccessLevel,
     ContentLevel,
     ContentStatus,
     Curriculum,
-    Hint,
     Lesson,
     Problem,
     ProblemDifficulty,
-    ProblemExample,
     ProblemPattern,
     Subtopic,
     Tag,
-    TestCase,
     Topic,
     Track,
-    problem_patterns,
-    problem_tags,
 )
 
 
@@ -250,7 +242,7 @@ class ContentRepository:
         self, slug_or_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
     ) -> Optional[Problem]:
         """Fetches problem with full relations eager-loaded.
-        
+
         SECURITY INVARIANT:
         Loads examples, hints, tags, patterns, and test_cases.
         """

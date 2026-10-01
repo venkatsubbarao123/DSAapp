@@ -43,7 +43,7 @@ class LevelService:
     @staticmethod
     def calculate_level(total_xp: int) -> int:
         """Calculates the current level based on total accumulated XP.
-        
+
         Solves: 50 * (L - 1) * L <= total_xp
         50 * L^2 - 50 * L - total_xp <= 0
         Quadratic root: L = (50 + sqrt(2500 + 4 * 50 * total_xp)) / (2 * 50)

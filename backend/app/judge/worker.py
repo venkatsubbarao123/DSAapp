@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 import logging
 import uuid
 from typing import Optional
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,7 +18,7 @@ from backend.app.judge.languages import get_language_definition
 from backend.app.judge.queue import JudgeQueue
 from backend.app.judge.sandbox.base import BaseSandbox, ExecutionRequest
 from backend.app.judge.sandbox.manager import get_sandbox
-from backend.app.models.content import Problem, TestCase
+from backend.app.models.content import Problem
 from backend.app.models.judge import JudgeJob, JudgeJobStatus, SubmissionResult, Verdict
 from backend.app.models.progress import (
     ProblemProgressStatus,

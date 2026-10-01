@@ -1,7 +1,7 @@
 """FastAPI dependencies for authentication, role verification, and premium access gates."""
 
 from typing import List, Optional
-from fastapi import Cookie, Depends, Header, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,7 +65,7 @@ async def require_premium(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Enforces server-side Premium subscription status.
-    
+
     CRITICAL SECURITY INVARIANT:
     Never trusts client parameters, cookies, or localStorage.
     Examines unexpired database entitlement records directly.

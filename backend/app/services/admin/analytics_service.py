@@ -3,7 +3,7 @@
 import json
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import List
 from sqlalchemy import func, select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,21 +11,18 @@ from backend.app.judge.queue import JudgeQueue
 from backend.app.judge.sandbox import get_sandbox_diagnostics
 from backend.app.models.content import (
     Problem,
-    ProblemDifficulty,
-    ContentAccessLevel,
 )
 from backend.app.models.contest import Contest, ContestParticipant, ContestSubmission
 from backend.app.models.gamification import (
     UserGamificationProfile,
     UserAchievement,
-    XPTransaction,
 )
 from backend.app.models.interview import InterviewSession, InterviewStatus
 from backend.app.models.judge import JudgeJob
 from backend.app.models.payment import PaymentOrder, OrderStatus, PremiumEntitlement
 from backend.app.models.progress import Submission, SubmissionStatus
 from backend.app.models.sql_learning import SQLSubmission
-from backend.app.models.user import User, UserRole
+from backend.app.models.user import User
 from backend.app.schemas.analytics import (
     CategoryCount,
     CompetitionAnalyticsResponse,

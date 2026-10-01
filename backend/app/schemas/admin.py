@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.models.user import UserRole
 from backend.app.models.content import ProblemDifficulty, ContentAccessLevel, ContentStatus

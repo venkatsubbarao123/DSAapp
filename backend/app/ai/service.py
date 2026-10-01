@@ -7,18 +7,17 @@ progress tracking, mistake notebook patterns, and security guardrails.
 from datetime import datetime, timezone
 import logging
 import time
-from typing import List, Optional
+from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from backend.app.ai.providers import get_ai_provider
-from backend.app.ai.security.prompt_guard import PromptGuard
 from backend.app.ai.usage import AIUsageTracker
 from backend.app.core.config import settings
 from backend.app.models.ai import AIConversation, AIHintUsage, AIMessage, AIRequestType
-from backend.app.models.content import Problem, Topic, ContentStatus
+from backend.app.models.content import Problem, ContentStatus
 from backend.app.models.progress import (
     Mistake,
     ProblemProgressStatus,

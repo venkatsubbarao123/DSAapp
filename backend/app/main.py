@@ -19,7 +19,6 @@ from backend.app.core.middleware import (
 )
 from backend.app.db.init_db import init_db
 from backend.app.db.session import check_db_health
-from backend.app.schemas.response import APIResponse
 from backend.app.services.redis import redis_service
 
 

@@ -6,7 +6,7 @@ Provides atomic job claims, heartbeats, and stale job reclamation.
 
 from datetime import datetime, timedelta, timezone
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -85,7 +85,7 @@ class JudgeQueue:
             .order_by(JudgeJob.queued_at.asc())
             .limit(1)
         )
-        
+
         # SQLite does not support SKIP LOCKED; apply with_for_update only when supported
         bind = db.bind
         dialect_name = bind.dialect.name if bind else ""

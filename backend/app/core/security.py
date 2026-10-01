@@ -42,7 +42,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def validate_password_strength(password: str) -> Tuple[bool, str]:
     """Validates password complexity requirements.
-    
+
     Returns:
         (is_valid, error_message)
     """
@@ -75,7 +75,7 @@ def create_refresh_token(
     family_id: Optional[str] = None,
 ) -> Tuple[str, str, str, datetime]:
     """Creates a revocable refresh token with unique JTI and token family tracking.
-    
+
     Returns:
         Tuple of (encoded_token, jti, family_id, expires_at_datetime)
     """

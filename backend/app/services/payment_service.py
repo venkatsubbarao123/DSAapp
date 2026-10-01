@@ -4,15 +4,14 @@ import base64
 import hashlib
 import json
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from fastapi import HTTPException, status
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.config import settings
 from backend.app.core.logging import logger
-from backend.app.models.payment import OrderStatus, PaymentOrder, PaymentTransaction, PremiumEntitlement
+from backend.app.models.payment import OrderStatus, PremiumEntitlement
 from backend.app.repositories.audit_repo import AuditRepository
 from backend.app.repositories.payment_repo import PaymentRepository
 from backend.app.schemas.payment import OrderResponse, OrderStatusResponse, PaymentHistoryItem
@@ -58,7 +57,7 @@ class PaymentService:
     ) -> OrderResponse:
         """Creates an order with server-calculated authoritative pricing."""
         chosen_plan = plan_id or settings.PREMIUM_PLAN_ID
-        
+
         # Authoritative price calculated strictly server-side
         amount = settings.PREMIUM_PRICE
         currency = settings.PREMIUM_CURRENCY

@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.security.prompt_guard import PromptGuard
 from backend.app.ai.security.output_guard import OutputGuard
-from backend.app.ai.security.pii_guard import PIIGuard
 from backend.app.schemas.ai import (
     ComplexityRequest,
     ComplexityResponse,

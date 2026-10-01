@@ -9,7 +9,7 @@ Protects the AI system against:
 """
 
 import re
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 
 # Suspicious injection patterns (case-insensitive)
@@ -53,7 +53,7 @@ class PromptGuard:
     @staticmethod
     def detect_injection(text: str) -> Tuple[bool, Optional[str]]:
         """Detects high-confidence prompt injection or jailbreak attempts.
-        
+
         Returns:
             Tuple of (is_suspicious, matched_pattern_name)
         """
@@ -75,7 +75,7 @@ class PromptGuard:
         user_code: Optional[str] = None,
     ) -> str:
         """Assembles prompt with strict structural isolation.
-        
+
         Employs structural XML-like boundary tags to ensure the model treats
         user content strictly as passive data and never as instructions.
         """

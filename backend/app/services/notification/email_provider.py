@@ -25,7 +25,7 @@ class BaseEmailProvider(ABC):
 
 class MockEmailProvider(BaseEmailProvider):
     """Structured mock email provider for local development, CI testing, and offline modes.
-    
+
     CRITICAL: Never silently drops messages; captures full delivery metadata for assertions.
     """
 

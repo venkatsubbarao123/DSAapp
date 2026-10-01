@@ -24,7 +24,6 @@ from backend.app.models.contest import (
     ContestStatus,
     ContestSubmission,
 )
-from backend.app.models.content import Problem
 from backend.app.models.progress import Submission, SubmissionStatus
 from backend.app.models.user import User
 from backend.app.schemas.contest import (

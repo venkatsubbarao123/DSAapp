@@ -1,7 +1,7 @@
 """Authentication API endpoints for registration, login, token refresh, and session revocation."""
 
 from typing import Optional
-from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.deps import get_auth_service, get_current_user

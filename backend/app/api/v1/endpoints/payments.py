@@ -1,11 +1,9 @@
 """Payment endpoints for order creation, status inspection, verification, and webhooks."""
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, Header, Request, status
 
 from backend.app.api.deps import get_current_user, get_payment_service
-from backend.app.db.session import get_db
 from backend.app.models.user import User, UserRole
 from backend.app.schemas.payment import (
     ManualPaymentVerifyRequest,

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.judge.queue import JudgeQueue
 from backend.app.judge.sandbox.manager import get_sandbox_diagnostics
-from backend.app.models.judge import JudgeJob, SubmissionResult
+from backend.app.models.judge import SubmissionResult
 from backend.app.models.progress import Submission
 from backend.app.models.user import User
 
@@ -21,7 +21,7 @@ class JudgeService:
         current_user: User,
     ) -> Optional[SubmissionResult]:
         """Retrieves submission result ensuring ownership or staff privileges.
-        
+
         Strict IDOR protection: Users can only view results of their own submissions.
         """
         stmt = select(Submission).where(Submission.id == submission_id)

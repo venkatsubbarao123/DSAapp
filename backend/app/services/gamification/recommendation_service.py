@@ -10,7 +10,7 @@ Strictly filters:
 """
 
 import logging
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,13 +20,11 @@ from backend.app.models.content import (
     ContentAccessLevel,
     ContentStatus,
     Problem,
-    ProblemDifficulty,
 )
 from backend.app.models.progress import (
     Mistake,
     ProblemProgressStatus,
     RevisionItem,
-    RevisionSchedule,
     UserProblemProgress,
 )
 from backend.app.models.user import User

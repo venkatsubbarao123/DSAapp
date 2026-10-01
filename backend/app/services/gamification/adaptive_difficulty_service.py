@@ -5,7 +5,7 @@ calibrated difficulty tiers (EASY, MEDIUM, HARD, EXPERT) preventing both boredom
 """
 
 import logging
-from typing import List, Tuple
+from typing import Tuple
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

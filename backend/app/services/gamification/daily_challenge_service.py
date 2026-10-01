@@ -98,7 +98,7 @@ class DailyChallengeService:
         date_str: Optional[str] = None,
     ) -> Tuple[bool, int, str]:
         """Verifies solution and credits XP reward idempotently.
-        
+
         Returns:
             Tuple[success, xp_awarded, message]
         """

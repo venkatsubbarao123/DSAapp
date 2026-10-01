@@ -75,7 +75,7 @@ class HintResponse(BaseModel):
 
 class TestCaseResponse(BaseModel):
     """Safe test case representation for students (SAMPLE ONLY).
-    
+
     SECURITY INVARIANT:
     Hidden test cases (is_hidden == True) are NEVER returned through this schema.
     """

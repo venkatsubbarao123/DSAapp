@@ -1,6 +1,5 @@
 """Spaced revision queue API endpoints."""
 
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from backend.app.api.deps import (
@@ -75,7 +74,7 @@ async def review_revision_item(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Records learner self-assessment feedback and calculates the next due date.
-    
+
     Allowed outcomes: AGAIN, HARD, GOOD, EASY.
     """
     await rate_limiter.check_rate_limit(f"rev:{current_user.id}", max_requests=120, window_seconds=60)

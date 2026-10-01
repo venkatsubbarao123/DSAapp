@@ -16,7 +16,6 @@ from backend.app.models.gamification import (
     PracticeSessionProblem,
     UserAchievement,
     UserDailyChallenge,
-    UserGamificationProfile,
 )
 from backend.app.models.progress import (
     ProblemProgressStatus,
@@ -165,7 +164,7 @@ class AchievementService:
     @classmethod
     async def evaluate_achievements(cls, db: AsyncSession, user_id: str) -> List[Tuple[Achievement, int]]:
         """Evaluates all locked achievements for a user and unlocks those whose criteria are met.
-        
+
         Returns:
             List of (Achievement, xp_awarded) tuples for newly unlocked achievements.
         """

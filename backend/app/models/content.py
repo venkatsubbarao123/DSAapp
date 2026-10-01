@@ -21,7 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.db.base import Base
 
 if TYPE_CHECKING:
-    from backend.app.models.user import User
+    pass
 
 
 class ContentLevel(str, enum.Enum):
@@ -297,7 +297,7 @@ class Hint(Base):
 
 class TestCase(Base):
     """Verification test cases for future online judging.
-    
+
     SECURITY INVARIANT:
     Test cases where is_hidden == True must NEVER be exposed in student APIs.
     """

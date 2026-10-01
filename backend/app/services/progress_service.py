@@ -7,17 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.models.audit import AuditLog
 from backend.app.models.content import ContentStatus
 from backend.app.models.progress import (
-    LessonProgressStatus,
     Mistake,
     MistakeType,
     ProblemProgressStatus,
-    ReviewOutcome,
     RevisionItem,
-    RevisionSchedule,
     RevisionSourceType,
     Submission,
     SubmissionStatus,
-    UserLessonProgress,
     UserProblemProgress,
 )
 from backend.app.judge.queue import JudgeQueue
@@ -223,7 +219,7 @@ class ProgressService:
         self, user_id: str, data: SubmissionCreate
     ) -> SubmissionDetail:
         """Creates a student code submission with idempotency and automatic problem attempt tracking.
-        
+
         CRITICAL ARCHITECTURAL INVARIANT:
         This endpoint records submitted source code for future judge evaluation.
         It updates problem progress to ATTEMPTED.
