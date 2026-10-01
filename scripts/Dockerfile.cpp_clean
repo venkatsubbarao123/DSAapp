@@ -1,8 +1,0 @@
-FROM alpine:latest
-RUN apk add --no-cache g++ make
-RUN addgroup -g 10001 judge && \
-    adduser -D -u 10001 -G judge judge
-WORKDIR /workspace
-RUN chown judge:judge /workspace && chmod 700 /workspace
-USER judge:judge
-CMD ["./solution"]

@@ -1,8 +1,8 @@
 # Phase 5 Secure Sandbox: C++20 (GCC) Runner
 FROM alpine:latest
 
-# Install C++ toolchain
-RUN apk add --no-cache g++ make
+# Install C++ toolchain (use HTTP to avoid local corporate TLS intercept; apk verifies RSA signatures internally)
+RUN sed -i 's/https/http/' /etc/apk/repositories && apk add --no-cache g++ make
 
 # Hardening: create unprivileged non-root user
 RUN addgroup -g 10001 judge && \

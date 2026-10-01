@@ -1,8 +1,0 @@
-FROM node:current-alpine
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn*
-RUN addgroup -g 10001 judge && \
-    adduser -D -u 10001 -G judge judge
-WORKDIR /workspace
-RUN chown judge:judge /workspace && chmod 700 /workspace
-USER judge:judge
-CMD ["node", "solution.js"]
