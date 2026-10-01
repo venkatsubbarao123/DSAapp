@@ -1,5 +1,5 @@
-# Phase 5 Secure Sandbox: C++20 (GCC 13) Runner
-FROM alpine:3.19
+# Phase 5 Secure Sandbox: C++20 (GCC) Runner
+FROM alpine:latest
 
 # Install C++ toolchain
 RUN apk add --no-cache g++ make

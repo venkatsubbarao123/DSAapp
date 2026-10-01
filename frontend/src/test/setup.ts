@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-// Mock window.scrollTo for jsdom test environment
+// Mock browser APIs for jsdom test environment
 if (typeof window !== "undefined") {
   window.scrollTo = () => {};
 
@@ -15,5 +15,21 @@ if (typeof window !== "undefined") {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     } as any);
+  }
+
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as any;
+  }
+
+  if (!window.IntersectionObserver) {
+    window.IntersectionObserver = class IntersectionObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as any;
   }
 }
