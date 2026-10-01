@@ -18,7 +18,7 @@ import re
 import sqlite3
 import time
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,20 +42,21 @@ SQLITE_MASTER_REGEX = re.compile(
 @dataclass
 class SQLSandboxResult:
     """Safe evaluation output from SQL sandbox execution."""
+
     verdict: str  # ACCEPTED, WRONG_ANSWER, SYNTAX_ERROR, FORBIDDEN_KEYWORD, TIME_LIMIT_EXCEEDED, SYSTEM_ERROR
     execution_time_ms: float = 0.0
-    user_columns: List[str] = field(default_factory=list)
-    user_rows: List[List[Any]] = field(default_factory=list)
-    expected_columns: List[str] = field(default_factory=list)
-    expected_rows_sample: List[List[Any]] = field(default_factory=list)
-    error_message: Optional[str] = None
+    user_columns: list[str] = field(default_factory=list)
+    user_rows: list[list[Any]] = field(default_factory=list)
+    expected_columns: list[str] = field(default_factory=list)
+    expected_rows_sample: list[list[Any]] = field(default_factory=list)
+    error_message: str | None = None
 
 
 class SQLSandbox:
     """Ephemeral, isolated SQLite execution sandbox."""
 
     @classmethod
-    def validate_query_safety(cls, query: str) -> Tuple[bool, Optional[str]]:
+    def validate_query_safety(cls, query: str) -> tuple[bool, str | None]:
         """Validates that query contains only safe read-only SELECT or WITH statements.
 
         Enforces:
@@ -80,13 +81,19 @@ class SQLSandbox:
         # Verify initial keyword
         first_token = trimmed.split()[0].upper() if trimmed.split() else ""
         if first_token not in ("SELECT", "WITH"):
-            return False, f"Forbidden statement type '{first_token}'. Only SELECT and WITH (CTE) queries are permitted."
+            return (
+                False,
+                f"Forbidden statement type '{first_token}'. Only SELECT and WITH (CTE) queries are permitted.",
+            )
 
         # Keyword checks
         forbidden_match = FORBIDDEN_KEYWORDS_REGEX.search(trimmed)
         if forbidden_match:
             keyword = forbidden_match.group(0).upper()
-            return False, f"Forbidden keyword detected: '{keyword}' is not allowed in student queries."
+            return (
+                False,
+                f"Forbidden keyword detected: '{keyword}' is not allowed in student queries.",
+            )
 
         # System catalog checks
         if SQLITE_MASTER_REGEX.search(trimmed):
@@ -117,7 +124,7 @@ class SQLSandbox:
     ) -> SQLSandboxResult:
         """Internal synchronous execution in a dedicated in-memory SQLite connection."""
         start_time = time.perf_counter()
-        conn: Optional[sqlite3.Connection] = None
+        conn: sqlite3.Connection | None = None
 
         try:
             # Create isolated in-memory DB
@@ -134,7 +141,9 @@ class SQLSandbox:
             # Step 1: Run reference solution query
             try:
                 cur.execute(solution_sql)
-                expected_columns = [d[0] for d in cur.description] if cur.description else []
+                expected_columns = (
+                    [d[0] for d in cur.description] if cur.description else []
+                )
                 expected_rows = cur.fetchall()
             except sqlite3.Error as sol_err:
                 logger.error(f"Authoritative solution SQL error: {sol_err}")
@@ -160,11 +169,16 @@ class SQLSandbox:
             q_start = time.perf_counter()
             try:
                 cur.execute(user_query)
-                user_columns = [d[0] for d in cur.description] if cur.description else []
+                user_columns = (
+                    [d[0] for d in cur.description] if cur.description else []
+                )
                 user_rows = cur.fetchall()
             except sqlite3.OperationalError as op_err:
                 err_str = str(op_err)
-                if "interrupted" in err_str.lower() or instruction_count > max_instructions:
+                if (
+                    "interrupted" in err_str.lower()
+                    or instruction_count > max_instructions
+                ):
                     return SQLSandboxResult(
                         verdict="TIME_LIMIT_EXCEEDED",
                         execution_time_ms=(time.perf_counter() - q_start) * 1000,
@@ -179,7 +193,7 @@ class SQLSandbox:
                 return SQLSandboxResult(
                     verdict="SYNTAX_ERROR",
                     execution_time_ms=(time.perf_counter() - q_start) * 1000,
-                    error_message=f"SQL Error: {str(db_err)}",
+                    error_message=f"SQL Error: {db_err!s}",
                 )
 
             exec_time_ms = (time.perf_counter() - q_start) * 1000
@@ -201,12 +215,10 @@ class SQLSandbox:
 
             # Step 5: Normalize and compare row sets
             norm_user_rows = [
-                tuple(cls._normalize_cell(v) for v in row)
-                for row in user_rows
+                tuple(cls._normalize_cell(v) for v in row) for row in user_rows
             ]
             norm_exp_rows = [
-                tuple(cls._normalize_cell(v) for v in row)
-                for row in expected_rows
+                tuple(cls._normalize_cell(v) for v in row) for row in expected_rows
             ]
 
             if len(norm_user_rows) != len(norm_exp_rows):
@@ -222,11 +234,11 @@ class SQLSandbox:
 
             is_correct = False
             if is_order_sensitive:
-                is_correct = (norm_user_rows == norm_exp_rows)
+                is_correct = norm_user_rows == norm_exp_rows
             else:
                 user_counter = collections.Counter(norm_user_rows)
                 exp_counter = collections.Counter(norm_exp_rows)
-                is_correct = (user_counter == exp_counter)
+                is_correct = user_counter == exp_counter
 
             if is_correct:
                 return SQLSandboxResult(
@@ -253,7 +265,7 @@ class SQLSandbox:
             return SQLSandboxResult(
                 verdict="SYSTEM_ERROR",
                 execution_time_ms=(time.perf_counter() - start_time) * 1000,
-                error_message=f"Sandbox execution error: {str(exc)}",
+                error_message=f"Sandbox execution error: {exc!s}",
             )
         finally:
             if conn:
@@ -347,13 +359,13 @@ class SQLSandbox:
                 return SQLSandboxResult(
                     verdict="SYNTAX_ERROR",
                     execution_time_ms=(time.perf_counter() - start_time) * 1000,
-                    error_message=f"SQL Syntax Error: {str(op_err)}",
+                    error_message=f"SQL Syntax Error: {op_err!s}",
                 )
             except Exception as e:
                 return SQLSandboxResult(
                     verdict="SYSTEM_ERROR",
                     execution_time_ms=(time.perf_counter() - start_time) * 1000,
-                    error_message=f"Execution error: {str(e)}",
+                    error_message=f"Execution error: {e!s}",
                 )
             finally:
                 if conn:

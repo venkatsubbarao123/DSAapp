@@ -1,6 +1,5 @@
 """Administrative endpoints for user listing, in-depth inspection, role updates, and suspension."""
 
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request
 
 from backend.app.api.deps import get_admin_service, require_admin
@@ -20,10 +19,10 @@ router = APIRouter()
 async def list_users(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    search: Optional[str] = Query(default=None),
-    role: Optional[UserRole] = Query(default=None),
-    is_active: Optional[bool] = Query(default=None),
-    plan: Optional[str] = Query(default=None),
+    search: str | None = Query(default=None),
+    role: UserRole | None = Query(default=None),
+    is_active: bool | None = Query(default=None),
+    plan: str | None = Query(default=None),
     current_user: User = Depends(require_admin),
     admin_service: AdminService = Depends(get_admin_service),
 ):

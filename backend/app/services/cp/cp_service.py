@@ -8,16 +8,16 @@ Manages:
 """
 
 import logging
-from typing import List, Optional
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from backend.app.models.content import ContentStatus, Problem
 from backend.app.models.cp import (
-    CPProblemMetadata,
     CompetitiveRating,
     CompetitiveRatingHistory,
+    CPProblemMetadata,
 )
 from backend.app.models.progress import Submission, SubmissionStatus
 from backend.app.models.user import User
@@ -78,7 +78,7 @@ class CPService:
         user_id: str,
         delta: int,
         reason: str,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
     ) -> int:
         """Server-authoritatively updates competitive rating and logs history audit."""
         rating_obj = await cls.get_or_create_rating(db, user_id)
@@ -86,8 +86,7 @@ class CPService:
         new_val = max(100, prev + delta)
 
         rating_obj.current_rating = new_val
-        if new_val > rating_obj.peak_rating:
-            rating_obj.peak_rating = new_val
+        rating_obj.peak_rating = max(rating_obj.peak_rating, new_val)
 
         history = CompetitiveRatingHistory(
             user_id=user_id,
@@ -105,10 +104,10 @@ class CPService:
     async def list_cp_problems(
         cls,
         db: AsyncSession,
-        user_id: Optional[str] = None,
-        rating_band: Optional[int] = None,
-        difficulty: Optional[str] = None,
-    ) -> List[CPProblemSummary]:
+        user_id: str | None = None,
+        rating_band: int | None = None,
+        difficulty: str | None = None,
+    ) -> list[CPProblemSummary]:
         """Lists competitive programming problems filtered by rating band and difficulty."""
         stmt = (
             select(Problem, CPProblemMetadata)
@@ -128,10 +127,14 @@ class CPService:
         # Check solved status
         solved_problem_ids = set()
         if user_id:
-            sub_stmt = select(Submission.problem_id).where(
-                Submission.user_id == user_id,
-                Submission.status == SubmissionStatus.ACCEPTED,
-            ).distinct()
+            sub_stmt = (
+                select(Submission.problem_id)
+                .where(
+                    Submission.user_id == user_id,
+                    Submission.status == SubmissionStatus.ACCEPTED,
+                )
+                .distinct()
+            )
             s_res = await db.execute(sub_stmt)
             solved_problem_ids = {r[0] for r in s_res.all()}
 
@@ -145,7 +148,9 @@ class CPService:
                     title=problem.title,
                     slug=problem.slug,
                     rating_band=cp_meta.rating_band,
-                    difficulty=problem.difficulty.value if hasattr(problem.difficulty, "value") else str(problem.difficulty),
+                    difficulty=problem.difficulty.value
+                    if hasattr(problem.difficulty, "value")
+                    else str(problem.difficulty),
                     tags=tag_names,
                     time_limit_ms=cp_meta.time_limit_ms,
                     memory_limit_mb=cp_meta.memory_limit_mb,
@@ -159,8 +164,8 @@ class CPService:
         cls,
         db: AsyncSession,
         slug_or_id: str,
-        user_id: Optional[str] = None,
-    ) -> Optional[CPProblemDetail]:
+        user_id: str | None = None,
+    ) -> CPProblemDetail | None:
         """Retrieves complete CP problem statement with input/output format and sample cases."""
         stmt = (
             select(Problem, CPProblemMetadata)
@@ -209,7 +214,9 @@ class CPService:
             slug=problem.slug,
             description=problem.statement,
             rating_band=cp_meta.rating_band,
-            difficulty=problem.difficulty.value if hasattr(problem.difficulty, "value") else str(problem.difficulty),
+            difficulty=problem.difficulty.value
+            if hasattr(problem.difficulty, "value")
+            else str(problem.difficulty),
             tags=tag_names,
             time_limit_ms=cp_meta.time_limit_ms,
             memory_limit_mb=cp_meta.memory_limit_mb,
@@ -255,7 +262,10 @@ class CPService:
         stmt = (
             select(CompetitiveRating, User)
             .join(User, CompetitiveRating.user_id == User.id)
-            .order_by(CompetitiveRating.current_rating.desc(), CompetitiveRating.contests_won.desc())
+            .order_by(
+                CompetitiveRating.current_rating.desc(),
+                CompetitiveRating.contests_won.desc(),
+            )
             .limit(limit)
         )
         res = await db.execute(stmt)

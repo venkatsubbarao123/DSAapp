@@ -1,7 +1,7 @@
 """Contest API endpoints."""
 
 import logging
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,16 +28,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=List[ContestSummaryResponse])
+@router.get("", response_model=list[ContestSummaryResponse])
 async def list_contests(
-    status_filter: Optional[str] = Query(None, alias="status"),
+    status_filter: str | None = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
 ):
     """Lists contests with server-authoritative status (UPCOMING, LIVE, ENDED)."""
     return await ContestService.list_contests(db, status_filter)
 
 
-@router.get("/history", response_model=List[UserContestHistoryEntry])
+@router.get("/history", response_model=list[UserContestHistoryEntry])
 async def get_my_contest_history(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -49,7 +49,7 @@ async def get_my_contest_history(
 @router.get("/{slug}", response_model=ContestDetailResponse)
 async def get_contest(
     slug: str,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieves detailed contest specification, problem catalog, and user registration state."""
@@ -79,7 +79,11 @@ async def join_contest(
     return {"success": True, "message": msg}
 
 
-@router.post("/{slug}/submit", response_model=ContestSubmitResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{slug}/submit",
+    response_model=ContestSubmitResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def submit_contest_solution(
     slug: str,
     payload: ContestSubmitRequest,

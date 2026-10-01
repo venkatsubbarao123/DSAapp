@@ -4,7 +4,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,9 +56,13 @@ class NotificationService:
     # PREFERENCES
     # =========================================================================
 
-    async def get_or_create_user_preferences(self, user_id: str) -> NotificationPreference:
+    async def get_or_create_user_preferences(
+        self, user_id: str
+    ) -> NotificationPreference:
         """Ensures a preferences entity exists for the user."""
-        stmt = select(NotificationPreference).where(NotificationPreference.user_id == user_id)
+        stmt = select(NotificationPreference).where(
+            NotificationPreference.user_id == user_id
+        )
         res = await self.db.execute(stmt)
         pref = res.scalars().first()
         if not pref:
@@ -68,13 +72,19 @@ class NotificationService:
             await self.db.refresh(pref)
         return pref
 
-    async def get_user_preferences(self, user_id: str) -> NotificationPreferencesResponse:
+    async def get_user_preferences(
+        self, user_id: str
+    ) -> NotificationPreferencesResponse:
         """Retrieves user channel/type preferences as a structured matrix."""
         pref = await self.get_or_create_user_preferences(user_id)
-        preferences: List[NotificationPreferenceItem] = []
+        preferences: list[NotificationPreferenceItem] = []
 
         for ch in NotificationChannel:
-            ch_active = pref.in_app_enabled if ch == NotificationChannel.IN_APP else pref.email_enabled
+            ch_active = (
+                pref.in_app_enabled
+                if ch == NotificationChannel.IN_APP
+                else pref.email_enabled
+            )
             for nt in NotificationType:
                 attr_name = self._TYPE_TO_FIELD.get(nt, "system_notifications")
                 cat_active = getattr(pref, attr_name, True)
@@ -94,7 +104,9 @@ class NotificationService:
         """Bulk updates user notification preference toggles."""
         pref = await self.get_or_create_user_preferences(user_id)
         for item in request.preferences:
-            attr_name = self._TYPE_TO_FIELD.get(item.notification_type, "system_notifications")
+            attr_name = self._TYPE_TO_FIELD.get(
+                item.notification_type, "system_notifications"
+            )
             if hasattr(pref, attr_name):
                 setattr(pref, attr_name, item.is_enabled)
         pref.updated_at = datetime.now(timezone.utc)
@@ -105,12 +117,18 @@ class NotificationService:
         self, user_id: str, channel: NotificationChannel, ntype: NotificationType
     ) -> bool:
         """Helper checking if a user has opted into a specific channel and type."""
-        stmt = select(NotificationPreference).where(NotificationPreference.user_id == user_id)
+        stmt = select(NotificationPreference).where(
+            NotificationPreference.user_id == user_id
+        )
         res = await self.db.execute(stmt)
         pref = res.scalars().first()
         if not pref:
             return True
-        ch_active = pref.in_app_enabled if channel == NotificationChannel.IN_APP else pref.email_enabled
+        ch_active = (
+            pref.in_app_enabled
+            if channel == NotificationChannel.IN_APP
+            else pref.email_enabled
+        )
         attr_name = self._TYPE_TO_FIELD.get(ntype, "system_notifications")
         cat_active = getattr(pref, attr_name, True)
         return bool(ch_active and cat_active)
@@ -125,10 +143,10 @@ class NotificationService:
         notification_type: NotificationType,
         title: str,
         body: str,
-        data_json: Optional[str] = None,
-        deduplication_key: Optional[str] = None,
-        channels: Optional[List[NotificationChannel]] = None,
-    ) -> Optional[Notification]:
+        data_json: str | None = None,
+        deduplication_key: str | None = None,
+        channels: list[NotificationChannel] | None = None,
+    ) -> Notification | None:
         """Creates and dispatches an event notification according to user channel preferences."""
         if channels is None:
             channels = [NotificationChannel.IN_APP]
@@ -142,11 +160,17 @@ class NotificationService:
             dup_res = await self.db.execute(dup_stmt)
             existing = dup_res.scalars().first()
             if existing:
-                logger.info(f"Notification with deduplication_key '{deduplication_key}' already exists. Skipping.")
+                logger.info(
+                    f"Notification with deduplication_key '{deduplication_key}' already exists. Skipping."
+                )
                 return existing
 
-        in_app_enabled = await self.is_channel_enabled_for_user(user_id, NotificationChannel.IN_APP, notification_type)
-        email_enabled = await self.is_channel_enabled_for_user(user_id, NotificationChannel.EMAIL, notification_type)
+        in_app_enabled = await self.is_channel_enabled_for_user(
+            user_id, NotificationChannel.IN_APP, notification_type
+        )
+        email_enabled = await self.is_channel_enabled_for_user(
+            user_id, NotificationChannel.EMAIL, notification_type
+        )
 
         notif = None
         # In-App Creation
@@ -188,7 +212,9 @@ class NotificationService:
                         html_body=f"<h3>{title}</h3><p>{body}</p>",
                         text_body=body,
                     )
-                    status_val = DeliveryStatus.SENT if success else DeliveryStatus.FAILED
+                    status_val = (
+                        DeliveryStatus.SENT if success else DeliveryStatus.FAILED
+                    )
                     err_msg = None if success else "Email provider rejected delivery"
                 except Exception as e:
                     logger.error(f"Error sending email to {user.email}: {e}")
@@ -201,7 +227,9 @@ class NotificationService:
                         channel=NotificationChannel.EMAIL,
                         status=status_val,
                         error_message=err_msg,
-                        sent_at=datetime.now(timezone.utc) if status_val == DeliveryStatus.SENT else None,
+                        sent_at=datetime.now(timezone.utc)
+                        if status_val == DeliveryStatus.SENT
+                        else None,
                     )
                     self.db.add(email_delivery)
 
@@ -225,7 +253,7 @@ class NotificationService:
         base_query = select(Notification).where(Notification.user_id == user_id)
 
         if unread_only:
-            base_query = base_query.where(Notification.is_read == False)
+            base_query = base_query.where(Notification.is_read.is_(False))
 
         count_stmt = select(func.count()).select_from(base_query.subquery())
         total = (await self.db.execute(count_stmt)).scalar() or 0
@@ -233,7 +261,7 @@ class NotificationService:
         # Unread count
         unread_stmt = select(func.count(Notification.id)).where(
             Notification.user_id == user_id,
-            Notification.is_read == False,
+            Notification.is_read.is_(False),
         )
         unread_count = (await self.db.execute(unread_stmt)).scalar() or 0
 
@@ -276,12 +304,14 @@ class NotificationService:
         """Returns total unread notifications for navigation badge."""
         stmt = select(func.count(Notification.id)).where(
             Notification.user_id == user_id,
-            Notification.is_read == False,
+            Notification.is_read.is_(False),
         )
         res = await self.db.execute(stmt)
         return res.scalar() or 0
 
-    async def mark_as_read(self, user_id: str, notification_id: str) -> NotificationItem:
+    async def mark_as_read(
+        self, user_id: str, notification_id: str
+    ) -> NotificationItem:
         """Marks a specific notification as read with ownership verification."""
         stmt = select(Notification).where(
             Notification.id == notification_id,
@@ -290,7 +320,9 @@ class NotificationService:
         res = await self.db.execute(stmt)
         notif = res.scalars().first()
         if not notif:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
+            )
 
         if not notif.is_read:
             notif.is_read = True
@@ -314,7 +346,7 @@ class NotificationService:
         now = datetime.now(timezone.utc)
         stmt = (
             update(Notification)
-            .where(Notification.user_id == user_id, Notification.is_read == False)
+            .where(Notification.user_id == user_id, Notification.is_read.is_(False))
             .values(read_at=now)
         )
         res = await self.db.execute(stmt)
@@ -329,13 +361,13 @@ class NotificationService:
         self,
         admin_user: User,
         request: AdminBroadcastRequest,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AdminBroadcastResponse:
         """Sends an administrative announcement to targeted active learners."""
         broadcast_id = str(uuid.uuid4())
 
         # Select candidate active users
-        user_query = select(User).where(User.is_active == True)
+        user_query = select(User).where(User.is_active.is_(True))
 
         if request.target_role:
             try:
@@ -350,7 +382,7 @@ class NotificationService:
         u_res = await self.db.execute(user_query)
         candidates = u_res.scalars().all()
 
-        recipients: List[User] = []
+        recipients: list[User] = []
         now = datetime.now(timezone.utc)
 
         if request.target_plan:
@@ -359,7 +391,7 @@ class NotificationService:
             if cand_ids:
                 prem_stmt = select(PremiumEntitlement.user_id).where(
                     PremiumEntitlement.user_id.in_(cand_ids),
-                    PremiumEntitlement.is_active == True,
+                    PremiumEntitlement.is_active.is_(True),
                     PremiumEntitlement.expires_at > now,
                 )
                 prem_res = await self.db.execute(prem_stmt)
@@ -367,7 +399,9 @@ class NotificationService:
 
                 for c in candidates:
                     is_prem = c.id in prem_ids
-                    if (plan_upper == "PREMIUM" and is_prem) or (plan_upper == "FREE" and not is_prem):
+                    if (plan_upper == "PREMIUM" and is_prem) or (
+                        plan_upper == "FREE" and not is_prem
+                    ):
                         recipients.append(c)
         else:
             recipients = list(candidates)
@@ -399,13 +433,15 @@ class NotificationService:
             target_type="Broadcast",
             target_id=broadcast_id,
             ip_address=ip_address,
-            metadata_json=json.dumps({
-                "title": request.title,
-                "type": request.type.value,
-                "recipients_targeted": len(recipients),
-                "dispatched_count": dispatched_count,
-                "channels": [c.value for c in request.channels],
-            }),
+            metadata_json=json.dumps(
+                {
+                    "title": request.title,
+                    "type": request.type.value,
+                    "recipients_targeted": len(recipients),
+                    "dispatched_count": dispatched_count,
+                    "channels": [c.value for c in request.channels],
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()

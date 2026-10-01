@@ -5,18 +5,18 @@ Client-supplied compile or runtime commands are strictly forbidden.
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 
 @dataclass(frozen=True)
 class LanguageDefinition:
     """Immutable configuration for a supported judge programming language."""
+
     language_id: str
     display_name: str
     source_filename: str
     is_compiled: bool
-    compile_command: Optional[List[str]]
-    run_command: List[str]
+    compile_command: list[str] | None
+    run_command: list[str]
     default_time_limit_ms: int
     default_memory_limit_mb: int
     docker_image: str
@@ -24,7 +24,7 @@ class LanguageDefinition:
 
 # Controlled, immutable language registry.
 # Dynamic client command injection is strictly prohibited.
-LANGUAGE_REGISTRY: Dict[str, LanguageDefinition] = {
+LANGUAGE_REGISTRY: dict[str, LanguageDefinition] = {
     "python": LanguageDefinition(
         language_id="python",
         display_name="Python 3.12",
@@ -41,7 +41,15 @@ LANGUAGE_REGISTRY: Dict[str, LanguageDefinition] = {
         display_name="C++20 (GCC 13)",
         source_filename="solution.cpp",
         is_compiled=True,
-        compile_command=["g++", "-O3", "-std=c++20", "-Wall", "solution.cpp", "-o", "solution"],
+        compile_command=[
+            "g++",
+            "-O3",
+            "-std=c++20",
+            "-Wall",
+            "solution.cpp",
+            "-o",
+            "solution",
+        ],
         run_command=["./solution"],
         default_time_limit_ms=1000,
         default_memory_limit_mb=256,
@@ -74,7 +82,14 @@ LANGUAGE_REGISTRY: Dict[str, LanguageDefinition] = {
         display_name="TypeScript 5.x",
         source_filename="solution.ts",
         is_compiled=True,
-        compile_command=["tsc", "--target", "ES2022", "--module", "commonjs", "solution.ts"],
+        compile_command=[
+            "tsc",
+            "--target",
+            "ES2022",
+            "--module",
+            "commonjs",
+            "solution.ts",
+        ],
         run_command=["node", "--max-old-space-size=256", "solution.js"],
         default_time_limit_ms=2000,
         default_memory_limit_mb=256,
@@ -83,7 +98,7 @@ LANGUAGE_REGISTRY: Dict[str, LanguageDefinition] = {
 }
 
 
-def get_language_definition(language_id: str) -> Optional[LanguageDefinition]:
+def get_language_definition(language_id: str) -> LanguageDefinition | None:
     """Retrieves language configuration by case-insensitive ID."""
     return LANGUAGE_REGISTRY.get(language_id.strip().lower())
 

@@ -4,9 +4,9 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,15 +15,19 @@ from backend.app.judge.queue import JudgeQueue
 from backend.app.judge.sandbox import get_sandbox_diagnostics
 from backend.app.models.audit import AuditLog
 from backend.app.models.content import (
-    Problem,
-    ProblemDifficulty,
     ContentAccessLevel,
     ContentStatus,
+    Problem,
+    ProblemDifficulty,
     TestCase,
 )
 from backend.app.models.gamification import UserGamificationProfile
 from backend.app.models.payment import PremiumEntitlement
-from backend.app.models.progress import UserProblemProgress, ProblemProgressStatus, Submission
+from backend.app.models.progress import (
+    ProblemProgressStatus,
+    Submission,
+    UserProblemProgress,
+)
 from backend.app.models.user import User, UserProfile, UserRole
 from backend.app.schemas.admin import (
     AdminCreateTestCaseRequest,
@@ -61,10 +65,10 @@ class AdminService:
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None,
-        role: Optional[UserRole] = None,
-        is_active: Optional[bool] = None,
-        plan: Optional[str] = None,
+        search: str | None = None,
+        role: UserRole | None = None,
+        is_active: bool | None = None,
+        plan: str | None = None,
     ) -> AdminUserListResponse:
         """Paginated user listing with search, filtering, and subscription enrichment."""
         base_query = select(User).outerjoin(UserProfile, User.id == UserProfile.user_id)
@@ -106,13 +110,13 @@ class AdminService:
         if user_ids:
             ent_stmt = select(PremiumEntitlement.user_id).where(
                 PremiumEntitlement.user_id.in_(user_ids),
-                PremiumEntitlement.is_active == True,
+                PremiumEntitlement.is_active.is_(True),
                 PremiumEntitlement.expires_at > now,
             )
             ent_res = await self.db.execute(ent_stmt)
             premium_user_ids = {row[0] for row in ent_res.all()}
 
-        items: List[AdminUserListItem] = []
+        items: list[AdminUserListItem] = []
         for u in users:
             is_prem = u.id in premium_user_ids
             # Filter by plan if requested
@@ -120,7 +124,11 @@ class AdminService:
             if plan and user_plan != plan.upper():
                 continue
 
-            display_name = u.profile.display_name if u.profile and u.profile.display_name else u.email.split("@")[0]
+            display_name = (
+                u.profile.display_name
+                if u.profile and u.profile.display_name
+                else u.email.split("@")[0]
+            )
             items.append(
                 AdminUserListItem(
                     id=u.id,
@@ -149,14 +157,14 @@ class AdminService:
     async def get_user_detail(self, user_id: str) -> AdminUserDetail:
         """Retrieves comprehensive user profile and cross-domain activity metrics."""
         stmt = (
-            select(User)
-            .where(User.id == user_id)
-            .options(selectinload(User.profile))
+            select(User).where(User.id == user_id).options(selectinload(User.profile))
         )
         res = await self.db.execute(stmt)
         user = res.scalars().first()
         if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
 
         # Premium entitlement check
         now = datetime.now(timezone.utc)
@@ -164,7 +172,7 @@ class AdminService:
             select(PremiumEntitlement)
             .where(
                 PremiumEntitlement.user_id == user_id,
-                PremiumEntitlement.is_active == True,
+                PremiumEntitlement.is_active.is_(True),
                 PremiumEntitlement.expires_at > now,
             )
             .order_by(PremiumEntitlement.expires_at.desc())
@@ -176,7 +184,9 @@ class AdminService:
         expires_at = ent.expires_at if ent else None
 
         # Metrics: Submissions count
-        sub_count_stmt = select(func.count(Submission.id)).where(Submission.user_id == user_id)
+        sub_count_stmt = select(func.count(Submission.id)).where(
+            Submission.user_id == user_id
+        )
         sub_res = await self.db.execute(sub_count_stmt)
         submissions_count = sub_res.scalar() or 0
 
@@ -189,13 +199,19 @@ class AdminService:
         solved_count = solved_res.scalar() or 0
 
         # Metrics: Gamification stats
-        gam_stmt = select(UserGamificationProfile).where(UserGamificationProfile.user_id == user_id)
+        gam_stmt = select(UserGamificationProfile).where(
+            UserGamificationProfile.user_id == user_id
+        )
         gam_res = await self.db.execute(gam_stmt)
         gam_profile = gam_res.scalars().first()
         current_streak = gam_profile.current_streak if gam_profile else 0
         total_xp = gam_profile.total_xp if gam_profile else 0
 
-        display_name = user.profile.display_name if user.profile and user.profile.display_name else user.email.split("@")[0]
+        display_name = (
+            user.profile.display_name
+            if user.profile and user.profile.display_name
+            else user.email.split("@")[0]
+        )
         bio = user.profile.bio if user.profile else None
         avatar_url = user.profile.avatar_url if user.profile else None
 
@@ -224,8 +240,8 @@ class AdminService:
         admin_user: User,
         target_user_id: str,
         new_role: UserRole,
-        reason: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        reason: str | None = None,
+        ip_address: str | None = None,
     ) -> AdminUserDetail:
         """Modifies a user's role with self-demotion protection and audit trail logging."""
         # Self-demotion guardrail
@@ -239,7 +255,9 @@ class AdminService:
         res = await self.db.execute(stmt)
         target_user = res.scalars().first()
         if not target_user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target user not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Target user not found"
+            )
 
         old_role = target_user.role
         target_user.role = new_role
@@ -252,11 +270,17 @@ class AdminService:
             target_type="User",
             target_id=target_user_id,
             ip_address=ip_address,
-            metadata_json=json.dumps({
-                "old_role": old_role.value if hasattr(old_role, "value") else str(old_role),
-                "new_role": new_role.value if hasattr(new_role, "value") else str(new_role),
-                "reason": reason,
-            }),
+            metadata_json=json.dumps(
+                {
+                    "old_role": old_role.value
+                    if hasattr(old_role, "value")
+                    else str(old_role),
+                    "new_role": new_role.value
+                    if hasattr(new_role, "value")
+                    else str(new_role),
+                    "reason": reason,
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()
@@ -271,8 +295,8 @@ class AdminService:
         admin_user: User,
         target_user_id: str,
         is_active: bool,
-        reason: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        reason: str | None = None,
+        ip_address: str | None = None,
     ) -> AdminUserDetail:
         """Suspends or reactivates a user account with self-suspension guardrail."""
         # Self-suspension guardrail
@@ -286,7 +310,9 @@ class AdminService:
         res = await self.db.execute(stmt)
         target_user = res.scalars().first()
         if not target_user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target user not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Target user not found"
+            )
 
         old_status = target_user.is_active
         target_user.is_active = is_active
@@ -299,11 +325,13 @@ class AdminService:
             target_type="User",
             target_id=target_user_id,
             ip_address=ip_address,
-            metadata_json=json.dumps({
-                "old_active": old_status,
-                "new_active": is_active,
-                "reason": reason,
-            }),
+            metadata_json=json.dumps(
+                {
+                    "old_active": old_status,
+                    "new_active": is_active,
+                    "reason": reason,
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()
@@ -321,10 +349,10 @@ class AdminService:
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None,
-        difficulty: Optional[ProblemDifficulty] = None,
-        status_filter: Optional[ContentStatus] = None,
-        access_level: Optional[ContentAccessLevel] = None,
+        search: str | None = None,
+        difficulty: ProblemDifficulty | None = None,
+        status_filter: ContentStatus | None = None,
+        access_level: ContentAccessLevel | None = None,
     ) -> AdminProblemListResponse:
         """Administrative problem inventory listing with test case counts."""
         base_query = select(Problem)
@@ -359,8 +387,8 @@ class AdminService:
 
         # Count test cases for each problem
         prob_ids = [p.id for p in problems]
-        tc_counts: Dict[str, int] = {}
-        hidden_counts: Dict[str, int] = {}
+        tc_counts: dict[str, int] = {}
+        hidden_counts: dict[str, int] = {}
 
         if prob_ids:
             tc_stmt = (
@@ -374,14 +402,14 @@ class AdminService:
 
             hidden_stmt = (
                 select(TestCase.problem_id, func.count(TestCase.id))
-                .where(TestCase.problem_id.in_(prob_ids), TestCase.is_hidden == True)
+                .where(TestCase.problem_id.in_(prob_ids), TestCase.is_hidden.is_(True))
                 .group_by(TestCase.problem_id)
             )
             hid_res = await self.db.execute(hidden_stmt)
             for pid, count in hid_res.all():
                 hidden_counts[pid] = count
 
-        items: List[AdminProblemListItem] = []
+        items: list[AdminProblemListItem] = []
         for p in problems:
             items.append(
                 AdminProblemListItem(
@@ -411,12 +439,14 @@ class AdminService:
             total_pages=total_pages,
         )
 
-    async def list_test_cases(self, problem_id: str) -> List[AdminTestCaseItem]:
+    async def list_test_cases(self, problem_id: str) -> list[AdminTestCaseItem]:
         """Lists ALL test cases for a problem (including hidden verification cases) for admin inspection."""
         prob_stmt = select(Problem).where(Problem.id == problem_id)
         prob_res = await self.db.execute(prob_stmt)
         if not prob_res.scalars().first():
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
+            )
 
         stmt = (
             select(TestCase)
@@ -445,14 +475,16 @@ class AdminService:
         admin_user: User,
         problem_id: str,
         data: AdminCreateTestCaseRequest,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AdminTestCaseItem:
         """Adds a new test case (public sample or hidden judge case) to a problem."""
         prob_stmt = select(Problem).where(Problem.id == problem_id)
         prob_res = await self.db.execute(prob_stmt)
         problem = prob_res.scalars().first()
         if not problem:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
+            )
 
         tc = TestCase(
             problem_id=problem_id,
@@ -470,18 +502,22 @@ class AdminService:
             target_type="TestCase",
             target_id=tc.id,
             ip_address=ip_address,
-            metadata_json=json.dumps({
-                "problem_id": problem_id,
-                "is_sample": data.is_sample,
-                "is_hidden": data.is_hidden,
-                "display_order": data.display_order,
-            }),
+            metadata_json=json.dumps(
+                {
+                    "problem_id": problem_id,
+                    "is_sample": data.is_sample,
+                    "is_hidden": data.is_hidden,
+                    "display_order": data.display_order,
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()
         await self.db.refresh(tc)
 
-        logger.info(f"Admin {admin_user.id} created test case {tc.id} for problem {problem_id}")
+        logger.info(
+            f"Admin {admin_user.id} created test case {tc.id} for problem {problem_id}"
+        )
         return AdminTestCaseItem(
             id=tc.id,
             problem_id=tc.problem_id,
@@ -498,14 +534,16 @@ class AdminService:
         admin_user: User,
         test_case_id: str,
         data: AdminUpdateTestCaseRequest,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AdminTestCaseItem:
         """Updates parameters of an existing test case."""
         stmt = select(TestCase).where(TestCase.id == test_case_id)
         res = await self.db.execute(stmt)
         tc = res.scalars().first()
         if not tc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Test case not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Test case not found"
+            )
 
         if data.input is not None:
             tc.input = data.input
@@ -524,7 +562,13 @@ class AdminService:
             target_type="TestCase",
             target_id=tc.id,
             ip_address=ip_address,
-            metadata_json=json.dumps({"updated_fields": [k for k, v in data.model_dump().items() if v is not None]}),
+            metadata_json=json.dumps(
+                {
+                    "updated_fields": [
+                        k for k, v in data.model_dump().items() if v is not None
+                    ]
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()
@@ -545,14 +589,16 @@ class AdminService:
         self,
         admin_user: User,
         test_case_id: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> bool:
         """Deletes a test case permanently."""
         stmt = select(TestCase).where(TestCase.id == test_case_id)
         res = await self.db.execute(stmt)
         tc = res.scalars().first()
         if not tc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Test case not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Test case not found"
+            )
 
         problem_id = tc.problem_id
         await self.db.delete(tc)
@@ -568,7 +614,9 @@ class AdminService:
         self.db.add(audit)
         await self.db.commit()
 
-        logger.info(f"Admin {admin_user.id} deleted test case {test_case_id} of problem {problem_id}")
+        logger.info(
+            f"Admin {admin_user.id} deleted test case {test_case_id} of problem {problem_id}"
+        )
         return True
 
     # =========================================================================
@@ -589,7 +637,7 @@ class AdminService:
         try:
             res = await self.db.execute(select(1))
             val = res.scalar()
-            db_healthy = (val == 1)
+            db_healthy = val == 1
             db_latency = round((time.time() - t0) * 1000, 2)
             db_msg = "Connected and responding"
         except Exception as e:
@@ -607,7 +655,9 @@ class AdminService:
         redis_latency = round((time.time() - t0) * 1000, 2)
         redis_status = ServiceHealthStatus(
             status="healthy" if redis_conn else "degraded",
-            message="Redis cache online" if redis_conn else "Operating in memory-fallback mode",
+            message="Redis cache online"
+            if redis_conn
+            else "Operating in memory-fallback mode",
             latency_ms=redis_latency,
         )
 
@@ -637,7 +687,9 @@ class AdminService:
             status="healthy",
             message="AI tutoring engine operational",
             details={
-                "provider": "Gemini 2.5 Flash" if gemini_configured else "Mock AI Tutor",
+                "provider": "Gemini 2.5 Flash"
+                if gemini_configured
+                else "Mock AI Tutor",
                 "mode": "production" if gemini_configured else "fallback",
             },
         )
@@ -645,7 +697,9 @@ class AdminService:
         uptime = round(time.time() - _PROCESS_START_TIME, 1)
 
         return SystemDiagnosticsResponse(
-            app_name=settings.PROJECT_NAME if hasattr(settings, "PROJECT_NAME") else "DSAapp",
+            app_name=settings.PROJECT_NAME
+            if hasattr(settings, "PROJECT_NAME")
+            else "DSAapp",
             app_version="1.0.0-phase9",
             environment=getattr(settings, "ENVIRONMENT", "development"),
             server_time=datetime.now(timezone.utc),
@@ -662,10 +716,10 @@ class AdminService:
         self,
         page: int = 1,
         page_size: int = 50,
-        action: Optional[str] = None,
-        actor_id: Optional[str] = None,
-        target_type: Optional[str] = None,
-        target_id: Optional[str] = None,
+        action: str | None = None,
+        actor_id: str | None = None,
+        target_type: str | None = None,
+        target_id: str | None = None,
     ) -> AuditLogListResponse:
         """Filterable, paginated inspection of the immutable security audit trail."""
         base_query = select(AuditLog)

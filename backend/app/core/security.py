@@ -3,20 +3,21 @@
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Tuple
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError, VerificationError
+from typing import Any
+
 import jwt
+from argon2 import PasswordHasher
+from argon2.exceptions import VerificationError, VerifyMismatchError
 
 from backend.app.core.config import settings
 
 # Initialize Argon2id password hasher with secure parameters
 _password_hasher = PasswordHasher(
-    time_cost=3,        # 3 iterations
+    time_cost=3,  # 3 iterations
     memory_cost=65536,  # 64 MB
-    parallelism=4,      # 4 parallel lanes
-    hash_len=32,        # 32-byte hash
-    salt_len=16,        # 16-byte salt
+    parallelism=4,  # 4 parallel lanes
+    hash_len=32,  # 32-byte hash
+    salt_len=16,  # 16-byte salt
 )
 
 # Password strength: at least 8 chars, contains at least one letter and one number
@@ -40,14 +41,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def validate_password_strength(password: str) -> Tuple[bool, str]:
+def validate_password_strength(password: str) -> tuple[bool, str]:
     """Validates password complexity requirements.
 
     Returns:
         (is_valid, error_message)
     """
     if len(password) < PASSWORD_MIN_LENGTH:
-        return False, f"Password must be at least {PASSWORD_MIN_LENGTH} characters long."
+        return (
+            False,
+            f"Password must be at least {PASSWORD_MIN_LENGTH} characters long.",
+        )
     if not PASSWORD_LETTER_REGEX.search(password):
         return False, "Password must contain at least one alphabetic character."
     if not PASSWORD_DIGIT_REGEX.search(password):
@@ -59,7 +63,7 @@ def create_access_token(user_id: str, role: str) -> str:
     """Creates a short-lived cryptographically signed access JWT."""
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "sub": user_id,
         "role": role,
         "type": "access",
@@ -72,8 +76,8 @@ def create_access_token(user_id: str, role: str) -> str:
 
 def create_refresh_token(
     user_id: str,
-    family_id: Optional[str] = None,
-) -> Tuple[str, str, str, datetime]:
+    family_id: str | None = None,
+) -> tuple[str, str, str, datetime]:
     """Creates a revocable refresh token with unique JTI and token family tracking.
 
     Returns:
@@ -84,7 +88,7 @@ def create_refresh_token(
     token_jti = uuid.uuid4().hex
     token_family = family_id or uuid.uuid4().hex
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "sub": user_id,
         "type": "refresh",
         "jti": token_jti,
@@ -96,7 +100,7 @@ def create_refresh_token(
     return token, token_jti, token_family, expire
 
 
-def decode_token(token: str) -> Optional[Dict[str, Any]]:
+def decode_token(token: str) -> dict[str, Any] | None:
     """Decodes and validates a JWT token using server secret key."""
     try:
         payload = jwt.decode(

@@ -1,6 +1,5 @@
 """Mistake notebook API endpoints for learner personal debugging and concept gap tracking."""
 
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from backend.app.api.deps import (
@@ -29,17 +28,23 @@ async def create_mistake(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Creates a new mistake entry in the learner's personal notebook."""
-    await rate_limiter.check_rate_limit(f"mistake:{current_user.id}", max_requests=60, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"mistake:{current_user.id}", max_requests=60, window_seconds=60
+    )
     mistake = await service.create_mistake(current_user.id, payload)
     return {"success": True, "data": mistake.model_dump()}
 
 
 @router.get("", response_model=dict)
 async def list_mistakes(
-    is_resolved: Optional[bool] = Query(None, description="Filter by resolution status"),
-    mistake_type: Optional[MistakeType] = Query(None, description="Filter by pedagogical mistake type"),
-    problem_id: Optional[str] = Query(None, description="Filter by problem slug or ID"),
-    search: Optional[str] = Query(None, max_length=100, description="Search terms in title or description"),
+    is_resolved: bool | None = Query(None, description="Filter by resolution status"),
+    mistake_type: MistakeType | None = Query(
+        None, description="Filter by pedagogical mistake type"
+    ),
+    problem_id: str | None = Query(None, description="Filter by problem slug or ID"),
+    search: str | None = Query(
+        None, max_length=100, description="Search terms in title or description"
+    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -89,7 +94,9 @@ async def update_mistake(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Updates a mistake notebook record (title, description, correction, resolution status)."""
-    await rate_limiter.check_rate_limit(f"mistake:{current_user.id}", max_requests=60, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"mistake:{current_user.id}", max_requests=60, window_seconds=60
+    )
     mistake = await service.update_mistake(mistake_id, current_user.id, payload)
     return {"success": True, "data": mistake.model_dump()}
 
@@ -102,6 +109,8 @@ async def delete_mistake(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Deletes a mistake entry from the user's notebook."""
-    await rate_limiter.check_rate_limit(f"mistake:{current_user.id}", max_requests=60, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"mistake:{current_user.id}", max_requests=60, window_seconds=60
+    )
     await service.delete_mistake(mistake_id, current_user.id)
     return {"success": True, "data": {"deleted": True}}

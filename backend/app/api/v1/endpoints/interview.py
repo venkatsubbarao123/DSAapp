@@ -1,7 +1,7 @@
 """Technical Interview Simulation API endpoints."""
 
 import logging
-from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,8 +25,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/start", response_model=InterviewSessionResponse, status_code=status.HTTP_201_CREATED)
-@router.post("/sessions", response_model=InterviewSessionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/start",
+    response_model=InterviewSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+@router.post(
+    "/sessions",
+    response_model=InterviewSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def start_interview_session(
     payload: StartInterviewRequest,
     current_user: User = Depends(get_current_user),
@@ -36,7 +44,7 @@ async def start_interview_session(
     return await InterviewService.create_session(db, current_user, payload)
 
 
-@router.get("/sessions", response_model=List[dict])
+@router.get("/sessions", response_model=list[dict])
 async def list_my_interviews(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -58,7 +66,9 @@ async def list_my_interviews(
             "started_at": s.started_at.isoformat() if s.started_at else None,
             "ended_at": s.completed_at.isoformat() if s.completed_at else None,
             "completed_at": s.completed_at.isoformat() if s.completed_at else None,
-            "duration_minutes": (s.duration_seconds // 60) if s.duration_seconds else 45,
+            "duration_minutes": (s.duration_seconds // 60)
+            if s.duration_seconds
+            else 45,
             "duration_seconds": s.duration_seconds,
             "remaining_seconds": s.remaining_seconds,
             "total_questions": s.total_questions,
@@ -89,7 +99,10 @@ async def get_interview_session(
     return session
 
 
-@router.post("/sessions/{session_id}/questions/{question_id}/answer", response_model=SubmitInterviewAnswerResponse)
+@router.post(
+    "/sessions/{session_id}/questions/{question_id}/answer",
+    response_model=SubmitInterviewAnswerResponse,
+)
 async def submit_question_answer_by_path(
     session_id: str,
     question_id: str,
@@ -101,7 +114,9 @@ async def submit_question_answer_by_path(
     payload.question_id = question_id
     if not payload.answer and payload.user_response:
         payload.answer = payload.user_response
-    resp, err = await InterviewService.submit_answer(db, session_id, current_user.id, payload)
+    resp, err = await InterviewService.submit_answer(
+        db, session_id, current_user.id, payload
+    )
     if err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -110,7 +125,9 @@ async def submit_question_answer_by_path(
     return resp
 
 
-@router.post("/sessions/{session_id}/answer", response_model=SubmitInterviewAnswerResponse)
+@router.post(
+    "/sessions/{session_id}/answer", response_model=SubmitInterviewAnswerResponse
+)
 async def submit_question_answer(
     session_id: str,
     payload: SubmitInterviewAnswerRequest,
@@ -120,7 +137,9 @@ async def submit_question_answer(
     """Submits student answer for an interview question with server-side validation."""
     if not payload.answer and payload.user_response:
         payload.answer = payload.user_response
-    resp, err = await InterviewService.submit_answer(db, session_id, current_user.id, payload)
+    resp, err = await InterviewService.submit_answer(
+        db, session_id, current_user.id, payload
+    )
     if err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

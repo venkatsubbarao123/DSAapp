@@ -1,9 +1,9 @@
 """Database initialization routines."""
 
+import backend.app.models  # noqa: F401 - Register models with Base.metadata
 from backend.app.core.logging import logger
 from backend.app.db.base import Base
 from backend.app.db.session import engine
-import backend.app.models  # noqa: F401 - Register models with Base.metadata
 
 
 async def init_db() -> None:

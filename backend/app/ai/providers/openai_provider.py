@@ -2,10 +2,10 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 
-from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.prompts import (
     COMPLEXITY_SYSTEM_PROMPT,
     EXPLAIN_SYSTEM_PROMPT,
@@ -15,9 +15,10 @@ from backend.app.ai.prompts import (
     build_tutor_user_message,
     get_hint_tier_guideline,
 )
-from backend.app.ai.security.prompt_guard import PromptGuard
+from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.security.output_guard import OutputGuard
 from backend.app.ai.security.pii_guard import PIIGuard
+from backend.app.ai.security.prompt_guard import PromptGuard
 from backend.app.core.config import settings
 from backend.app.schemas.ai import (
     ComplexityRequest,
@@ -48,23 +49,33 @@ class OpenAIProvider(AIProvider):
 
     def is_available(self) -> bool:
         """Returns True only if an API key is configured."""
-        return bool(self.api_key and not self.api_key.startswith("test_") and len(self.api_key) >= 10)
+        return bool(
+            self.api_key
+            and not self.api_key.startswith("test_")
+            and len(self.api_key) >= 10
+        )
 
-    def get_diagnostics(self) -> Dict[str, Any]:
+    def get_diagnostics(self) -> dict[str, Any]:
         """Provides status diagnostics without leaking secrets."""
         available = self.is_available()
         return {
             "provider": "openai",
             "model": self.model,
-            "status": "READY" if available else "UNAVAILABLE (MISSING OR DUMMY API KEY)",
+            "status": "READY"
+            if available
+            else "UNAVAILABLE (MISSING OR DUMMY API KEY)",
             "live_network": True,
             "base_url": self.base_url,
         }
 
-    async def _call_api(self, system_prompt: str, user_content: str, json_mode: bool = True) -> str:
+    async def _call_api(
+        self, system_prompt: str, user_content: str, json_mode: bool = True
+    ) -> str:
         """Executes HTTP request to /chat/completions endpoint with safety guards."""
         if not self.is_available():
-            raise RuntimeError("Live OpenAI provider is unavailable (valid AI_API_KEY not configured).")
+            raise RuntimeError(
+                "Live OpenAI provider is unavailable (valid AI_API_KEY not configured)."
+            )
 
         # 1. PII Redaction
         redacted_user_content = PIIGuard.redact_pii(user_content)
@@ -74,7 +85,7 @@ class OpenAIProvider(AIProvider):
             "Content-Type": "application/json",
         }
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -104,9 +115,9 @@ class OpenAIProvider(AIProvider):
     async def tutor(
         self,
         request: TutorRequest,
-        problem_title: Optional[str] = None,
-        problem_description: Optional[str] = None,
-        lesson_title: Optional[str] = None,
+        problem_title: str | None = None,
+        problem_description: str | None = None,
+        lesson_title: str | None = None,
     ) -> TutorResponse:
         """Calls OpenAI for pedagogical tutor guidance."""
         user_msg = build_tutor_user_message(
@@ -118,12 +129,15 @@ class OpenAIProvider(AIProvider):
         )
 
         contained_prompt = PromptGuard.build_contained_prompt(
-            system_instruction=TUTOR_SYSTEM_PROMPT + "\n\nFormat your response as valid JSON with keys: explanation, key_idea, example, next_step, related_concept, visualization_suggestion (null or object with visualizer_type, title, description).",
+            system_instruction=TUTOR_SYSTEM_PROMPT
+            + "\n\nFormat your response as valid JSON with keys: explanation, key_idea, example, next_step, related_concept, visualization_suggestion (null or object with visualizer_type, title, description).",
             trusted_metadata=f"Context Problem: {problem_title or 'None'}",
             untrusted_user_content=user_msg,
         )
 
-        res_json_str = await self._call_api(TUTOR_SYSTEM_PROMPT, contained_prompt, json_mode=True)
+        res_json_str = await self._call_api(
+            TUTOR_SYSTEM_PROMPT, contained_prompt, json_mode=True
+        )
         parsed = json.loads(res_json_str)
 
         vis = None
@@ -151,7 +165,7 @@ class OpenAIProvider(AIProvider):
         request: HintRequest,
         problem_title: str,
         problem_description: str,
-        problem_hints: Optional[List[str]] = None,
+        problem_hints: list[str] | None = None,
     ) -> HintResponse:
         """Calls OpenAI for progressive tiered hint."""
         tier_rule = get_hint_tier_guideline(request.hint_level)
@@ -163,13 +177,16 @@ class OpenAIProvider(AIProvider):
         )
 
         user_content = (
-            f"Problem: {problem_title}\n"
-            f"Description: {problem_description[:1000]}\n"
+            f"Problem: {problem_title}\nDescription: {problem_description[:1000]}\n"
         )
         if request.current_code:
-            user_content += f"\nLearner's Current Draft:\n```\n{request.current_code[:2000]}\n```"
+            user_content += (
+                f"\nLearner's Current Draft:\n```\n{request.current_code[:2000]}\n```"
+            )
 
-        res_json = await self._call_api(prompt_instruction, user_content, json_mode=True)
+        res_json = await self._call_api(
+            prompt_instruction, user_content, json_mode=True
+        )
         parsed = json.loads(res_json)
 
         return HintResponse(
@@ -186,7 +203,7 @@ class OpenAIProvider(AIProvider):
     async def explain(
         self,
         request: ExplainRequest,
-        problem_title: Optional[str] = None,
+        problem_title: str | None = None,
     ) -> ExplainResponse:
         """Calls OpenAI for conceptual or diagnostic code review."""
         sys_prompt = (
@@ -237,7 +254,7 @@ class OpenAIProvider(AIProvider):
     async def pattern(
         self,
         request: PatternRequest,
-        problem_title: Optional[str] = None,
+        problem_title: str | None = None,
     ) -> PatternResponse:
         """Calls OpenAI for algorithmic pattern detection."""
         sys_prompt = (
@@ -256,7 +273,9 @@ class OpenAIProvider(AIProvider):
         parsed = json.loads(res_json)
 
         evidence = [
-            PatternEvidence(indicator=e.get("indicator", ""), relevance=e.get("relevance", ""))
+            PatternEvidence(
+                indicator=e.get("indicator", ""), relevance=e.get("relevance", "")
+            )
             for e in parsed.get("evidence", [])
         ]
 

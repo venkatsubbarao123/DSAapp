@@ -2,7 +2,7 @@
 
 import json
 import math
-from typing import List, Optional
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,9 +53,11 @@ class ContentService:
 
     # --- Student Reading & Gated Access ---
 
-    async def get_curricula_list(self) -> List[CurriculumSummary]:
+    async def get_curricula_list(self) -> list[CurriculumSummary]:
         """Returns all published curricula."""
-        curricula = await self.content_repo.get_curricula(status=ContentStatus.PUBLISHED)
+        curricula = await self.content_repo.get_curricula(
+            status=ContentStatus.PUBLISHED
+        )
         return [CurriculumSummary.model_validate(c) for c in curricula]
 
     async def get_curriculum_by_slug(self, slug_or_id: str) -> CurriculumDetail:
@@ -79,15 +81,19 @@ class ContentService:
             status=curriculum.status,
             display_order=curriculum.display_order,
             is_free=curriculum.is_free,
-            tracks=[TrackSummary.model_validate(t) for t in curriculum.tracks if t.status == ContentStatus.PUBLISHED],
+            tracks=[
+                TrackSummary.model_validate(t)
+                for t in curriculum.tracks
+                if t.status == ContentStatus.PUBLISHED
+            ],
             created_at=curriculum.created_at,
             updated_at=curriculum.updated_at,
         )
 
     async def get_topics_list(
         self,
-        track_id: Optional[str] = None,
-        difficulty: Optional[ContentLevel] = None,
+        track_id: str | None = None,
+        difficulty: ContentLevel | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedData[TopicSummary]:
@@ -135,7 +141,11 @@ class ContentService:
             difficulty=topic.difficulty,
             access_level=topic.access_level,
             status=topic.status,
-            subtopics=[SubtopicSummary.model_validate(st) for st in topic.subtopics if st.status == ContentStatus.PUBLISHED],
+            subtopics=[
+                SubtopicSummary.model_validate(st)
+                for st in topic.subtopics
+                if st.status == ContentStatus.PUBLISHED
+            ],
             created_at=topic.created_at,
             updated_at=topic.updated_at,
         )
@@ -167,7 +177,7 @@ class ContentService:
     async def get_lesson_detail(
         self,
         slug_or_id: str,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> LessonDetail:
         """Fetches lesson with strict server-side Premium access verification."""
         lesson = await self.content_repo.get_lesson_by_slug_or_id(
@@ -186,7 +196,9 @@ class ContentService:
                 if current_user.role in (UserRole.ADMIN, UserRole.CONTENT_EDITOR):
                     is_authorized = True
                 else:
-                    is_authorized = await self.user_repo.has_active_premium(current_user.id)
+                    is_authorized = await self.user_repo.has_active_premium(
+                        current_user.id
+                    )
 
             if not is_authorized:
                 raise HTTPException(
@@ -221,12 +233,12 @@ class ContentService:
 
     async def get_problems_list(
         self,
-        topic_slug: Optional[str] = None,
-        difficulty: Optional[ProblemDifficulty] = None,
-        access_level: Optional[ContentAccessLevel] = None,
-        tag_slug: Optional[str] = None,
-        pattern_slug: Optional[str] = None,
-        search: Optional[str] = None,
+        topic_slug: str | None = None,
+        difficulty: ProblemDifficulty | None = None,
+        access_level: ContentAccessLevel | None = None,
+        tag_slug: str | None = None,
+        pattern_slug: str | None = None,
+        search: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedData[ProblemSummary]:
@@ -279,7 +291,7 @@ class ContentService:
     async def get_problem_detail(
         self,
         slug_or_id: str,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> ProblemDetail:
         """Fetches problem specification with strict Premium verification and test case security.
 
@@ -303,7 +315,9 @@ class ContentService:
                 if current_user.role in (UserRole.ADMIN, UserRole.CONTENT_EDITOR):
                     is_authorized = True
                 else:
-                    is_authorized = await self.user_repo.has_active_premium(current_user.id)
+                    is_authorized = await self.user_repo.has_active_premium(
+                        current_user.id
+                    )
 
             if not is_authorized:
                 raise HTTPException(
@@ -345,7 +359,9 @@ class ContentService:
             expected_space_complexity=problem.expected_space_complexity,
             supported_languages=langs,
             version=problem.version,
-            examples=[ProblemExampleResponse.model_validate(ex) for ex in problem.examples],
+            examples=[
+                ProblemExampleResponse.model_validate(ex) for ex in problem.examples
+            ],
             hints=[HintResponse.model_validate(h) for h in problem.hints],
             sample_test_cases=sample_test_cases,
             tags=[TagResponse.model_validate(t) for t in problem.tags],
@@ -362,8 +378,8 @@ class ContentService:
         entity_id: str,
         new_status: ContentStatus,
         actor_id: str,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
+        ip_address: str | None = None,
+        request_id: str | None = None,
     ) -> bool:
         """Updates publishing state (DRAFT -> REVIEW -> PUBLISHED/ARCHIVED) with audit trail."""
         model_map = {

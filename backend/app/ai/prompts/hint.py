@@ -1,6 +1,5 @@
 """Progressive hint system prompts and templates."""
 
-
 HINT_SYSTEM_PROMPT = """You are a progressive hint generation engine for DSAapp.
 Students request tiered hints (levels 1 through 5) when stuck on a coding challenge.
 

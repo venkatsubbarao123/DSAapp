@@ -1,6 +1,6 @@
 """Mock Sandbox for testing the Judge lifecycle and error conditions."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from backend.app.judge.sandbox.base import (
     BaseSandbox,
@@ -17,7 +17,7 @@ class MockSandbox(BaseSandbox):
         self,
         compile_success: bool = True,
         compiler_output: str = "",
-        stdout_responses: Optional[List[str]] = None,
+        stdout_responses: list[str] | None = None,
         exit_code: int = 0,
         stderr: str = "",
         execution_time_ms: int = 50,
@@ -39,12 +39,12 @@ class MockSandbox(BaseSandbox):
         self.memory_exceeded = memory_exceeded
         self.output_exceeded = output_exceeded
         self.is_available_flag = is_available_flag
-        self.executed_requests: List[ExecutionRequest] = []
+        self.executed_requests: list[ExecutionRequest] = []
 
     def is_available(self) -> bool:
         return self.is_available_flag
 
-    def get_diagnostics(self) -> Dict[str, Any]:
+    def get_diagnostics(self) -> dict[str, Any]:
         return {
             "driver": "mock",
             "available": self.is_available_flag,
@@ -71,7 +71,7 @@ class MockSandbox(BaseSandbox):
     def run(
         self,
         request: ExecutionRequest,
-        workspace_id: Optional[str] = None,
+        workspace_id: str | None = None,
     ) -> ExecutionResult:
         self.executed_requests.append(request)
 

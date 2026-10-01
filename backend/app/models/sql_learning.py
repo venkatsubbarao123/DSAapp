@@ -7,7 +7,8 @@ Provides models for:
 
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -27,27 +28,44 @@ if TYPE_CHECKING:
 
 class SQLProblem(Base):
     """SQL Practice Problem with isolated sandbox test definition."""
+
     __tablename__ = "sql_problems"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    slug: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
-    difficulty: Mapped[str] = mapped_column(String(32), default="MEDIUM", nullable=False)
-    category: Mapped[str] = mapped_column(String(64), default="BASICS", nullable=False, index=True)
+    difficulty: Mapped[str] = mapped_column(
+        String(32), default="MEDIUM", nullable=False
+    )
+    category: Mapped[str] = mapped_column(
+        String(64), default="BASICS", nullable=False, index=True
+    )
 
     # Sandbox environment initialization scripts
     schema_ddl: Mapped[str] = mapped_column(Text, nullable=False)
     seed_data_sql: Mapped[str] = mapped_column(Text, nullable=False)
     solution_sql: Mapped[str] = mapped_column(Text, nullable=False)
 
-    is_order_sensitive: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    allowed_features: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    time_limit_seconds: Mapped[float] = mapped_column(Float, default=3.0, nullable=False)
+    is_order_sensitive: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    allowed_features: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    time_limit_seconds: Mapped[float] = mapped_column(
+        Float, default=3.0, nullable=False
+    )
 
-    access_level: Mapped[str] = mapped_column(String(32), default="FREE", nullable=False)
-    is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    access_level: Mapped[str] = mapped_column(
+        String(32), default="FREE", nullable=False
+    )
+    is_published: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, index=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -64,16 +82,31 @@ class SQLProblem(Base):
 
 class SQLSubmission(Base):
     """SQL Query evaluation attempt executed inside isolated sandbox."""
+
     __tablename__ = "sql_submissions"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    sql_problem_id: Mapped[str] = mapped_column(String(36), ForeignKey("sql_problems.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sql_problem_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("sql_problems.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     query: Mapped[str] = mapped_column(Text, nullable=False)
-    verdict: Mapped[str] = mapped_column(String(64), nullable=False)  # ACCEPTED, WRONG_ANSWER, SYNTAX_ERROR, FORBIDDEN_KEYWORD, TIME_LIMIT_EXCEEDED, SYSTEM_ERROR
+    verdict: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )  # ACCEPTED, WRONG_ANSWER, SYNTAX_ERROR, FORBIDDEN_KEYWORD, TIME_LIMIT_EXCEEDED, SYSTEM_ERROR
     execution_time_ms: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

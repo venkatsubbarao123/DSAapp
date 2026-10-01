@@ -6,7 +6,7 @@ accuracy calculation, XP rewards, rating progression, and achievement unlocks.
 
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+
 from fastapi import HTTPException, status
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,9 +21,13 @@ from backend.app.models.gamification import (
 from backend.app.models.user import User
 from backend.app.repositories.user_repo import UserRepository
 from backend.app.services.gamification.achievement_service import AchievementService
-from backend.app.services.gamification.adaptive_difficulty_service import AdaptiveDifficultyService
+from backend.app.services.gamification.adaptive_difficulty_service import (
+    AdaptiveDifficultyService,
+)
 from backend.app.services.gamification.rating_service import RatingService
-from backend.app.services.gamification.recommendation_service import IntelligentProblemSelector
+from backend.app.services.gamification.recommendation_service import (
+    IntelligentProblemSelector,
+)
 from backend.app.services.gamification.streak_service import StreakService
 from backend.app.services.gamification.xp_service import XP_REWARDS, XPService
 
@@ -39,13 +43,15 @@ class PracticeSessionService:
         db: AsyncSession,
         user: User,
         mode: str = "QUICK",
-        topic_id: Optional[str] = None,
-        pattern_id: Optional[str] = None,
-        difficulty: Optional[str] = None,
+        topic_id: str | None = None,
+        pattern_id: str | None = None,
+        difficulty: str | None = None,
         target_count: int = 3,
     ) -> PracticeSession:
         """Initializes a new practice session with intelligently selected problems."""
-        target_count = min(max(1, target_count), 10)  # Bound target count between 1 and 10
+        target_count = min(
+            max(1, target_count), 10
+        )  # Bound target count between 1 and 10
 
         # Mode validation
         try:
@@ -65,7 +71,10 @@ class PracticeSessionService:
         # Determine adaptive difficulty if not explicitly passed
         chosen_diff = difficulty
         if not chosen_diff:
-            chosen_diff, _ = await AdaptiveDifficultyService.determine_adaptive_difficulty(
+            (
+                chosen_diff,
+                _,
+            ) = await AdaptiveDifficultyService.determine_adaptive_difficulty(
                 db=db, user_id=user.id
             )
 
@@ -112,7 +121,9 @@ class PracticeSessionService:
             db.add(sess_prob)
 
         await db.flush()
-        logger.info(f"Created PracticeSession {session.id} ({session.mode}) with {len(candidates)} problems for user {user.id}")
+        logger.info(
+            f"Created PracticeSession {session.id} ({session.mode}) with {len(candidates)} problems for user {user.id}"
+        )
         return session
 
     @classmethod
@@ -127,14 +138,19 @@ class PracticeSessionService:
             select(PracticeSession)
             .where(PracticeSession.id == session_id)
             .options(
-                selectinload(PracticeSession.session_problems).selectinload(PracticeSessionProblem.problem),
+                selectinload(PracticeSession.session_problems).selectinload(
+                    PracticeSessionProblem.problem
+                ),
                 selectinload(PracticeSession.topic),
                 selectinload(PracticeSession.pattern),
             )
         )
         session = (await db.execute(stmt)).scalar_one_or_none()
         if not session:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practice session not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Practice session not found.",
+            )
 
         # IDOR Protection
         if session.user_id != user_id:
@@ -154,8 +170,8 @@ class PracticeSessionService:
         problem_id: str,
         solved: bool,
         time_spent_seconds: int,
-        submission_id: Optional[str] = None,
-    ) -> Tuple[PracticeSession, int]:
+        submission_id: str | None = None,
+    ) -> tuple[PracticeSession, int]:
         """Records the outcome of a problem attempted within the session.
 
         Returns:
@@ -170,7 +186,9 @@ class PracticeSessionService:
             )
 
         # Find matching problem in session
-        sess_prob = next((p for p in session.session_problems if p.problem_id == problem_id), None)
+        sess_prob = next(
+            (p for p in session.session_problems if p.problem_id == problem_id), None
+        )
         if not sess_prob:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -187,7 +205,11 @@ class PracticeSessionService:
         if solved:
             # Determine problem difficulty reward
             prob = sess_prob.problem
-            diff_key = f"PROBLEM_SOLVE_{prob.difficulty.value.upper()}" if prob else "PROBLEM_SOLVE_EASY"
+            diff_key = (
+                f"PROBLEM_SOLVE_{prob.difficulty.value.upper()}"
+                if prob
+                else "PROBLEM_SOLVE_EASY"
+            )
             amount = XP_REWARDS.get(diff_key, 20)
 
             # Idempotently credit solve XP
@@ -246,7 +268,9 @@ class PracticeSessionService:
         session.completed_count = completed_count
         session.solved_count = solved_count
         session.accuracy = round((solved_count / len(probs)) if probs else 0.0, 2)
-        session.duration_seconds = total_time or int((now - session.started_at).total_seconds())
+        session.duration_seconds = total_time or int(
+            (now - session.started_at).total_seconds()
+        )
 
         # Award session completion bonus XP
         completion_xp = XP_REWARDS.get("PRACTICE_SESSION_COMPLETE", 30)
@@ -270,7 +294,9 @@ class PracticeSessionService:
         await AchievementService.evaluate_achievements(db, user.id)
 
         await db.flush()
-        logger.info(f"PracticeSession {session.id} finalized. Solved: {solved_count}/{len(probs)}, Accuracy: {session.accuracy * 100}%")
+        logger.info(
+            f"PracticeSession {session.id} finalized. Solved: {solved_count}/{len(probs)}, Accuracy: {session.accuracy * 100}%"
+        )
         return session
 
     @classmethod
@@ -280,19 +306,23 @@ class PracticeSessionService:
         user_id: str,
         limit: int = 20,
         offset: int = 0,
-    ) -> Tuple[List[PracticeSession], int]:
+    ) -> tuple[list[PracticeSession], int]:
         """Returns paginated practice sessions for the specified user."""
         limit = min(max(1, limit), 50)
         offset = max(0, offset)
 
-        count_stmt = select(func.count(PracticeSession.id)).where(PracticeSession.user_id == user_id)
+        count_stmt = select(func.count(PracticeSession.id)).where(
+            PracticeSession.user_id == user_id
+        )
         total = (await db.execute(count_stmt)).scalar() or 0
 
         stmt = (
             select(PracticeSession)
             .where(PracticeSession.user_id == user_id)
             .options(
-                selectinload(PracticeSession.session_problems).selectinload(PracticeSessionProblem.problem),
+                selectinload(PracticeSession.session_problems).selectinload(
+                    PracticeSessionProblem.problem
+                ),
                 selectinload(PracticeSession.topic),
                 selectinload(PracticeSession.pattern),
             )

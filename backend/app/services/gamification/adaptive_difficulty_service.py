@@ -5,7 +5,7 @@ calibrated difficulty tiers (EASY, MEDIUM, HARD, EXPERT) preventing both boredom
 """
 
 import logging
-from typing import Tuple
+
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,20 +31,22 @@ class AdaptiveDifficultyService:
         db: AsyncSession,
         user_id: str,
         current_preferred: str = ProblemDifficulty.EASY.value,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Analyzes recent performance and returns (recommended_difficulty, rationale)."""
         # Fetch the last 5 finalized submissions
         stmt = (
             select(Submission)
             .where(
                 Submission.user_id == user_id,
-                Submission.status.in_([
-                    SubmissionStatus.ACCEPTED,
-                    SubmissionStatus.WRONG_ANSWER,
-                    SubmissionStatus.TIME_LIMIT_EXCEEDED,
-                    SubmissionStatus.MEMORY_LIMIT_EXCEEDED,
-                    SubmissionStatus.RUNTIME_ERROR,
-                ]),
+                Submission.status.in_(
+                    [
+                        SubmissionStatus.ACCEPTED,
+                        SubmissionStatus.WRONG_ANSWER,
+                        SubmissionStatus.TIME_LIMIT_EXCEEDED,
+                        SubmissionStatus.MEMORY_LIMIT_EXCEEDED,
+                        SubmissionStatus.RUNTIME_ERROR,
+                    ]
+                ),
             )
             .order_by(desc(Submission.created_at))
             .limit(5)
@@ -58,7 +60,10 @@ class AdaptiveDifficultyService:
         curr_idx = DIFFICULTY_LADDER.index(curr_diff)
 
         if len(recent_subs) < 3:
-            return curr_diff, "Maintaining current difficulty level as baseline performance data is being gathered."
+            return (
+                curr_diff,
+                "Maintaining current difficulty level as baseline performance data is being gathered.",
+            )
 
         # Check consecutive solves
         consecutive_solves = 0
@@ -81,12 +86,12 @@ class AdaptiveDifficultyService:
                 next_diff = DIFFICULTY_LADDER[curr_idx + 1]
                 return (
                     next_diff,
-                    f"Strong performance with {consecutive_solves} consecutive accepted solutions! Stepping up challenge to {next_diff}."
+                    f"Strong performance with {consecutive_solves} consecutive accepted solutions! Stepping up challenge to {next_diff}.",
                 )
             else:
                 return (
                     curr_diff,
-                    f"Max difficulty ({curr_diff}) reached with {consecutive_solves} consecutive solves. Maintaining master tier challenge."
+                    f"Max difficulty ({curr_diff}) reached with {consecutive_solves} consecutive solves. Maintaining master tier challenge.",
                 )
 
         if consecutive_failures >= 3:
@@ -94,12 +99,15 @@ class AdaptiveDifficultyService:
                 prev_diff = DIFFICULTY_LADDER[curr_idx - 1]
                 return (
                     prev_diff,
-                    f"{consecutive_failures} consecutive challenging attempts detected. Easing difficulty to {prev_diff} to reinforce foundations."
+                    f"{consecutive_failures} consecutive challenging attempts detected. Easing difficulty to {prev_diff} to reinforce foundations.",
                 )
             else:
                 return (
                     curr_diff,
-                    f"Reinforcing foundational practice at {curr_diff} with conceptual recommendations."
+                    f"Reinforcing foundational practice at {curr_diff} with conceptual recommendations.",
                 )
 
-        return curr_diff, f"Steady performance detected. Continuing practice at {curr_diff}."
+        return (
+            curr_diff,
+            f"Steady performance detected. Continuing practice at {curr_diff}.",
+        )

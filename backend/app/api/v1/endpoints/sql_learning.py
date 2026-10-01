@@ -1,7 +1,7 @@
 """SQL Learning and Practice Engine API endpoints."""
 
 import logging
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,11 +27,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/problems", response_model=List[SQLProblemSummary])
+@router.get("/problems", response_model=list[SQLProblemSummary])
 async def list_sql_problems(
-    category: Optional[str] = Query(None, description="Filter by category (BASICS, JOINS, AGGREGATIONS, WINDOW_FUNCTIONS)"),
-    difficulty: Optional[str] = Query(None, description="Filter by difficulty: EASY, MEDIUM, HARD"),
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    category: str | None = Query(
+        None,
+        description="Filter by category (BASICS, JOINS, AGGREGATIONS, WINDOW_FUNCTIONS)",
+    ),
+    difficulty: str | None = Query(
+        None, description="Filter by difficulty: EASY, MEDIUM, HARD"
+    ),
+    current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Lists SQL practice problems with difficulty and user solved status."""
@@ -42,7 +47,7 @@ async def list_sql_problems(
 @router.get("/problems/{slug}", response_model=SQLProblemDetail)
 async def get_sql_problem(
     slug: str,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieves full SQL problem specification with test schema and sample data."""
@@ -77,7 +82,7 @@ async def submit_sql_query(
     return await SQLService.submit_query(db, current_user.id, slug, payload.query)
 
 
-@router.get("/problems/{slug}/submissions", response_model=List[SQLSubmissionSummary])
+@router.get("/problems/{slug}/submissions", response_model=list[SQLSubmissionSummary])
 async def list_my_sql_submissions(
     slug: str,
     current_user: User = Depends(get_current_user),

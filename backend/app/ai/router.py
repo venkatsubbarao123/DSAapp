@@ -1,7 +1,8 @@
 """API Router for Phase 6 AI Learning System and Tutor Endpoints."""
 
 import logging
-from typing import Any, Dict
+from typing import Any
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,7 +60,9 @@ async def explain_concept_or_code(
     return await AIService.explain_content(db, current_user, request)
 
 
-@router.post("/complexity", response_model=ComplexityResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/complexity", response_model=ComplexityResponse, status_code=status.HTTP_200_OK
+)
 async def analyze_complexity(
     request: ComplexityRequest,
     db: AsyncSession = Depends(get_db),
@@ -79,7 +82,11 @@ async def detect_pattern(
     return await AIService.detect_pattern(db, current_user, request)
 
 
-@router.get("/recommendations", response_model=RecommendationResponse, status_code=status.HTTP_200_OK)
+@router.get(
+    "/recommendations",
+    response_model=RecommendationResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def get_personalized_recommendations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -88,7 +95,9 @@ async def get_personalized_recommendations(
     return await AIService.get_personalized_recommendations(db, current_user)
 
 
-@router.get("/usage", response_model=AIUsageSummaryResponse, status_code=status.HTTP_200_OK)
+@router.get(
+    "/usage", response_model=AIUsageSummaryResponse, status_code=status.HTTP_200_OK
+)
 async def get_ai_usage_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -97,10 +106,12 @@ async def get_ai_usage_summary(
     return await AIService.get_usage_summary(db, current_user)
 
 
-@router.get("/diagnostics", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+@router.get(
+    "/diagnostics", response_model=dict[str, Any], status_code=status.HTTP_200_OK
+)
 async def get_ai_diagnostics(
     current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Provides safe diagnostic status of the active AI provider without leaking secrets."""
     provider = get_ai_provider()
     return provider.get_diagnostics()

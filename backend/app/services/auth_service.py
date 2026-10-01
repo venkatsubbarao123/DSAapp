@@ -1,7 +1,7 @@
 """Authentication service orchestrating registration, credential verification, and token rotation."""
 
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,9 +33,9 @@ class AuthService:
     async def register(
         self,
         payload: UserRegisterRequest,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
-    ) -> Tuple[User, str, str]:
+        ip_address: str | None = None,
+        request_id: str | None = None,
+    ) -> tuple[User, str, str]:
         """Registers a new user, hashes password with Argon2id, and issues session tokens."""
         # 1. Check duplicate account
         existing_user = await self.user_repo.get_by_email(payload.email)
@@ -91,9 +91,9 @@ class AuthService:
     async def login(
         self,
         payload: UserLoginRequest,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
-    ) -> Tuple[User, str, str]:
+        ip_address: str | None = None,
+        request_id: str | None = None,
+    ) -> tuple[User, str, str]:
         """Authenticates user with constant-time password check and issues tokens."""
         user = await self.user_repo.get_by_email(payload.email)
 
@@ -105,7 +105,9 @@ class AuthService:
 
         if not user:
             # Run dummy verification to mitigate timing attacks against non-existent accounts
-            verify_password("dummy_password", "$argon2id$v=19$m=65536,t=3,p=4$dummy$dummy")
+            verify_password(
+                "dummy_password", "$argon2id$v=19$m=65536,t=3,p=4$dummy$dummy"
+            )
             raise invalid_credentials_exc
 
         if not verify_password(payload.password, user.hashed_password):
@@ -151,9 +153,9 @@ class AuthService:
     async def refresh_tokens(
         self,
         raw_refresh_token: str,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
-    ) -> Tuple[str, str]:
+        ip_address: str | None = None,
+        request_id: str | None = None,
+    ) -> tuple[str, str]:
         """Validates refresh token, executes token rotation, and detects replay attacks."""
         payload = decode_token(raw_refresh_token)
         unauthorized_exc = HTTPException(
@@ -228,10 +230,10 @@ class AuthService:
 
     async def logout(
         self,
-        raw_refresh_token: Optional[str],
-        user_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
+        raw_refresh_token: str | None,
+        user_id: str | None = None,
+        ip_address: str | None = None,
+        request_id: str | None = None,
     ) -> None:
         """Revokes refresh token session on logout."""
         if raw_refresh_token:

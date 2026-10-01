@@ -1,7 +1,7 @@
 """Leaderboard Rankings API Endpoints."""
 
 import logging
-from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,10 +19,13 @@ router = APIRouter()
 
 @router.get("", response_model=LeaderboardResponse)
 async def get_leaderboard(
-    category: str = Query("weekly_xp", description="Leaderboard category: weekly_xp, monthly_xp, all_time_xp, streak"),
+    category: str = Query(
+        "weekly_xp",
+        description="Leaderboard category: weekly_xp, monthly_xp, all_time_xp, streak",
+    ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Returns paginated privacy-safe competitive leaderboard rankings with deterministic tie-breaking."""

@@ -1,13 +1,13 @@
 """User and profile repository operations."""
 
 from datetime import datetime, timezone
-from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from backend.app.models.user import User, UserProfile, UserRole
 from backend.app.models.payment import EntitlementStatus, PremiumEntitlement
+from backend.app.models.user import User, UserProfile, UserRole
 
 
 class UserRepository:
@@ -16,7 +16,7 @@ class UserRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, user_id: str) -> Optional[User]:
+    async def get_by_id(self, user_id: str) -> User | None:
         """Fetches user by UUID with profile and active entitlements."""
         stmt = (
             select(User)
@@ -29,7 +29,7 @@ class UserRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> User | None:
         """Fetches user by normalized email."""
         stmt = (
             select(User)
@@ -47,7 +47,7 @@ class UserRepository:
         email: str,
         hashed_password: str,
         role: UserRole = UserRole.STUDENT,
-        display_name: Optional[str] = None,
+        display_name: str | None = None,
     ) -> User:
         """Creates a new user and initialized profile record atomically."""
         normalized_email = email.strip().lower()

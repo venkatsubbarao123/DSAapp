@@ -11,14 +11,15 @@ Provides models for:
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -28,13 +29,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.db.base import Base
 
 if TYPE_CHECKING:
-    from backend.app.models.user import User
     from backend.app.models.content import Problem
     from backend.app.models.progress import Submission
+    from backend.app.models.user import User
 
 
 class ContestStatus(str, enum.Enum):
     """Lifecycle states of a contest."""
+
     DRAFT = "DRAFT"
     UPCOMING = "UPCOMING"
     LIVE = "LIVE"
@@ -44,6 +46,7 @@ class ContestStatus(str, enum.Enum):
 
 class ContestVisibility(str, enum.Enum):
     """Contest visibility."""
+
     PUBLIC = "PUBLIC"
     UNLISTED = "UNLISTED"
     PRIVATE = "PRIVATE"
@@ -51,20 +54,37 @@ class ContestVisibility(str, enum.Enum):
 
 class Contest(Base):
     """Contest event model."""
+
     __tablename__ = "contests"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    slug: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    status: Mapped[ContestStatus] = mapped_column(String(32), default=ContestStatus.DRAFT, nullable=False, index=True)
+    status: Mapped[ContestStatus] = mapped_column(
+        String(32), default=ContestStatus.DRAFT, nullable=False, index=True
+    )
 
-    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    duration_seconds: Mapped[int] = mapped_column(Integer, nullable=False)  # e.g. 7200 (2 hrs)
+    start_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    end_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    duration_seconds: Mapped[int] = mapped_column(
+        Integer, nullable=False
+    )  # e.g. 7200 (2 hrs)
 
-    visibility: Mapped[str] = mapped_column(String(32), default=ContestVisibility.PUBLIC.value, nullable=False)
-    premium_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(32), default=ContestVisibility.PUBLIC.value, nullable=False
+    )
+    premium_required: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -79,18 +99,18 @@ class Contest(Base):
     )
 
     # Relationships
-    problems: Mapped[List["ContestProblem"]] = relationship(
+    problems: Mapped[list["ContestProblem"]] = relationship(
         "ContestProblem",
         back_populates="contest",
         cascade="all, delete-orphan",
         order_by="ContestProblem.sequence",
     )
-    participants: Mapped[List["ContestParticipant"]] = relationship(
+    participants: Mapped[list["ContestParticipant"]] = relationship(
         "ContestParticipant",
         back_populates="contest",
         cascade="all, delete-orphan",
     )
-    submissions: Mapped[List["ContestSubmission"]] = relationship(
+    submissions: Mapped[list["ContestSubmission"]] = relationship(
         "ContestSubmission",
         back_populates="contest",
         cascade="all, delete-orphan",
@@ -101,8 +121,16 @@ class Contest(Base):
         if self.status in (ContestStatus.DRAFT, ContestStatus.ARCHIVED):
             return ContestStatus(self.status)
         now_utc = datetime.now(timezone.utc)
-        start = self.start_at if self.start_at.tzinfo else self.start_at.replace(tzinfo=timezone.utc)
-        end = self.end_at if self.end_at.tzinfo else self.end_at.replace(tzinfo=timezone.utc)
+        start = (
+            self.start_at
+            if self.start_at.tzinfo
+            else self.start_at.replace(tzinfo=timezone.utc)
+        )
+        end = (
+            self.end_at
+            if self.end_at.tzinfo
+            else self.end_at.replace(tzinfo=timezone.utc)
+        )
         if now_utc < start:
             return ContestStatus.UPCOMING
         elif start <= now_utc < end:
@@ -114,8 +142,16 @@ class Contest(Base):
     def remaining_seconds(self) -> int:
         """Server-authoritative remaining time in seconds."""
         now_utc = datetime.now(timezone.utc)
-        start = self.start_at if self.start_at.tzinfo else self.start_at.replace(tzinfo=timezone.utc)
-        end = self.end_at if self.end_at.tzinfo else self.end_at.replace(tzinfo=timezone.utc)
+        start = (
+            self.start_at
+            if self.start_at.tzinfo
+            else self.start_at.replace(tzinfo=timezone.utc)
+        )
+        end = (
+            self.end_at
+            if self.end_at.tzinfo
+            else self.end_at.replace(tzinfo=timezone.utc)
+        )
         if now_utc >= end:
             return 0
         if now_utc < start:
@@ -125,16 +161,31 @@ class Contest(Base):
 
 class ContestProblem(Base):
     """Problem included in a contest with assigned sequence and points."""
+
     __tablename__ = "contest_problems"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    contest_id: Mapped[str] = mapped_column(String(36), ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
-    problem_id: Mapped[str] = mapped_column(String(36), ForeignKey("problems.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    contest_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("contests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    problem_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("problems.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     points: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
     penalty_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
-    difficulty: Mapped[str] = mapped_column(String(32), default="MEDIUM", nullable=False)
+    difficulty: Mapped[str] = mapped_column(
+        String(32), default="MEDIUM", nullable=False
+    )
 
     contest: Mapped["Contest"] = relationship("Contest", back_populates="problems")
     problem: Mapped["Problem"] = relationship("Problem")
@@ -148,11 +199,24 @@ class ContestProblem(Base):
 
 class ContestParticipant(Base):
     """Contest registration and participant performance record."""
+
     __tablename__ = "contest_participants"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    contest_id: Mapped[str] = mapped_column(String(36), ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    contest_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("contests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -167,26 +231,54 @@ class ContestParticipant(Base):
 
     final_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     final_penalty: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    final_rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    final_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     contest: Mapped["Contest"] = relationship("Contest", back_populates="participants")
     user: Mapped["User"] = relationship("User")
 
     __table_args__ = (
         UniqueConstraint("contest_id", "user_id", name="uq_contest_user"),
-        Index("ix_contest_participants_score", "contest_id", "final_score", "final_penalty"),
+        Index(
+            "ix_contest_participants_score",
+            "contest_id",
+            "final_score",
+            "final_penalty",
+        ),
     )
 
 
 class ContestSubmission(Base):
     """Link between a contest and a student's code submission."""
+
     __tablename__ = "contest_submissions"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    contest_id: Mapped[str] = mapped_column(String(36), ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
-    participant_id: Mapped[str] = mapped_column(String(36), ForeignKey("contest_participants.id", ondelete="CASCADE"), nullable=False, index=True)
-    problem_id: Mapped[str] = mapped_column(String(36), ForeignKey("problems.id", ondelete="CASCADE"), nullable=False, index=True)
-    submission_id: Mapped[str] = mapped_column(String(36), ForeignKey("submissions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    contest_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("contests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    participant_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("contest_participants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    problem_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("problems.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    submission_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("submissions.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -211,13 +303,28 @@ class ContestSubmission(Base):
 
 class ContestCheatSignal(Base):
     """Application-level anti-cheat signal audit record."""
+
     __tablename__ = "contest_cheat_signals"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    contest_id: Mapped[str] = mapped_column(String(36), ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    signal_type: Mapped[str] = mapped_column(String(64), nullable=False)  # RAPID_SUBMISSIONS, REPEATED_CODE, etc.
-    details_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    contest_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("contests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    signal_type: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )  # RAPID_SUBMISSIONS, REPEATED_CODE, etc.
+    details_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     detected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

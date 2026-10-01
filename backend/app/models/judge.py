@@ -3,14 +3,15 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
+
 from sqlalchemy import (
+    JSON,
     DateTime,
     Enum,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
 )
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
 
 class JudgeJobStatus(str, enum.Enum):
     """Execution state of a judge job."""
+
     QUEUED = "QUEUED"
     CLAIMED = "CLAIMED"
     RUNNING = "RUNNING"
@@ -35,6 +37,7 @@ class JudgeJobStatus(str, enum.Enum):
 
 class Verdict(str, enum.Enum):
     """Definitive judge verdicts for code submissions."""
+
     ACCEPTED = "ACCEPTED"
     WRONG_ANSWER = "WRONG_ANSWER"
     TIME_LIMIT_EXCEEDED = "TIME_LIMIT_EXCEEDED"
@@ -47,9 +50,12 @@ class Verdict(str, enum.Enum):
 
 class JudgeJob(Base):
     """Durable job record for asynchronous online judging."""
+
     __tablename__ = "judge_jobs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     submission_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("submissions.id", ondelete="CASCADE"),
@@ -67,18 +73,24 @@ class JudgeJob(Base):
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
 
-    worker_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    worker_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     queued_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    heartbeat_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    heartbeat_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
 
-    failure_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    metadata_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -105,9 +117,12 @@ class JudgeJob(Base):
 
 class SubmissionResult(Base):
     """Detailed execution result for a completed judge submission."""
+
     __tablename__ = "submission_results"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     submission_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("submissions.id", ondelete="CASCADE"),
@@ -120,12 +135,12 @@ class SubmissionResult(Base):
     tests_total: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     tests_passed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    execution_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    memory_used_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    execution_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    memory_used_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Truncated safe outputs for diagnosis (max 4KB each)
-    compiler_output_safe: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    runtime_output_safe: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    compiler_output_safe: Mapped[str | None] = mapped_column(Text, nullable=True)
+    runtime_output_safe: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

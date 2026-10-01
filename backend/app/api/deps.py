@@ -1,6 +1,5 @@
 """FastAPI dependencies for authentication, role verification, and premium access gates."""
 
-from typing import List, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +14,7 @@ security_bearer = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_bearer),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Authenticates the user from short-lived access JWT Bearer token."""
@@ -45,8 +44,9 @@ async def get_current_user(
     return user
 
 
-def require_role(allowed_roles: List[UserRole]):
+def require_role(allowed_roles: list[UserRole]):
     """Factory creating a role-enforcing dependency."""
+
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in allowed_roles:
             raise HTTPException(
@@ -54,6 +54,7 @@ def require_role(allowed_roles: List[UserRole]):
                 detail=f"Operation not permitted. Required role: {[r.value for r in allowed_roles]}",
             )
         return current_user
+
     return role_checker
 
 
@@ -88,13 +89,14 @@ def get_auth_service(session: AsyncSession = Depends(get_db)) -> AuthService:
 def get_payment_service(session: AsyncSession = Depends(get_db)):
     """Dependency injector for PaymentService."""
     from backend.app.services.payment_service import PaymentService
+
     return PaymentService(session)
 
 
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_bearer),
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """Optionally authenticates user without failing if no token is present."""
     if not credentials or not credentials.credentials:
         return None
@@ -114,30 +116,35 @@ async def get_current_user_optional(
 def get_content_service(session: AsyncSession = Depends(get_db)):
     """Dependency injector for ContentService."""
     from backend.app.services.content_service import ContentService
+
     return ContentService(session)
 
 
 def get_progress_service(session: AsyncSession = Depends(get_db)):
     """Dependency injector for ProgressService."""
     from backend.app.services.progress_service import ProgressService
+
     return ProgressService(session)
 
 
 def get_admin_service(session: AsyncSession = Depends(get_db)):
     """Dependency injector for AdminService."""
     from backend.app.services.admin.admin_service import AdminService
+
     return AdminService(session)
 
 
 def get_analytics_service(session: AsyncSession = Depends(get_db)):
     """Dependency injector for AnalyticsService."""
     from backend.app.services.admin.analytics_service import AnalyticsService
+
     return AnalyticsService(session)
 
 
 def get_notification_service(session: AsyncSession = Depends(get_db)):
     """Dependency injector for NotificationService."""
-    from backend.app.services.notification.notification_service import NotificationService
+    from backend.app.services.notification.notification_service import (
+        NotificationService,
+    )
+
     return NotificationService(session)
-
-

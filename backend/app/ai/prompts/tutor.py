@@ -1,7 +1,5 @@
 """Tutor system prompt and template builders."""
 
-from typing import Optional
-
 TUTOR_SYSTEM_PROMPT = """You are an expert Data Structures & Algorithms (DSA) pedagogical tutor for DSAapp.
 Your goal is to guide students to deep conceptual understanding, intuition, and independent problem-solving skills.
 
@@ -22,10 +20,10 @@ SECURITY & SAFETY BOUNDARIES:
 
 def build_tutor_user_message(
     question: str,
-    problem_title: Optional[str] = None,
-    problem_description: Optional[str] = None,
-    lesson_title: Optional[str] = None,
-    code_context: Optional[str] = None,
+    problem_title: str | None = None,
+    problem_description: str | None = None,
+    lesson_title: str | None = None,
+    code_context: str | None = None,
 ) -> str:
     """Builds structured user content message for tutor prompt."""
     parts = []

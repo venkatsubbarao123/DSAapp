@@ -1,7 +1,8 @@
 """Repository layer for progress, submissions, mistakes notebook, and spaced revision."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 from sqlalchemy import (
     and_,
     desc,
@@ -48,7 +49,7 @@ class ProgressRepository:
 
     async def get_user_lesson_progress(
         self, user_id: str, lesson_id: str
-    ) -> Optional[UserLessonProgress]:
+    ) -> UserLessonProgress | None:
         stmt = select(UserLessonProgress).where(
             UserLessonProgress.user_id == user_id,
             UserLessonProgress.lesson_id == lesson_id,
@@ -112,7 +113,7 @@ class ProgressRepository:
 
     async def get_user_problem_progress(
         self, user_id: str, problem_id: str
-    ) -> Optional[UserProblemProgress]:
+    ) -> UserProblemProgress | None:
         stmt = select(UserProblemProgress).where(
             UserProblemProgress.user_id == user_id,
             UserProblemProgress.problem_id == problem_id,
@@ -176,11 +177,15 @@ class ProgressRepository:
     # -----------------------------------------------------------------------
 
     async def get_total_visible_lessons(self) -> int:
-        stmt = select(func.count(Lesson.id)).where(Lesson.status == ContentStatus.PUBLISHED)
+        stmt = select(func.count(Lesson.id)).where(
+            Lesson.status == ContentStatus.PUBLISHED
+        )
         return (await self.db.execute(stmt)).scalar() or 0
 
     async def get_total_visible_problems(self) -> int:
-        stmt = select(func.count(Problem.id)).where(Problem.status == ContentStatus.PUBLISHED)
+        stmt = select(func.count(Problem.id)).where(
+            Problem.status == ContentStatus.PUBLISHED
+        )
         return (await self.db.execute(stmt)).scalar() or 0
 
     async def count_user_completed_lessons(self, user_id: str) -> int:
@@ -193,7 +198,9 @@ class ProgressRepository:
     async def count_user_started_lessons(self, user_id: str) -> int:
         stmt = select(func.count(UserLessonProgress.id)).where(
             UserLessonProgress.user_id == user_id,
-            UserLessonProgress.status.in_([LessonProgressStatus.IN_PROGRESS, LessonProgressStatus.COMPLETED]),
+            UserLessonProgress.status.in_(
+                [LessonProgressStatus.IN_PROGRESS, LessonProgressStatus.COMPLETED]
+            ),
         )
         return (await self.db.execute(stmt)).scalar() or 0
 
@@ -207,13 +214,15 @@ class ProgressRepository:
     async def count_user_attempted_problems(self, user_id: str) -> int:
         stmt = select(func.count(UserProblemProgress.id)).where(
             UserProblemProgress.user_id == user_id,
-            UserProblemProgress.status.in_([ProblemProgressStatus.ATTEMPTED, ProblemProgressStatus.SOLVED]),
+            UserProblemProgress.status.in_(
+                [ProblemProgressStatus.ATTEMPTED, ProblemProgressStatus.SOLVED]
+            ),
         )
         return (await self.db.execute(stmt)).scalar() or 0
 
     async def get_recent_activity(
         self, user_id: str, limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieves recent learning events across lessons and problems."""
         # 1. Recent lesson progress
         lesson_stmt = (
@@ -247,28 +256,32 @@ class ProgressRepository:
 
         combined = []
         for r in lesson_res:
-            combined.append({
-                "title": r[0],
-                "slug": r[1],
-                "entity_type": "LESSON",
-                "status": r[2].value if hasattr(r[2], "value") else str(r[2]),
-                "timestamp": r[3],
-            })
+            combined.append(
+                {
+                    "title": r[0],
+                    "slug": r[1],
+                    "entity_type": "LESSON",
+                    "status": r[2].value if hasattr(r[2], "value") else str(r[2]),
+                    "timestamp": r[3],
+                }
+            )
         for r in problem_res:
-            combined.append({
-                "title": r[0],
-                "slug": r[1],
-                "entity_type": "PROBLEM",
-                "status": r[2].value if hasattr(r[2], "value") else str(r[2]),
-                "timestamp": r[3],
-            })
+            combined.append(
+                {
+                    "title": r[0],
+                    "slug": r[1],
+                    "entity_type": "PROBLEM",
+                    "status": r[2].value if hasattr(r[2], "value") else str(r[2]),
+                    "timestamp": r[3],
+                }
+            )
 
         combined.sort(key=lambda x: x["timestamp"], reverse=True)
         return combined[:limit]
 
     async def get_topic_progress(
         self, user_id: str, topic_id_or_slug: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Calculates child aggregate metrics for a given topic."""
         # Find topic
         topic_stmt = select(Topic).where(
@@ -283,7 +296,9 @@ class ProgressRepository:
         lessons_stmt = (
             select(Lesson.id)
             .join(Subtopic, Lesson.subtopic_id == Subtopic.id)
-            .where(Subtopic.topic_id == topic.id, Lesson.status == ContentStatus.PUBLISHED)
+            .where(
+                Subtopic.topic_id == topic.id, Lesson.status == ContentStatus.PUBLISHED
+            )
         )
         lesson_ids = (await self.db.execute(lessons_stmt)).scalars().all()
 
@@ -291,7 +306,9 @@ class ProgressRepository:
         problems_stmt = (
             select(Problem.id)
             .join(Subtopic, Problem.subtopic_id == Subtopic.id)
-            .where(Subtopic.topic_id == topic.id, Problem.status == ContentStatus.PUBLISHED)
+            .where(
+                Subtopic.topic_id == topic.id, Problem.status == ContentStatus.PUBLISHED
+            )
         )
         problem_ids = (await self.db.execute(problems_stmt)).scalars().all()
 
@@ -315,7 +332,9 @@ class ProgressRepository:
 
         total_items = len(lesson_ids) + len(problem_ids)
         completed_items = completed_lessons + solved_problems
-        percent = round((completed_items / total_items) * 100, 1) if total_items > 0 else 0.0
+        percent = (
+            round((completed_items / total_items) * 100, 1) if total_items > 0 else 0.0
+        )
 
         return {
             "topic_id": topic.id,
@@ -334,7 +353,7 @@ class ProgressRepository:
 
     async def get_submission_by_idempotency_key(
         self, user_id: str, idempotency_key: str
-    ) -> Optional[Submission]:
+    ) -> Submission | None:
         stmt = (
             select(Submission)
             .options(selectinload(Submission.problem))
@@ -351,8 +370,8 @@ class ProgressRepository:
         problem_id: str,
         language: str,
         source_code: str,
-        idempotency_key: Optional[str] = None,
-        metadata_json: Optional[Dict[str, Any]] = None,
+        idempotency_key: str | None = None,
+        metadata_json: dict[str, Any] | None = None,
     ) -> Submission:
         submission = Submission(
             user_id=user_id,
@@ -370,12 +389,12 @@ class ProgressRepository:
     async def list_user_submissions(
         self,
         user_id: str,
-        problem_id: Optional[str] = None,
-        language: Optional[str] = None,
-        status: Optional[SubmissionStatus] = None,
+        problem_id: str | None = None,
+        language: str | None = None,
+        status: SubmissionStatus | None = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> Tuple[List[Submission], int]:
+    ) -> tuple[list[Submission], int]:
         filters = [Submission.user_id == user_id]
         if problem_id:
             filters.append(Submission.problem_id == problem_id)
@@ -403,7 +422,7 @@ class ProgressRepository:
 
     async def get_user_submission_by_id(
         self, submission_id: str, user_id: str
-    ) -> Optional[Submission]:
+    ) -> Submission | None:
         """Ownership-safe retrieval: strictly matches user_id."""
         stmt = (
             select(Submission)
@@ -412,7 +431,10 @@ class ProgressRepository:
                 selectinload(Submission.result),
             )
             .where(
-                or_(Submission.id == submission_id, Submission.public_id == submission_id),
+                or_(
+                    Submission.id == submission_id,
+                    Submission.public_id == submission_id,
+                ),
                 Submission.user_id == user_id,
             )
         )
@@ -428,9 +450,9 @@ class ProgressRepository:
         title: str,
         description: str,
         mistake_type: MistakeType,
-        correction: Optional[str] = None,
-        problem_id: Optional[str] = None,
-        lesson_id: Optional[str] = None,
+        correction: str | None = None,
+        problem_id: str | None = None,
+        lesson_id: str | None = None,
     ) -> Mistake:
         mistake = Mistake(
             user_id=user_id,
@@ -447,7 +469,7 @@ class ProgressRepository:
 
     async def get_user_mistake_by_id(
         self, mistake_id: str, user_id: str
-    ) -> Optional[Mistake]:
+    ) -> Mistake | None:
         stmt = (
             select(Mistake)
             .options(selectinload(Mistake.problem), selectinload(Mistake.lesson))
@@ -461,13 +483,13 @@ class ProgressRepository:
     async def list_user_mistakes(
         self,
         user_id: str,
-        is_resolved: Optional[bool] = None,
-        mistake_type: Optional[MistakeType] = None,
-        problem_id: Optional[str] = None,
-        search: Optional[str] = None,
+        is_resolved: bool | None = None,
+        mistake_type: MistakeType | None = None,
+        problem_id: str | None = None,
+        search: str | None = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> Tuple[List[Mistake], int]:
+    ) -> tuple[list[Mistake], int]:
         filters = [Mistake.user_id == user_id]
         if is_resolved is not None:
             filters.append(Mistake.is_resolved == is_resolved)
@@ -477,7 +499,9 @@ class ProgressRepository:
             filters.append(Mistake.problem_id == problem_id)
         if search and search.strip():
             term = f"%{search.strip()[:100]}%"
-            filters.append(or_(Mistake.title.ilike(term), Mistake.description.ilike(term)))
+            filters.append(
+                or_(Mistake.title.ilike(term), Mistake.description.ilike(term))
+            )
 
         count_stmt = select(func.count(Mistake.id)).where(and_(*filters))
         total = (await self.db.execute(count_stmt)).scalar() or 0
@@ -496,7 +520,7 @@ class ProgressRepository:
     async def count_unresolved_mistakes(self, user_id: str) -> int:
         stmt = select(func.count(Mistake.id)).where(
             Mistake.user_id == user_id,
-            Mistake.is_resolved == False,
+            Mistake.is_resolved.is_(False),
         )
         return (await self.db.execute(stmt)).scalar() or 0
 
@@ -562,7 +586,7 @@ class ProgressRepository:
 
     async def get_user_revision_item_by_id(
         self, item_id: str, user_id: str
-    ) -> Optional[RevisionItem]:
+    ) -> RevisionItem | None:
         stmt = (
             select(RevisionItem)
             .options(selectinload(RevisionItem.schedule))
@@ -575,14 +599,16 @@ class ProgressRepository:
 
     async def list_due_revision_items(
         self, user_id: str, limit: int = 50, offset: int = 0
-    ) -> Tuple[List[RevisionItem], int]:
+    ) -> tuple[list[RevisionItem], int]:
         """Lists active revision items that are due now or upcoming."""
         count_stmt = (
             select(func.count(RevisionItem.id))
-            .join(RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id)
+            .join(
+                RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id
+            )
             .where(
                 RevisionItem.user_id == user_id,
-                RevisionItem.is_active == True,
+                RevisionItem.is_active.is_(True),
                 RevisionSchedule.status == RevisionScheduleStatus.ACTIVE,
             )
         )
@@ -591,10 +617,12 @@ class ProgressRepository:
         query = (
             select(RevisionItem)
             .options(selectinload(RevisionItem.schedule))
-            .join(RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id)
+            .join(
+                RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id
+            )
             .where(
                 RevisionItem.user_id == user_id,
-                RevisionItem.is_active == True,
+                RevisionItem.is_active.is_(True),
                 RevisionSchedule.status == RevisionScheduleStatus.ACTIVE,
             )
             .order_by(RevisionSchedule.due_at.asc(), desc(RevisionItem.priority))
@@ -608,10 +636,12 @@ class ProgressRepository:
         now = datetime.now(timezone.utc)
         stmt = (
             select(func.count(RevisionItem.id))
-            .join(RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id)
+            .join(
+                RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id
+            )
             .where(
                 RevisionItem.user_id == user_id,
-                RevisionItem.is_active == True,
+                RevisionItem.is_active.is_(True),
                 RevisionSchedule.status == RevisionScheduleStatus.ACTIVE,
                 RevisionSchedule.due_at <= now,
             )
@@ -651,10 +681,14 @@ class ProgressRepository:
             sched.ease_factor = max(1.3, sched.ease_factor - 0.15)
             sched.review_count += 1
         elif outcome == ReviewOutcome.GOOD:
-            sched.interval_days = max(1.0, round(sched.interval_days * sched.ease_factor, 1))
+            sched.interval_days = max(
+                1.0, round(sched.interval_days * sched.ease_factor, 1)
+            )
             sched.review_count += 1
         elif outcome == ReviewOutcome.EASY:
-            sched.interval_days = max(2.0, round(sched.interval_days * sched.ease_factor * 1.3, 1))
+            sched.interval_days = max(
+                2.0, round(sched.interval_days * sched.ease_factor * 1.3, 1)
+            )
             sched.ease_factor = min(3.0, sched.ease_factor + 0.15)
             sched.review_count += 1
 

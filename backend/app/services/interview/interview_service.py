@@ -10,7 +10,7 @@ Provides:
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Optional, Tuple
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -80,7 +80,12 @@ INTERVIEW_QUESTION_TEMPLATES = {
             "type": "OOP",
             "title": "Dependency Inversion Principle",
             "prompt": "Which SOLID principle states that high-level modules should not depend on low-level modules; both should depend on abstractions?",
-            "options": ["Single Responsibility", "Open/Closed", "Liskov Substitution", "Dependency Inversion"],
+            "options": [
+                "Single Responsibility",
+                "Open/Closed",
+                "Liskov Substitution",
+                "Dependency Inversion",
+            ],
             "correct": "Dependency Inversion",
             "difficulty": "MEDIUM",
             "category": "OOP",
@@ -102,7 +107,12 @@ INTERVIEW_QUESTION_TEMPLATES = {
             "type": "MCQ",
             "title": "Hash Table Collisions",
             "prompt": "In hashing with open addressing, which collision resolution technique uses linear probing?",
-            "options": ["h(k, i) = (h'(k) + i) % m", "h(k, i) = (h'(k) + c1*i + c2*i^2) % m", "h(k, i) = (h1(k) + i*h2(k)) % m", "Chaining with linked lists"],
+            "options": [
+                "h(k, i) = (h'(k) + i) % m",
+                "h(k, i) = (h'(k) + c1*i + c2*i^2) % m",
+                "h(k, i) = (h1(k) + i*h2(k)) % m",
+                "Chaining with linked lists",
+            ],
             "correct": "h(k, i) = (h'(k) + i) % m",
             "difficulty": "EASY",
             "category": "DSA",
@@ -311,7 +321,7 @@ class InterviewService:
         db: AsyncSession,
         session_id: str,
         user_id: str,
-    ) -> Optional[InterviewSessionResponse]:
+    ) -> InterviewSessionResponse | None:
         """Retrieves session state with server-authoritative timer and answer concealment."""
         stmt = (
             select(InterviewSession)
@@ -380,7 +390,7 @@ class InterviewService:
         session_id: str,
         user_id: str,
         payload: SubmitInterviewAnswerRequest,
-    ) -> Tuple[Optional[SubmitInterviewAnswerResponse], Optional[str]]:
+    ) -> tuple[SubmitInterviewAnswerResponse | None, str | None]:
         """Records student answer for an interview question with server-authoritative checks."""
         stmt = select(InterviewSession).where(InterviewSession.id == session_id)
         session = (await db.execute(stmt)).scalars().first()
@@ -432,7 +442,7 @@ class InterviewService:
         db: AsyncSession,
         session_id: str,
         user_id: str,
-    ) -> Tuple[Optional[InterviewReportResponse], Optional[str]]:
+    ) -> tuple[InterviewReportResponse | None, str | None]:
         """Manually marks interview as completed and runs full evaluation."""
         stmt = (
             select(InterviewSession)
@@ -460,7 +470,9 @@ class InterviewService:
     ) -> None:
         """Internal scoring engine: evaluates MCQ exact match, SQL/Code rubrics, and feedback."""
         if not session.questions:
-            stmt = select(InterviewQuestion).where(InterviewQuestion.session_id == session.id)
+            stmt = select(InterviewQuestion).where(
+                InterviewQuestion.session_id == session.id
+            )
             session.questions = list((await db.execute(stmt)).scalars().all())
 
         total_score = 0
@@ -468,7 +480,7 @@ class InterviewService:
         points_per_q = max_score // max(1, len(session.questions))
         correct_count = 0
 
-        category_stats: Dict[str, Dict[str, int]] = {}
+        category_stats: dict[str, dict[str, int]] = {}
 
         for q in session.questions:
             q_score = 0
@@ -494,19 +506,27 @@ class InterviewService:
                     if is_safe and len(ans_str) > 15:
                         q_score = points_per_q
                         is_corr = True
-                        q.evaluation_reason = "Valid SQL structure addressing problem requirements."
+                        q.evaluation_reason = (
+                            "Valid SQL structure addressing problem requirements."
+                        )
                     else:
                         q_score = points_per_q // 2
-                        q.evaluation_reason = "Partial solution; verify SQL syntax and clauses."
+                        q.evaluation_reason = (
+                            "Partial solution; verify SQL syntax and clauses."
+                        )
                 else:
                     # Conceptual / Coding / OOP: Evaluate based on substantive response
                     if len(ans_str) > 30:
                         q_score = points_per_q
                         is_corr = True
-                        q.evaluation_reason = "Clear and coherent technical explanation provided."
+                        q.evaluation_reason = (
+                            "Clear and coherent technical explanation provided."
+                        )
                     elif len(ans_str) > 10:
                         q_score = points_per_q // 2
-                        q.evaluation_reason = "Partially answered. More detail needed for full points."
+                        q.evaluation_reason = (
+                            "Partially answered. More detail needed for full points."
+                        )
                     else:
                         q.evaluation_reason = "Answer too brief or incomplete."
 
@@ -525,13 +545,23 @@ class InterviewService:
             session.status = InterviewStatus.EXPIRED.value
 
         # Calculate time management feedback
-        completed = session.completed_at if session.completed_at.tzinfo else session.completed_at.replace(tzinfo=timezone.utc)
-        started = session.started_at if session.started_at.tzinfo else session.started_at.replace(tzinfo=timezone.utc)
+        completed = (
+            session.completed_at
+            if session.completed_at.tzinfo
+            else session.completed_at.replace(tzinfo=timezone.utc)
+        )
+        started = (
+            session.started_at
+            if session.started_at.tzinfo
+            else session.started_at.replace(tzinfo=timezone.utc)
+        )
         elapsed_sec = int((completed - started).total_seconds())
         if elapsed_sec < session.duration_seconds * 0.5:
             time_feedback = "Fast pacing: You completed the interview with significant time remaining. Consider spending extra time reviewing edge cases and code structure."
         elif elapsed_sec < session.duration_seconds * 0.9:
-            time_feedback = "Optimal pacing: Excellent time management across all questions."
+            time_feedback = (
+                "Optimal pacing: Excellent time management across all questions."
+            )
         else:
             time_feedback = "Time-pressured: You used nearly all allocated time. Practice structured problem breakdown to improve speed."
 
@@ -539,12 +569,14 @@ class InterviewService:
         cat_scores = []
         for cat, data in category_stats.items():
             pct = (data["earned"] / max(1, data["total"])) * 100
-            cat_scores.append({
-                "category": cat,
-                "score": data["earned"],
-                "total_possible": data["total"],
-                "percentage": round(pct, 1),
-            })
+            cat_scores.append(
+                {
+                    "category": cat,
+                    "score": data["earned"],
+                    "total_possible": data["total"],
+                    "percentage": round(pct, 1),
+                }
+            )
 
         # Pedagogical recommendations
         strengths = []
@@ -561,7 +593,9 @@ class InterviewService:
         else:
             areas_to_improve.append("Fundamental concept reinforcement needed")
             areas_to_improve.append("Practice writing end-to-end runnable syntax")
-            recommended_topics.extend(["Core Data Structures", "SQL Basics", "OOP Principles"])
+            recommended_topics.extend(
+                ["Core Data Structures", "SQL Basics", "OOP Principles"]
+            )
 
         session.feedback_summary = {
             "category_scores": cat_scores,
@@ -579,7 +613,11 @@ class InterviewService:
                 event_type="INTERVIEW_COMPLETE",
                 source_id=f"interview:{session.id}",
                 amount=75,
-                metadata={"session_id": session.id, "mode": session.mode, "score": session.score},
+                metadata={
+                    "session_id": session.id,
+                    "mode": session.mode,
+                    "score": session.score,
+                },
             )
             await StreakService.record_activity(db=db, user_id=session.user_id)
         except Exception as e:
@@ -593,7 +631,7 @@ class InterviewService:
         db: AsyncSession,
         session_id: str,
         user_id: str,
-    ) -> Optional[InterviewReportResponse]:
+    ) -> InterviewReportResponse | None:
         """Generates comprehensive report from stored evaluation."""
         stmt = (
             select(InterviewSession)
@@ -608,16 +646,30 @@ class InterviewService:
             await cls._evaluate_session_internal(db, session)
 
         fb = session.feedback_summary or {}
-        cat_scores = [InterviewCategoryScore(**c) for c in fb.get("category_scores", [])]
+        cat_scores = [
+            InterviewCategoryScore(**c) for c in fb.get("category_scores", [])
+        ]
 
         correct_count = sum(1 for q in session.questions if q.is_correct)
         end_time = session.completed_at or datetime.now(timezone.utc)
-        completed = end_time if end_time.tzinfo else end_time.replace(tzinfo=timezone.utc)
-        started = session.started_at if session.started_at.tzinfo else session.started_at.replace(tzinfo=timezone.utc)
+        completed = (
+            end_time if end_time.tzinfo else end_time.replace(tzinfo=timezone.utc)
+        )
+        started = (
+            session.started_at
+            if session.started_at.tzinfo
+            else session.started_at.replace(tzinfo=timezone.utc)
+        )
         time_spent = int((completed - started).total_seconds())
 
-        verdict = "HIRE" if session.score >= 80 else ("LEANING_HIRE" if session.score >= 60 else "NEEDS_PRACTICE")
-        rubric_breakdown = {c["category"]: c["score"] for c in fb.get("category_scores", [])}
+        verdict = (
+            "HIRE"
+            if session.score >= 80
+            else ("LEANING_HIRE" if session.score >= 60 else "NEEDS_PRACTICE")
+        )
+        rubric_breakdown = {
+            c["category"]: c["score"] for c in fb.get("category_scores", [])
+        }
         feedback_summary = f"Performance in {session.mode} interview: scored {session.score}/100. Verdict: {verdict}."
         areas = fb.get("areas_to_improve", [])
 
@@ -634,7 +686,9 @@ class InterviewService:
             correct_questions=correct_count,
             category_scores=cat_scores,
             rubric_breakdown=rubric_breakdown,
-            time_management_feedback=fb.get("time_management_feedback", "Normal completion."),
+            time_management_feedback=fb.get(
+                "time_management_feedback", "Normal completion."
+            ),
             feedback_summary=feedback_summary,
             strengths=fb.get("strengths", []),
             areas_to_improve=areas,
@@ -678,7 +732,9 @@ class InterviewService:
         )
 
         try:
-            ai_res = await provider.generate_completion(prompt=prompt, max_tokens=500, temperature=0.7)
+            ai_res = await provider.generate_completion(
+                prompt=prompt, max_tokens=500, temperature=0.7
+            )
             return InterviewCoachResponse(
                 reply=ai_res.text.strip(),
                 suggestion="Practice articulating your thoughts step-by-step before implementing code.",

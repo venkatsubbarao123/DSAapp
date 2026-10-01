@@ -1,7 +1,7 @@
 """Object-Oriented Programming (OOP) Module API endpoints."""
 
 import logging
-from typing import List
+
 from fastapi import APIRouter, HTTPException, status
 
 from backend.app.services.oop.oop_service import (
@@ -24,25 +24,25 @@ async def get_oop_overview():
     return OOPService.get_overview()
 
 
-@router.get("/pillars", response_model=List[OOPPillar])
+@router.get("/pillars", response_model=list[OOPPillar])
 async def get_oop_pillars():
     """Returns the Four Pillars of Object-Oriented Programming."""
     return OOPService.get_pillars()
 
 
-@router.get("/solid", response_model=List[SOLIDPrinciple])
+@router.get("/solid", response_model=list[SOLIDPrinciple])
 async def get_solid_principles():
     """Returns the SOLID software design principles."""
     return OOPService.get_solid_principles()
 
 
-@router.get("/patterns", response_model=List[OOPDesignPattern])
+@router.get("/patterns", response_model=list[OOPDesignPattern])
 async def get_design_patterns():
     """Returns the Gang of Four design patterns."""
     return OOPService.get_design_patterns()
 
 
-@router.get("/modules", response_model=List[OOPModule])
+@router.get("/modules", response_model=list[OOPModule])
 async def list_oop_modules():
     """Returns all structured OOP learning modules."""
     return OOPService.list_modules()

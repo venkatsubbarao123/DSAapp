@@ -1,9 +1,11 @@
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.app.judge.queue import JudgeQueue
 from backend.app.models.audit import AuditLog
 from backend.app.models.content import ContentStatus
 from backend.app.models.progress import (
@@ -16,7 +18,6 @@ from backend.app.models.progress import (
     SubmissionStatus,
     UserProblemProgress,
 )
-from backend.app.judge.queue import JudgeQueue
 from backend.app.repositories.content_repo import ContentRepository
 from backend.app.repositories.progress_repo import ProgressRepository
 from backend.app.schemas.progress import (
@@ -51,7 +52,9 @@ class ProgressService:
     # Progress Tracking Workflows
     # -----------------------------------------------------------------------
 
-    async def start_lesson(self, user_id: str, lesson_id_or_slug: str) -> UserLessonProgressRead:
+    async def start_lesson(
+        self, user_id: str, lesson_id_or_slug: str
+    ) -> UserLessonProgressRead:
         """Records that a user has opened / started reading a lesson."""
         lesson = await self.content_repo.get_lesson_by_slug_or_id(lesson_id_or_slug)
         if not lesson or lesson.status != ContentStatus.PUBLISHED:
@@ -64,7 +67,9 @@ class ProgressService:
         await self.db.commit()
         return UserLessonProgressRead.model_validate(prog)
 
-    async def complete_lesson(self, user_id: str, lesson_id_or_slug: str) -> UserLessonProgressRead:
+    async def complete_lesson(
+        self, user_id: str, lesson_id_or_slug: str
+    ) -> UserLessonProgressRead:
         """Records lesson completion."""
         lesson = await self.content_repo.get_lesson_by_slug_or_id(lesson_id_or_slug)
         if not lesson or lesson.status != ContentStatus.PUBLISHED:
@@ -77,7 +82,9 @@ class ProgressService:
         await self.db.commit()
         return UserLessonProgressRead.model_validate(prog)
 
-    async def attempt_problem(self, user_id: str, problem_id_or_slug: str) -> UserProblemProgressRead:
+    async def attempt_problem(
+        self, user_id: str, problem_id_or_slug: str
+    ) -> UserProblemProgressRead:
         """Records problem attempt."""
         problem = await self.content_repo.get_problem_by_slug_or_id(problem_id_or_slug)
         if not problem or problem.status != ContentStatus.PUBLISHED:
@@ -90,7 +97,9 @@ class ProgressService:
         await self.db.commit()
         return UserProblemProgressRead.model_validate(prog)
 
-    async def solve_problem(self, user_id: str, problem_id_or_slug: str) -> UserProblemProgressRead:
+    async def solve_problem(
+        self, user_id: str, problem_id_or_slug: str
+    ) -> UserProblemProgressRead:
         """Records verified solve milestone for a problem."""
         problem = await self.content_repo.get_problem_by_slug_or_id(problem_id_or_slug)
         if not problem or problem.status != ContentStatus.PUBLISHED:
@@ -114,12 +123,24 @@ class ProgressService:
         attempted_problems = await self.repo.count_user_attempted_problems(user_id)
         solved_problems = await self.repo.count_user_solved_problems(user_id)
 
-        lesson_pct = round((completed_lessons / total_lessons) * 100, 1) if total_lessons > 0 else 0.0
-        problem_pct = round((solved_problems / total_problems) * 100, 1) if total_problems > 0 else 0.0
+        lesson_pct = (
+            round((completed_lessons / total_lessons) * 100, 1)
+            if total_lessons > 0
+            else 0.0
+        )
+        problem_pct = (
+            round((solved_problems / total_problems) * 100, 1)
+            if total_problems > 0
+            else 0.0
+        )
 
         total_content = total_lessons + total_problems
         completed_content = completed_lessons + solved_problems
-        overall_pct = round((completed_content / total_content) * 100, 1) if total_content > 0 else 0.0
+        overall_pct = (
+            round((completed_content / total_content) * 100, 1)
+            if total_content > 0
+            else 0.0
+        )
 
         raw_activity = await self.repo.get_recent_activity(user_id, limit=10)
         activity_items = [
@@ -151,7 +172,9 @@ class ProgressService:
             unresolved_mistakes_count=unresolved_msts,
         )
 
-    async def get_topic_progress(self, user_id: str, topic_id_or_slug: str) -> TopicProgressRead:
+    async def get_topic_progress(
+        self, user_id: str, topic_id_or_slug: str
+    ) -> TopicProgressRead:
         res = await self.repo.get_topic_progress(user_id, topic_id_or_slug)
         if not res:
             raise HTTPException(
@@ -160,7 +183,9 @@ class ProgressService:
             )
         return TopicProgressRead(**res)
 
-    async def get_problem_progress(self, user_id: str, problem_id_or_slug: str) -> UserProblemProgressRead:
+    async def get_problem_progress(
+        self, user_id: str, problem_id_or_slug: str
+    ) -> UserProblemProgressRead:
         problem = await self.content_repo.get_problem_by_slug_or_id(problem_id_or_slug)
         if not problem or problem.status != ContentStatus.PUBLISHED:
             raise HTTPException(
@@ -190,13 +215,19 @@ class ProgressService:
         completed = await self.repo.count_user_completed_lessons(user_id)
         total_solved = solved + completed
 
-        retention_score = min(98.5, round(60.0 + (total_solved * 4.2), 1)) if total_solved > 0 else 0.0
+        retention_score = (
+            min(98.5, round(60.0 + (total_solved * 4.2), 1))
+            if total_solved > 0
+            else 0.0
+        )
 
         # Group mistakes by type
-        _, mistakes_count = await self.repo.list_user_mistakes(user_id, limit=1)
-        mistake_breakdown: Dict[str, int] = {}
+        _, _mistakes_count = await self.repo.list_user_mistakes(user_id, limit=1)
+        mistake_breakdown: dict[str, int] = {}
         for m_type in MistakeType:
-            items, c = await self.repo.list_user_mistakes(user_id, mistake_type=m_type, limit=1)
+            _items, c = await self.repo.list_user_mistakes(
+                user_id, mistake_type=m_type, limit=1
+            )
             if c > 0:
                 mistake_breakdown[m_type.value] = c
 
@@ -205,7 +236,10 @@ class ProgressService:
             streak_days=min(14, max(1, total_solved)),
             mistake_breakdown=mistake_breakdown,
             pattern_mastery=[
-                {"pattern": "Two Pointers", "level": "PROFICIENT" if solved >= 1 else "DEVELOPING"},
+                {
+                    "pattern": "Two Pointers",
+                    "level": "PROFICIENT" if solved >= 1 else "DEVELOPING",
+                },
                 {"pattern": "Sliding Window", "level": "DEVELOPING"},
                 {"pattern": "Dynamic Programming", "level": "NOVICE"},
             ],
@@ -262,13 +296,15 @@ class ProgressService:
             action="submission_created",
             target_type="Submission",
             target_id=submission.id,
-            metadata_json=json.dumps({
-                "public_id": submission.public_id,
-                "problem_id": problem.id,
-                "problem_slug": problem.slug,
-                "language": data.language,
-                "status": submission.status.value,
-            }),
+            metadata_json=json.dumps(
+                {
+                    "public_id": submission.public_id,
+                    "problem_id": problem.id,
+                    "problem_slug": problem.slug,
+                    "language": data.language,
+                    "status": submission.status.value,
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()
@@ -280,12 +316,12 @@ class ProgressService:
     async def list_submissions(
         self,
         user_id: str,
-        problem_id: Optional[str] = None,
-        language: Optional[str] = None,
-        status_filter: Optional[SubmissionStatus] = None,
+        problem_id: str | None = None,
+        language: str | None = None,
+        status_filter: SubmissionStatus | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> Tuple[List[SubmissionSummary], int]:
+    ) -> tuple[list[SubmissionSummary], int]:
         page = max(1, page)
         page_size = min(100, max(1, page_size))
         offset = (page - 1) * page_size
@@ -332,13 +368,15 @@ class ProgressService:
             )
         return self._to_submission_detail(sub)
 
-    def _to_submission_result_dict(self, res: Any) -> Optional[Dict[str, Any]]:
+    def _to_submission_result_dict(self, res: Any) -> dict[str, Any] | None:
         if not res:
             return None
         return {
             "id": res.id,
             "submission_id": res.submission_id,
-            "verdict": res.verdict.value if hasattr(res.verdict, "value") else str(res.verdict),
+            "verdict": res.verdict.value
+            if hasattr(res.verdict, "value")
+            else str(res.verdict),
             "tests_total": res.tests_total,
             "tests_passed": res.tests_passed,
             "execution_time_ms": res.execution_time_ms,
@@ -395,11 +433,13 @@ class ProgressService:
             action="mistake_created",
             target_type="Mistake",
             target_id=mistake.id,
-            metadata_json=json.dumps({
-                "public_id": mistake.public_id,
-                "mistake_type": data.mistake_type.value,
-                "title": data.title,
-            }),
+            metadata_json=json.dumps(
+                {
+                    "public_id": mistake.public_id,
+                    "mistake_type": data.mistake_type.value,
+                    "title": data.title,
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()
@@ -411,13 +451,13 @@ class ProgressService:
     async def list_mistakes(
         self,
         user_id: str,
-        is_resolved: Optional[bool] = None,
-        mistake_type: Optional[MistakeType] = None,
-        problem_id: Optional[str] = None,
-        search: Optional[str] = None,
+        is_resolved: bool | None = None,
+        mistake_type: MistakeType | None = None,
+        problem_id: str | None = None,
+        search: str | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> Tuple[List[MistakeRead], int]:
+    ) -> tuple[list[MistakeRead], int]:
         page = max(1, page)
         page_size = min(100, max(1, page_size))
         offset = (page - 1) * page_size
@@ -469,7 +509,9 @@ class ProgressService:
             mistake.mistake_type = data.mistake_type
         if data.is_resolved is not None:
             mistake.is_resolved = data.is_resolved
-            mistake.resolved_at = datetime.now(timezone.utc) if data.is_resolved else None
+            mistake.resolved_at = (
+                datetime.now(timezone.utc) if data.is_resolved else None
+            )
 
         await self.db.commit()
         return self._to_mistake_read(mistake)
@@ -517,12 +559,16 @@ class ProgressService:
         if data.source_type == RevisionSourceType.PROBLEM:
             prob = await self.content_repo.get_problem_by_slug_or_id(data.source_id)
             if not prob or prob.status != ContentStatus.PUBLISHED:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found.")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found."
+                )
             title = title or prob.title
         elif data.source_type == RevisionSourceType.LESSON:
             les = await self.content_repo.get_lesson_by_slug_or_id(data.source_id)
             if not les or les.status != ContentStatus.PUBLISHED:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found.")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found."
+                )
             title = title or les.title
 
         item = await self.repo.create_revision_item(
@@ -537,7 +583,7 @@ class ProgressService:
 
     async def list_due_revisions(
         self, user_id: str, page: int = 1, page_size: int = 50
-    ) -> Tuple[List[RevisionItemRead], int]:
+    ) -> tuple[list[RevisionItemRead], int]:
         page = max(1, page)
         page_size = min(100, max(1, page_size))
         offset = (page - 1) * page_size
@@ -565,12 +611,14 @@ class ProgressService:
             action="revision_reviewed",
             target_type="RevisionItem",
             target_id=item.id,
-            metadata_json=json.dumps({
-                "public_id": item.public_id,
-                "outcome": data.outcome.value,
-                "new_interval_days": sched.interval_days,
-                "due_at": sched.due_at.isoformat(),
-            }),
+            metadata_json=json.dumps(
+                {
+                    "public_id": item.public_id,
+                    "outcome": data.outcome.value,
+                    "new_interval_days": sched.interval_days,
+                    "due_at": sched.due_at.isoformat(),
+                }
+            ),
         )
         self.db.add(audit)
         await self.db.commit()

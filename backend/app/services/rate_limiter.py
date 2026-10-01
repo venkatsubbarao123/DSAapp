@@ -2,7 +2,7 @@
 
 import time
 from collections import defaultdict
-from typing import Dict, List
+
 from fastapi import HTTPException, status
 
 from backend.app.core.config import settings
@@ -15,7 +15,7 @@ class RateLimiter:
 
     def __init__(self):
         # In-memory sliding window buffer: key -> list of timestamps
-        self._local_buckets: Dict[str, List[float]] = defaultdict(list)
+        self._local_buckets: dict[str, list[float]] = defaultdict(list)
 
     async def check_rate_limit(
         self,
@@ -43,7 +43,9 @@ class RateLimiter:
                 request_count = results[2]
 
                 if request_count > max_requests:
-                    logger.warning(f"Rate limit exceeded for key={key}: {request_count}/{max_requests}")
+                    logger.warning(
+                        f"Rate limit exceeded for key={key}: {request_count}/{max_requests}"
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                         detail="Too many requests. Please slow down and try again later.",
@@ -52,7 +54,9 @@ class RateLimiter:
             except HTTPException:
                 raise
             except Exception as exc:
-                logger.warning(f"Redis rate limiter failed, falling back to local memory: {exc}")
+                logger.warning(
+                    f"Redis rate limiter failed, falling back to local memory: {exc}"
+                )
 
         # In-memory fallback
         timestamps = self._local_buckets[key]
@@ -61,7 +65,9 @@ class RateLimiter:
         self._local_buckets[key] = [t for t in timestamps if t > cutoff]
 
         if len(self._local_buckets[key]) >= max_requests:
-            logger.warning(f"Local rate limit exceeded for key={key}: {len(self._local_buckets[key])}/{max_requests}")
+            logger.warning(
+                f"Local rate limit exceeded for key={key}: {len(self._local_buckets[key])}/{max_requests}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many requests. Please slow down and try again later.",

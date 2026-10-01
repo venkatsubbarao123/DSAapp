@@ -1,9 +1,9 @@
 """Email delivery provider interfaces with Mock structured logging and Production SMTP capabilities."""
 
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +17,9 @@ class BaseEmailProvider(ABC):
         to_email: str,
         subject: str,
         html_body: str,
-        text_body: Optional[str] = None,
+        text_body: str | None = None,
     ) -> bool:
         """Dispatches an email. Returns True if successfully accepted/delivered."""
-        pass
 
 
 class MockEmailProvider(BaseEmailProvider):
@@ -30,14 +29,14 @@ class MockEmailProvider(BaseEmailProvider):
     """
 
     def __init__(self):
-        self.sent_messages: List[Dict[str, Any]] = []
+        self.sent_messages: list[dict[str, Any]] = []
 
     async def send_email(
         self,
         to_email: str,
         subject: str,
         html_body: str,
-        text_body: Optional[str] = None,
+        text_body: str | None = None,
     ) -> bool:
         record = {
             "to_email": to_email,
@@ -79,12 +78,12 @@ class SmtpEmailProvider(BaseEmailProvider):
         to_email: str,
         subject: str,
         html_body: str,
-        text_body: Optional[str] = None,
+        text_body: str | None = None,
     ) -> bool:
         import asyncio
+        import smtplib
         from email.mime.multipart import MIMEMultipart
         from email.mime.text import MIMEText
-        import smtplib
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject

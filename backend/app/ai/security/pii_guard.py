@@ -5,11 +5,11 @@ is never inadvertently transmitted to external AI providers.
 """
 
 import re
-from typing import Optional
-
 
 EMAIL_REGEX = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
-PHONE_REGEX = re.compile(r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+PHONE_REGEX = re.compile(
+    r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+)
 CARD_REGEX = re.compile(r"\b(?:\d{4}[-\s]?){3}\d{4}\b")
 SSN_REGEX = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 
@@ -18,7 +18,7 @@ class PIIGuard:
     """Detects and redacts PII from text before passing to AI models."""
 
     @staticmethod
-    def redact_pii(text: Optional[str]) -> str:
+    def redact_pii(text: str | None) -> str:
         """Redacts emails, phone numbers, and payment numbers with standardized placeholders."""
         if not text:
             return ""
@@ -31,7 +31,7 @@ class PIIGuard:
         return redacted
 
     @staticmethod
-    def contains_pii(text: Optional[str]) -> bool:
+    def contains_pii(text: str | None) -> bool:
         """Checks if text contains detectable PII patterns."""
         if not text:
             return False
@@ -42,7 +42,4 @@ class PIIGuard:
             return True
         if PHONE_REGEX.search(text):
             return True
-        if SSN_REGEX.search(text):
-            return True
-
-        return False
+        return bool(SSN_REGEX.search(text))

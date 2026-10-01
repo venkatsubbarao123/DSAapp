@@ -1,6 +1,5 @@
 """Administrative endpoints for system diagnostics and security audit log inspection."""
 
-from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from backend.app.api.deps import get_admin_service, require_admin
@@ -30,10 +29,10 @@ async def get_system_diagnostics(
 async def list_audit_logs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
-    action: Optional[str] = Query(default=None),
-    actor_id: Optional[str] = Query(default=None),
-    target_type: Optional[str] = Query(default=None),
-    target_id: Optional[str] = Query(default=None),
+    action: str | None = Query(default=None),
+    actor_id: str | None = Query(default=None),
+    target_type: str | None = Query(default=None),
+    target_id: str | None = Query(default=None),
     current_user: User = Depends(require_admin),
     admin_service: AdminService = Depends(get_admin_service),
 ):

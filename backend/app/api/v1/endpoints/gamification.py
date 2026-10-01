@@ -1,6 +1,7 @@
 """Gamification Profile, XP Ledger, Streak, and Achievement Endpoints."""
 
 import logging
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,7 +66,9 @@ async def get_xp_history(
     db: AsyncSession = Depends(get_db),
 ):
     """Returns paginated immutable XP ledger transactions for the learner."""
-    count_stmt = select(func.count(XPTransaction.id)).where(XPTransaction.user_id == current_user.id)
+    count_stmt = select(func.count(XPTransaction.id)).where(
+        XPTransaction.user_id == current_user.id
+    )
     total = (await db.execute(count_stmt)).scalar() or 0
 
     stmt = (
@@ -122,7 +125,9 @@ async def get_achievements(
     achievements = (await db.execute(catalog_stmt)).scalars().all()
 
     # 2. Fetch user unlocks
-    user_ach_stmt = select(UserAchievement).where(UserAchievement.user_id == current_user.id)
+    user_ach_stmt = select(UserAchievement).where(
+        UserAchievement.user_id == current_user.id
+    )
     user_achievements = (await db.execute(user_ach_stmt)).scalars().all()
     unlock_map = {ua.achievement_id: ua for ua in user_achievements}
 

@@ -4,9 +4,10 @@ Supports SQL persistence with optional Redis acceleration.
 Provides atomic job claims, heartbeats, and stale job reclamation.
 """
 
-from datetime import datetime, timedelta, timezone
 import logging
-from typing import Any, Dict, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any
+
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +34,11 @@ class JudgeQueue:
         now = datetime.now(timezone.utc)
 
         if existing_job:
-            if existing_job.status in (JudgeJobStatus.QUEUED, JudgeJobStatus.RUNNING, JudgeJobStatus.CLAIMED):
+            if existing_job.status in (
+                JudgeJobStatus.QUEUED,
+                JudgeJobStatus.RUNNING,
+                JudgeJobStatus.CLAIMED,
+            ):
                 return existing_job
             # Reset existing job for re-execution
             existing_job.status = JudgeJobStatus.QUEUED
@@ -73,7 +78,7 @@ class JudgeQueue:
         return job
 
     @staticmethod
-    async def claim_next_job(db: AsyncSession, worker_id: str) -> Optional[JudgeJob]:
+    async def claim_next_job(db: AsyncSession, worker_id: str) -> JudgeJob | None:
         """Atomically claims the oldest queued job for execution by worker_id."""
         now = datetime.now(timezone.utc)
 
@@ -81,7 +86,11 @@ class JudgeQueue:
         # For Postgres, with_for_update(skip_locked=True) is used; for SQLite, standard select.
         stmt = (
             select(JudgeJob)
-            .where(JudgeJob.status.in_([JudgeJobStatus.QUEUED, JudgeJobStatus.RETRY_PENDING]))
+            .where(
+                JudgeJob.status.in_(
+                    [JudgeJobStatus.QUEUED, JudgeJobStatus.RETRY_PENDING]
+                )
+            )
             .order_by(JudgeJob.queued_at.asc())
             .limit(1)
         )
@@ -140,12 +149,9 @@ class JudgeQueue:
         threshold = now - timedelta(seconds=timeout_seconds)
 
         # Find timed out running jobs
-        stmt = (
-            select(JudgeJob)
-            .where(
-                JudgeJob.status == JudgeJobStatus.RUNNING,
-                JudgeJob.heartbeat_at < threshold,
-            )
+        stmt = select(JudgeJob).where(
+            JudgeJob.status == JudgeJobStatus.RUNNING,
+            JudgeJob.heartbeat_at < threshold,
         )
         result = await db.execute(stmt)
         stale_jobs = result.scalars().all()
@@ -162,7 +168,9 @@ class JudgeQueue:
             else:
                 job.status = JudgeJobStatus.FAILED
                 job.completed_at = now
-                job.failure_reason = "Job exceeded maximum execution attempts without worker heartbeat."
+                job.failure_reason = (
+                    "Job exceeded maximum execution attempts without worker heartbeat."
+                )
                 # Mark submission as SYSTEM_ERROR
                 sub_stmt = (
                     update(Submission)
@@ -170,7 +178,9 @@ class JudgeQueue:
                     .values(status=SubmissionStatus.SYSTEM_ERROR, updated_at=now)
                 )
                 await db.execute(sub_stmt)
-                logger.error(f"Marked judge job {job.id} as FAILED due to repeated worker timeouts.")
+                logger.error(
+                    f"Marked judge job {job.id} as FAILED due to repeated worker timeouts."
+                )
             reclaimed += 1
 
         if reclaimed > 0:
@@ -207,13 +217,20 @@ class JudgeQueue:
         return False
 
     @staticmethod
-    async def get_queue_stats(db: AsyncSession) -> Dict[str, Any]:
+    async def get_queue_stats(db: AsyncSession) -> dict[str, Any]:
         """Provides operational metrics on queue depth and processing status."""
-        stmt = select(JudgeJob.status, func.count(JudgeJob.id)).group_by(JudgeJob.status)
+        stmt = select(JudgeJob.status, func.count(JudgeJob.id)).group_by(
+            JudgeJob.status
+        )
         result = await db.execute(stmt)
-        counts = {status.value if hasattr(status, "value") else str(status): count for status, count in result.all()}
+        counts = {
+            status.value if hasattr(status, "value") else str(status): count
+            for status, count in result.all()
+        }
 
-        total_queued = counts.get(JudgeJobStatus.QUEUED.value, 0) + counts.get(JudgeJobStatus.RETRY_PENDING.value, 0)
+        total_queued = counts.get(JudgeJobStatus.QUEUED.value, 0) + counts.get(
+            JudgeJobStatus.RETRY_PENDING.value, 0
+        )
         total_running = counts.get(JudgeJobStatus.RUNNING.value, 0)
 
         return {

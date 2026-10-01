@@ -6,7 +6,7 @@ streak freeze protections, idempotent same-day activities, and milestone XP rewa
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.services.gamification.xp_service import XPService
@@ -18,19 +18,19 @@ class StreakService:
     """Manages learner daily activity streaks and freezes."""
 
     @staticmethod
-    def get_today_str(now: Optional[datetime] = None) -> str:
+    def get_today_str(now: datetime | None = None) -> str:
         """Returns today's date string in YYYY-MM-DD (UTC)."""
         dt = now or datetime.now(timezone.utc)
         return dt.strftime("%Y-%m-%d")
 
     @staticmethod
-    def get_yesterday_str(now: Optional[datetime] = None) -> str:
+    def get_yesterday_str(now: datetime | None = None) -> str:
         """Returns yesterday's date string in YYYY-MM-DD (UTC)."""
         dt = now or datetime.now(timezone.utc)
         return (dt - timedelta(days=1)).strftime("%Y-%m-%d")
 
     @staticmethod
-    def get_day_before_yesterday_str(now: Optional[datetime] = None) -> str:
+    def get_day_before_yesterday_str(now: datetime | None = None) -> str:
         """Returns date string for two days ago (UTC)."""
         dt = now or datetime.now(timezone.utc)
         return (dt - timedelta(days=2)).strftime("%Y-%m-%d")
@@ -41,8 +41,8 @@ class StreakService:
         db: AsyncSession,
         user_id: str,
         activity_type: str = "INTERVIEW",
-        now: Optional[datetime] = None,
-    ) -> Tuple[int, int, bool]:
+        now: datetime | None = None,
+    ) -> tuple[int, int, bool]:
         """Convenience alias for recording learning activity."""
         return await cls.record_qualifying_activity(db, user_id, activity_type, now)
 
@@ -52,8 +52,8 @@ class StreakService:
         db: AsyncSession,
         user_id: str,
         activity_type: str,
-        now: Optional[datetime] = None,
-    ) -> Tuple[int, int, bool]:
+        now: datetime | None = None,
+    ) -> tuple[int, int, bool]:
         """Records a qualifying learning activity (solve, daily challenge, revision).
 
         Returns:
@@ -81,7 +81,9 @@ class StreakService:
             # Used streak freeze to preserve yesterday's missed day
             profile.streak_freeze_count -= 1
             profile.current_streak += 1
-            logger.info(f"User {user_id} consumed 1 streak freeze. Streak preserved at {profile.current_streak}")
+            logger.info(
+                f"User {user_id} consumed 1 streak freeze. Streak preserved at {profile.current_streak}"
+            )
         else:
             # Missed more than allowed without freeze: reset streak
             profile.current_streak = 1

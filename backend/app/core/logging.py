@@ -4,10 +4,10 @@ import json
 import logging
 import sys
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Context variable for correlating logs with request IDs
-request_id_ctx: ContextVar[Optional[str]] = ContextVar("request_id_ctx", default=None)
+request_id_ctx: ContextVar[str | None] = ContextVar("request_id_ctx", default=None)
 
 # Sensitive keys that must be scrubbed from structured log payloads
 SENSITIVE_KEYS = {
@@ -51,7 +51,7 @@ class StructuredJsonFormatter(logging.Formatter):
     """Formats log records as structured JSON."""
 
     def format(self, record: logging.LogRecord) -> str:
-        log_payload: Dict[str, Any] = {
+        log_payload: dict[str, Any] = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "logger": record.name,
@@ -87,9 +87,7 @@ def setup_logging(log_level: str = "INFO", structured: bool = True) -> logging.L
         handler.setFormatter(StructuredJsonFormatter())
     else:
         handler.setFormatter(
-            logging.Formatter(
-                fmt="%(asctime)s [%(levelname)s] [%(name)s] %(message)s"
-            )
+            logging.Formatter(fmt="%(asctime)s [%(levelname)s] [%(name)s] %(message)s")
         )
 
     logger.addHandler(handler)

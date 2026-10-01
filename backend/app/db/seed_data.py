@@ -4,6 +4,7 @@ Clearly identified as DEVELOPMENT SEED DATA.
 """
 
 import json
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

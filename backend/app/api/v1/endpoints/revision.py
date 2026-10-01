@@ -45,7 +45,9 @@ async def list_due_revisions(
         has_prev=page > 1,
     )
     data = paginated.model_dump()
-    data["due_items_count"] = sum(1 for item in items if item.is_due_now or item.is_overdue)
+    data["due_items_count"] = sum(
+        1 for item in items if item.is_due_now or item.is_overdue
+    )
     data["total_active_items"] = total
     return {"success": True, "data": data}
 
@@ -59,7 +61,9 @@ async def create_revision_item(
     service: ProgressService = Depends(get_progress_service),
 ):
     """Adds a lesson, problem, or mistake to the user's spaced revision queue."""
-    await rate_limiter.check_rate_limit(f"rev:{current_user.id}", max_requests=60, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"rev:{current_user.id}", max_requests=60, window_seconds=60
+    )
     item = await service.create_revision_item(current_user.id, payload)
     return {"success": True, "data": item.model_dump()}
 
@@ -77,7 +81,9 @@ async def review_revision_item(
 
     Allowed outcomes: AGAIN, HARD, GOOD, EASY.
     """
-    await rate_limiter.check_rate_limit(f"rev:{current_user.id}", max_requests=120, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"rev:{current_user.id}", max_requests=120, window_seconds=60
+    )
     reviewed_item = await service.review_revision_item(
         revision_item_id, current_user.id, payload
     )
@@ -87,4 +93,3 @@ async def review_revision_item(
         data["interval_days"] = reviewed_item.schedule.interval_days
         data["review_count"] = reviewed_item.schedule.review_count
     return {"success": True, "data": data}
-

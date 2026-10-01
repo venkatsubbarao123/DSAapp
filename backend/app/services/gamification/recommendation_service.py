@@ -10,7 +10,7 @@ Strictly filters:
 """
 
 import logging
-from typing import List, Optional, Set
+
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,13 +35,14 @@ logger = logging.getLogger(__name__)
 
 class ScoredProblemCandidate(BaseModel):
     """Candidate problem enriched with deterministic scoring rationale."""
+
     problem_id: str
     slug: str
     title: str
     difficulty: str
-    topic_id: Optional[str]
+    topic_id: str | None
     score: float
-    reasons: List[str]
+    reasons: list[str]
     category: str
 
 
@@ -54,11 +55,11 @@ class IntelligentProblemSelector:
         db: AsyncSession,
         user: User,
         mode: str = "QUICK",
-        topic_id: Optional[str] = None,
-        pattern_id: Optional[str] = None,
-        preferred_difficulty: Optional[str] = None,
+        topic_id: str | None = None,
+        pattern_id: str | None = None,
+        preferred_difficulty: str | None = None,
         limit: int = 3,
-    ) -> List[ScoredProblemCandidate]:
+    ) -> list[ScoredProblemCandidate]:
         """Selects up to `limit` optimal candidate problems tailored to learner state."""
         # 1. Check user premium entitlement
         is_premium = await UserRepository(db).has_active_premium(user.id)
@@ -84,19 +85,27 @@ class IntelligentProblemSelector:
 
         # 3. Gather learner context
         # Solved problems
-        prog_stmt = select(UserProblemProgress).where(UserProblemProgress.user_id == user.id)
+        prog_stmt = select(UserProblemProgress).where(
+            UserProblemProgress.user_id == user.id
+        )
         user_progress_list = (await db.execute(prog_stmt)).scalars().all()
-        solved_ids: Set[str] = {
-            p.problem_id for p in user_progress_list if p.status == ProblemProgressStatus.SOLVED
+        solved_ids: set[str] = {
+            p.problem_id
+            for p in user_progress_list
+            if p.status == ProblemProgressStatus.SOLVED
         }
-        attempted_unsolved_ids: Set[str] = {
-            p.problem_id for p in user_progress_list if p.status == ProblemProgressStatus.ATTEMPTED
+        attempted_unsolved_ids: set[str] = {
+            p.problem_id
+            for p in user_progress_list
+            if p.status == ProblemProgressStatus.ATTEMPTED
         }
 
         # Mistakes
         mistake_stmt = select(Mistake).where(Mistake.user_id == user.id)
         user_mistakes = (await db.execute(mistake_stmt)).scalars().all()
-        mistake_problem_ids: Set[str] = {m.problem_id for m in user_mistakes if m.problem_id}
+        mistake_problem_ids: set[str] = {
+            m.problem_id for m in user_mistakes if m.problem_id
+        }
 
         # Revision items due
         rev_stmt = select(RevisionItem).where(
@@ -104,12 +113,14 @@ class IntelligentProblemSelector:
             RevisionItem.is_active.is_(True),
         )
         due_revisions = (await db.execute(rev_stmt)).scalars().all()
-        revision_problem_ids: Set[str] = {
-            r.source_id for r in due_revisions if getattr(r.source_type, "value", str(r.source_type)) == "PROBLEM"
+        revision_problem_ids: set[str] = {
+            r.source_id
+            for r in due_revisions
+            if getattr(r.source_type, "value", str(r.source_type)) == "PROBLEM"
         }
 
         # 4. Filter and score candidates
-        candidates: List[ScoredProblemCandidate] = []
+        candidates: list[ScoredProblemCandidate] = []
 
         for p in all_problems:
             # If not in revision mode, skip already solved problems
@@ -117,7 +128,7 @@ class IntelligentProblemSelector:
                 continue
 
             score = 10.0
-            reasons: List[str] = []
+            reasons: list[str] = []
             category = "PRACTICE"
 
             # Revision Priority (+40)
@@ -127,19 +138,25 @@ class IntelligentProblemSelector:
                 category = "REVISION_DUE"
             elif mode.upper() == "REVISION" and p.id in solved_ids:
                 score += 35.0
-                reasons.append("Previously solved; selected for spaced retention review.")
+                reasons.append(
+                    "Previously solved; selected for spaced retention review."
+                )
                 category = "REVISION"
 
             # Mistake Priority (+35)
             if p.id in mistake_problem_ids:
                 score += 35.0
-                reasons.append("Prior mistake logged for this problem; recommended to reinforce concept.")
+                reasons.append(
+                    "Prior mistake logged for this problem; recommended to reinforce concept."
+                )
                 category = "MISTAKE_PRACTICE"
 
             # Recently Failed / Attempted (+30)
             if p.id in attempted_unsolved_ids:
                 score += 30.0
-                reasons.append("Previously attempted but unsolved; ready for a fresh attempt.")
+                reasons.append(
+                    "Previously attempted but unsolved; ready for a fresh attempt."
+                )
                 category = "RECENTLY_FAILED"
 
             # Pattern Match
@@ -149,14 +166,25 @@ class IntelligentProblemSelector:
                 category = "PATTERN_PRACTICE"
 
             # Difficulty Fit
-            if preferred_difficulty and p.difficulty.value == preferred_difficulty.upper():
+            if (
+                preferred_difficulty
+                and p.difficulty.value == preferred_difficulty.upper()
+            ):
                 score += 20.0
-                reasons.append(f"Calibrated to your preferred difficulty tier ({p.difficulty.value}).")
+                reasons.append(
+                    f"Calibrated to your preferred difficulty tier ({p.difficulty.value})."
+                )
 
             # Weak Topic heuristics: if topic has mistakes
-            if p.topic_id and any(m.problem and m.problem.topic_id == p.topic_id for m in user_mistakes if m.problem):
+            if p.topic_id and any(
+                m.problem and m.problem.topic_id == p.topic_id
+                for m in user_mistakes
+                if m.problem
+            ):
                 score += 15.0
-                reasons.append("Targets an algorithmic topic where cognitive mistakes were recently noted.")
+                reasons.append(
+                    "Targets an algorithmic topic where cognitive mistakes were recently noted."
+                )
                 category = "WEAK_TOPIC"
 
             if not reasons:

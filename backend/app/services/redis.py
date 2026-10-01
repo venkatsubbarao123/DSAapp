@@ -5,13 +5,13 @@ and safe in-memory fallback when Redis is offline or running in test mode.
 """
 
 import time
-from typing import Dict, Optional, Tuple
+
 from backend.app.core.config import settings
 from backend.app.core.logging import logger
 
-DEFAULT_CACHE_TTL = 300       # 5 minutes
-DEFAULT_RATELIMIT_TTL = 60    # 1 minute
-DEFAULT_SESSION_TTL = 86400   # 24 hours
+DEFAULT_CACHE_TTL = 300  # 5 minutes
+DEFAULT_RATELIMIT_TTL = 60  # 1 minute
+DEFAULT_SESSION_TTL = 86400  # 24 hours
 
 
 class RedisService:
@@ -21,13 +21,17 @@ class RedisService:
     system outages if Redis becomes temporarily unreachable.
     """
 
-    def __init__(self, redis_url: str = settings.REDIS_URL, required: bool = settings.REDIS_REQUIRED):
+    def __init__(
+        self,
+        redis_url: str = settings.REDIS_URL,
+        required: bool = settings.REDIS_REQUIRED,
+    ):
         self.redis_url = redis_url
         self.required = required
-        self._client: Optional[object] = None
+        self._client: object | None = None
         self._connected = False
         # In-memory fallback dictionary: key -> (value, expiry_timestamp_or_none)
-        self._memory_fallback: Dict[str, Tuple[str, Optional[float]]] = {}
+        self._memory_fallback: dict[str, tuple[str, float | None]] = {}
 
     def make_key(self, namespace: str, identifier: str) -> str:
         """Constructs standardized namespaced Redis key.
@@ -42,6 +46,7 @@ class RedisService:
         """Attempts connection to Redis if redis-py is available."""
         try:
             import redis.asyncio as aioredis
+
             self._client = aioredis.from_url(
                 self.redis_url,
                 encoding="utf-8",
@@ -54,16 +59,24 @@ class RedisService:
             return True
         except ImportError:
             if self.required:
-                logger.error("redis-py library is not installed, but REDIS_REQUIRED is True.")
+                logger.error(
+                    "redis-py library is not installed, but REDIS_REQUIRED is True."
+                )
             else:
-                logger.info("redis-py not installed; Redis service using safe in-memory fallback.")
+                logger.info(
+                    "redis-py not installed; Redis service using safe in-memory fallback."
+                )
             self._connected = False
             return False
         except Exception as exc:
             if self.required:
-                logger.error(f"Failed to connect to required Redis service at {self.redis_url}: {exc}")
+                logger.error(
+                    f"Failed to connect to required Redis service at {self.redis_url}: {exc}"
+                )
             else:
-                logger.warning(f"Optional Redis service unreachable at {self.redis_url}. Using safe in-memory fallback.")
+                logger.warning(
+                    f"Optional Redis service unreachable at {self.redis_url}. Using safe in-memory fallback."
+                )
             self._connected = False
             return False
 
@@ -95,13 +108,15 @@ class RedisService:
     def is_connected(self) -> bool:
         return self._connected
 
-    async def get(self, key: str) -> Optional[str]:
+    async def get(self, key: str) -> str | None:
         """Gets value from Redis with safe in-memory fallback."""
         if self._connected and self._client and hasattr(self._client, "get"):
             try:
                 return await self._client.get(key)
             except Exception as e:
-                logger.warning(f"Redis get failed for key {key}: {e}. Checking in-memory fallback.")
+                logger.warning(
+                    f"Redis get failed for key {key}: {e}. Checking in-memory fallback."
+                )
 
         # Check in-memory fallback
         if key in self._memory_fallback:
@@ -112,7 +127,7 @@ class RedisService:
                 del self._memory_fallback[key]
         return None
 
-    async def set(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: str, ttl: int | None = None) -> bool:
         """Sets value in Redis with optional TTL and safe in-memory fallback."""
         if self._connected and self._client and hasattr(self._client, "set"):
             try:
@@ -122,7 +137,9 @@ class RedisService:
                     await self._client.set(key, value)
                 return True
             except Exception as e:
-                logger.warning(f"Redis set failed for key {key}: {e}. Storing in memory fallback.")
+                logger.warning(
+                    f"Redis set failed for key {key}: {e}. Storing in memory fallback."
+                )
 
         # Store in in-memory fallback
         expiry = (time.time() + ttl) if ttl else None

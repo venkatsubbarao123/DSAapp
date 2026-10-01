@@ -3,8 +3,10 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -13,7 +15,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -23,12 +24,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.db.base import Base
 
 if TYPE_CHECKING:
+    from backend.app.models.content import Lesson, Problem
     from backend.app.models.user import User
-    from backend.app.models.content import Problem, Lesson
 
 
 class ProblemProgressStatus(str, enum.Enum):
     """User problem progress state."""
+
     NOT_STARTED = "NOT_STARTED"
     ATTEMPTED = "ATTEMPTED"
     SOLVED = "SOLVED"
@@ -36,6 +38,7 @@ class ProblemProgressStatus(str, enum.Enum):
 
 class LessonProgressStatus(str, enum.Enum):
     """User lesson completion progress state."""
+
     NOT_STARTED = "NOT_STARTED"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -43,6 +46,7 @@ class LessonProgressStatus(str, enum.Enum):
 
 class SubmissionStatus(str, enum.Enum):
     """Phase 5 Online Judge submission lifecycle states."""
+
     CREATED = "CREATED"
     QUEUED = "QUEUED"
     RUNNING = "RUNNING"
@@ -64,6 +68,7 @@ class SubmissionStatus(str, enum.Enum):
 
 class MistakeType(str, enum.Enum):
     """Pedagogical classification of learner mistakes."""
+
     CONCEPT_GAP = "CONCEPT_GAP"
     LOGIC_ERROR = "LOGIC_ERROR"
     EDGE_CASE = "EDGE_CASE"
@@ -76,6 +81,7 @@ class MistakeType(str, enum.Enum):
 
 class RevisionSourceType(str, enum.Enum):
     """Target entity type scheduled for revision."""
+
     LESSON = "LESSON"
     PROBLEM = "PROBLEM"
     MISTAKE = "MISTAKE"
@@ -83,6 +89,7 @@ class RevisionSourceType(str, enum.Enum):
 
 class RevisionScheduleStatus(str, enum.Enum):
     """Status of spaced revision cadence."""
+
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     PAUSED = "PAUSED"
@@ -90,6 +97,7 @@ class RevisionScheduleStatus(str, enum.Enum):
 
 class ReviewOutcome(str, enum.Enum):
     """Learner self-assessment feedback for spaced revision interval calculation."""
+
     AGAIN = "AGAIN"
     HARD = "HARD"
     GOOD = "GOOD"
@@ -98,11 +106,18 @@ class ReviewOutcome(str, enum.Enum):
 
 class UserProblemProgress(Base):
     """Per-user tracking of algorithmic problem engagement."""
+
     __tablename__ = "user_problem_progress"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    problem_id: Mapped[str] = mapped_column(String(36), ForeignKey("problems.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    problem_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("problems.id", ondelete="CASCADE"), nullable=False
+    )
 
     status: Mapped[ProblemProgressStatus] = mapped_column(
         Enum(ProblemProgressStatus),
@@ -112,12 +127,18 @@ class UserProblemProgress(Base):
     attempts_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     successful_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    first_attempted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_attempted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    solved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    first_attempted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_attempted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    solved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     bookmarked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    personal_difficulty: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    personal_difficulty: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -132,7 +153,9 @@ class UserProblemProgress(Base):
     )
 
     user: Mapped["User"] = relationship("User", backref="problem_progress_records")
-    problem: Mapped["Problem"] = relationship("Problem", backref="user_progress_records")
+    problem: Mapped["Problem"] = relationship(
+        "Problem", backref="user_progress_records"
+    )
 
     __table_args__ = (
         UniqueConstraint("user_id", "problem_id", name="uq_user_problem_progress"),
@@ -144,11 +167,18 @@ class UserProblemProgress(Base):
 
 class UserLessonProgress(Base):
     """Per-user tracking of educational lesson reading and completion."""
+
     __tablename__ = "user_lesson_progress"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    lesson_id: Mapped[str] = mapped_column(String(36), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    lesson_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False
+    )
 
     status: Mapped[LessonProgressStatus] = mapped_column(
         Enum(LessonProgressStatus),
@@ -157,9 +187,15 @@ class UserLessonProgress(Base):
     )
     progress_percent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_viewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_viewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -178,7 +214,10 @@ class UserLessonProgress(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson_progress"),
-        CheckConstraint("progress_percent >= 0 AND progress_percent <= 100", name="chk_lesson_progress_percent"),
+        CheckConstraint(
+            "progress_percent >= 0 AND progress_percent <= 100",
+            name="chk_lesson_progress_percent",
+        ),
         Index("ix_user_lesson_progress_user_status", "user_id", "status"),
         Index("ix_user_lesson_progress_user_updated", "user_id", "updated_at"),
         Index("ix_user_lesson_progress_lesson_id", "lesson_id"),
@@ -187,9 +226,12 @@ class UserLessonProgress(Base):
 
 class Submission(Base):
     """User code submission record for a problem."""
+
     __tablename__ = "submissions"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     public_id: Mapped[str] = mapped_column(
         String(36),
         unique=True,
@@ -197,8 +239,12 @@ class Submission(Base):
         default=lambda: f"sub_{uuid.uuid4().hex[:12]}",
         nullable=False,
     )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    problem_id: Mapped[str] = mapped_column(String(36), ForeignKey("problems.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    problem_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("problems.id", ondelete="CASCADE"), nullable=False
+    )
 
     language: Mapped[str] = mapped_column(String(32), nullable=False)
     source_code: Mapped[str] = mapped_column(Text, nullable=False)
@@ -208,8 +254,8 @@ class Submission(Base):
         nullable=False,
     )
 
-    idempotency_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    metadata_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -236,9 +282,12 @@ class Submission(Base):
 
 class Mistake(Base):
     """Personal mistake notebook entry for conceptual or implementation bugs."""
+
     __tablename__ = "mistakes"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     public_id: Mapped[str] = mapped_column(
         String(36),
         unique=True,
@@ -246,13 +295,15 @@ class Mistake(Base):
         default=lambda: f"mst_{uuid.uuid4().hex[:12]}",
         nullable=False,
     )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    problem_id: Mapped[Optional[str]] = mapped_column(
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    problem_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("problems.id", ondelete="SET NULL"),
         nullable=True,
     )
-    lesson_id: Mapped[Optional[str]] = mapped_column(
+    lesson_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("lessons.id", ondelete="SET NULL"),
         nullable=True,
@@ -261,10 +312,12 @@ class Mistake(Base):
     mistake_type: Mapped[MistakeType] = mapped_column(Enum(MistakeType), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    correction: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    correction: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     is_resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -279,8 +332,12 @@ class Mistake(Base):
     )
 
     user: Mapped["User"] = relationship("User", backref="user_mistakes")
-    problem: Mapped[Optional["Problem"]] = relationship("Problem", backref="problem_mistakes")
-    lesson: Mapped[Optional["Lesson"]] = relationship("Lesson", backref="lesson_mistakes")
+    problem: Mapped[Optional["Problem"]] = relationship(
+        "Problem", backref="problem_mistakes"
+    )
+    lesson: Mapped[Optional["Lesson"]] = relationship(
+        "Lesson", backref="lesson_mistakes"
+    )
 
     __table_args__ = (
         Index("ix_mistakes_user_resolved", "user_id", "is_resolved"),
@@ -291,9 +348,12 @@ class Mistake(Base):
 
 class RevisionItem(Base):
     """Spaced repetition item anchor referencing a lesson, problem, or mistake."""
+
     __tablename__ = "revision_items"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     public_id: Mapped[str] = mapped_column(
         String(36),
         unique=True,
@@ -301,9 +361,13 @@ class RevisionItem(Base):
         default=lambda: f"rev_{uuid.uuid4().hex[:12]}",
         nullable=False,
     )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
-    source_type: Mapped[RevisionSourceType] = mapped_column(Enum(RevisionSourceType), nullable=False)
+    source_type: Mapped[RevisionSourceType] = mapped_column(
+        Enum(RevisionSourceType), nullable=False
+    )
     source_id: Mapped[str] = mapped_column(String(64), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
 
@@ -331,16 +395,21 @@ class RevisionItem(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("user_id", "source_type", "source_id", name="uq_user_revision_source"),
+        UniqueConstraint(
+            "user_id", "source_type", "source_id", name="uq_user_revision_source"
+        ),
         Index("ix_revision_items_user_active", "user_id", "is_active"),
     )
 
 
 class RevisionSchedule(Base):
     """Spaced repetition scheduling cadence metadata for a revision item."""
+
     __tablename__ = "revision_schedules"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     revision_item_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("revision_items.id", ondelete="CASCADE"),
@@ -349,7 +418,9 @@ class RevisionSchedule(Base):
     )
 
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    last_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     review_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     interval_days: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
@@ -373,7 +444,9 @@ class RevisionSchedule(Base):
         nullable=False,
     )
 
-    revision_item: Mapped["RevisionItem"] = relationship("RevisionItem", back_populates="schedule")
+    revision_item: Mapped["RevisionItem"] = relationship(
+        "RevisionItem", back_populates="schedule"
+    )
 
     __table_args__ = (
         Index("ix_revision_schedules_due_at", "due_at"),

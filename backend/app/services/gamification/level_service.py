@@ -15,12 +15,13 @@ XP(L) = 50 * (L - 1) * L
 """
 
 import math
-from typing import Tuple
+
 from pydantic import BaseModel
 
 
 class LevelProgress(BaseModel):
     """Safe, typed level progression data."""
+
     current_level: int
     total_xp: int
     level_floor_xp: int
@@ -59,7 +60,7 @@ class LevelService:
         return max(1, level)
 
     @classmethod
-    def get_level_thresholds(cls, level: int) -> Tuple[int, int]:
+    def get_level_thresholds(cls, level: int) -> tuple[int, int]:
         """Returns (floor_xp, ceiling_xp) for the given level."""
         floor_xp = cls.total_xp_for_level(level)
         ceiling_xp = cls.total_xp_for_level(level + 1)

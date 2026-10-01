@@ -1,16 +1,16 @@
 """AI Providers factory and registry."""
 
-from typing import Optional
+
 from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.providers.gemini_provider import GeminiProvider
 from backend.app.ai.providers.mock_provider import MockAIProvider
 from backend.app.ai.providers.openai_provider import OpenAIProvider
 from backend.app.core.config import settings
 
-_cached_provider: Optional[AIProvider] = None
+_cached_provider: AIProvider | None = None
 
 
-def get_ai_provider(override_driver: Optional[str] = None) -> AIProvider:
+def get_ai_provider(override_driver: str | None = None) -> AIProvider:
     """Retrieves or instantiates the configured AI provider.
 
     Guarantees that test environments can run deterministically using the MockAIProvider
@@ -39,7 +39,7 @@ def get_ai_provider(override_driver: Optional[str] = None) -> AIProvider:
     return _cached_provider
 
 
-def set_ai_provider_instance(provider: Optional[AIProvider]) -> None:
+def set_ai_provider_instance(provider: AIProvider | None) -> None:
     """Allows setting an explicit provider instance (e.g. for unit and integration test fixtures)."""
     global _cached_provider
     _cached_provider = provider

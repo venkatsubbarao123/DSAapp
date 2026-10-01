@@ -9,7 +9,7 @@ Handles:
 """
 
 import logging
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,9 +31,15 @@ from backend.app.schemas.gamification import (
     RecordProblemResultRequest,
     RecordProblemResultResponse,
 )
-from backend.app.services.gamification.daily_challenge_service import DailyChallengeService
-from backend.app.services.gamification.practice_session_service import PracticeSessionService
-from backend.app.services.gamification.recommendation_service import IntelligentProblemSelector
+from backend.app.services.gamification.daily_challenge_service import (
+    DailyChallengeService,
+)
+from backend.app.services.gamification.practice_session_service import (
+    PracticeSessionService,
+)
+from backend.app.services.gamification.recommendation_service import (
+    IntelligentProblemSelector,
+)
 from backend.app.services.gamification.streak_service import StreakService
 
 logger = logging.getLogger(__name__)
@@ -78,7 +84,12 @@ def _format_session_response(session: PracticeSession) -> PracticeSessionRespons
 # 1. PRACTICE SESSIONS
 # ─────────────────────────────────────────────────────────────
 
-@router.post("/sessions", response_model=PracticeSessionResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions",
+    response_model=PracticeSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_practice_session(
     payload: CreatePracticeSessionRequest,
     current_user: User = Depends(get_current_user),
@@ -95,7 +106,9 @@ async def create_practice_session(
         target_count=payload.target_count,
     )
     # Reload with relationships
-    loaded_session = await PracticeSessionService.get_session(db, session.id, current_user.id)
+    loaded_session = await PracticeSessionService.get_session(
+        db, session.id, current_user.id
+    )
     return _format_session_response(loaded_session)
 
 
@@ -110,7 +123,10 @@ async def get_practice_session(
     return _format_session_response(session)
 
 
-@router.post("/sessions/{session_id}/problem/{problem_id}/result", response_model=RecordProblemResultResponse)
+@router.post(
+    "/sessions/{session_id}/problem/{problem_id}/result",
+    response_model=RecordProblemResultResponse,
+)
 async def record_practice_problem_result(
     session_id: str,
     problem_id: str,
@@ -144,12 +160,16 @@ async def complete_practice_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Finalizes an active practice session and calculates authoritative accuracy and rewards."""
-    session = await PracticeSessionService.complete_session(db, current_user, session_id)
-    loaded_session = await PracticeSessionService.get_session(db, session.id, current_user.id)
+    session = await PracticeSessionService.complete_session(
+        db, current_user, session_id
+    )
+    loaded_session = await PracticeSessionService.get_session(
+        db, session.id, current_user.id
+    )
     return _format_session_response(loaded_session)
 
 
-@router.get("/history", response_model=List[PracticeSessionResponse])
+@router.get("/history", response_model=list[PracticeSessionResponse])
 async def get_practice_history(
     limit: int = Query(20, ge=1, le=50),
     offset: int = Query(0, ge=0),
@@ -167,9 +187,12 @@ async def get_practice_history(
 # 2. RECOMMENDATIONS
 # ─────────────────────────────────────────────────────────────
 
+
 @router.get("/recommendations", response_model=PracticeRecommendationsResponse)
 async def get_practice_recommendations(
-    mode: str = Query("QUICK", description="Category mode: QUICK, WEAK_AREA, MISTAKES, REVISION"),
+    mode: str = Query(
+        "QUICK", description="Category mode: QUICK, WEAK_AREA, MISTAKES, REVISION"
+    ),
     limit: int = Query(5, ge=1, le=10),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -196,17 +219,24 @@ async def get_practice_recommendations(
     return PracticeRecommendationsResponse(mode=mode, recommendations=dto_list)
 
 
-@router.get("/recommendations/explain/{problem_id}", response_model=ExplainRecommendationResponse)
+@router.get(
+    "/recommendations/explain/{problem_id}",
+    response_model=ExplainRecommendationResponse,
+)
 async def explain_problem_recommendation(
     problem_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Provides a natural-language explanation of why this specific problem was selected."""
-    stmt = select(Problem).where(Problem.id == problem_id, Problem.status == ContentStatus.PUBLISHED)
+    stmt = select(Problem).where(
+        Problem.id == problem_id, Problem.status == ContentStatus.PUBLISHED
+    )
     problem = (await db.execute(stmt)).scalar_one_or_none()
     if not problem:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found."
+        )
 
     # Check user context
     prog_stmt = select(UserProblemProgress).where(
@@ -215,17 +245,23 @@ async def explain_problem_recommendation(
     )
     prog = (await db.execute(prog_stmt)).scalar_one_or_none()
 
-    factors: List[str] = [
+    factors: list[str] = [
         f"Difficulty: {problem.difficulty.value} tier calibrated to your current problem-solving momentum.",
         "Algorithmic reinforcement: Promotes mastery of core constraints and invariants.",
     ]
 
     if prog and prog.status == ProblemProgressStatus.ATTEMPTED:
-        factors.append("Recent incomplete attempt detected. Recommended to achieve full solution acceptance.")
+        factors.append(
+            "Recent incomplete attempt detected. Recommended to achieve full solution acceptance."
+        )
     elif prog and prog.status == ProblemProgressStatus.SOLVED:
-        factors.append("Previously solved. Recommended for spaced repetition memory consolidation.")
+        factors.append(
+            "Previously solved. Recommended for spaced repetition memory consolidation."
+        )
     else:
-        factors.append("Fresh curriculum challenge designed to broaden your algorithmic pattern recognition.")
+        factors.append(
+            "Fresh curriculum challenge designed to broaden your algorithmic pattern recognition."
+        )
 
     explanation = (
         f"'{problem.title}' was recommended based on your recent practice trends. "
@@ -245,9 +281,10 @@ async def explain_problem_recommendation(
 # 3. DAILY CHALLENGE
 # ─────────────────────────────────────────────────────────────
 
+
 @router.get("/daily", response_model=DailyChallengeResponse)
 async def get_daily_challenge(
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieves today's calendar daily challenge and user completion status (supports guests)."""
@@ -264,7 +301,6 @@ async def get_daily_challenge(
     first_attempt = False
     has_claimed = False
     can_claim = False
-    xp_awarded = 0
     user_challenge = None
 
     if current_user:
@@ -277,10 +313,11 @@ async def get_daily_challenge(
         first_attempt = bool(user_prog and user_prog.attempts_count == 1)
 
         # Check if reward claimed
-        user_challenge = await DailyChallengeService.get_user_challenge_status(db, current_user.id, challenge)
+        user_challenge = await DailyChallengeService.get_user_challenge_status(
+            db, current_user.id, challenge
+        )
         has_claimed = bool(user_challenge and user_challenge.solved)
         can_claim = is_solved and not has_claimed
-        xp_awarded = user_challenge.xp_awarded if user_challenge else 0
 
     problem = await db.get(Problem, challenge.problem_id)
     return DailyChallengeResponse(

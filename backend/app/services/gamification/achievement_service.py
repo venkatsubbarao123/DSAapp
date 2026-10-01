@@ -6,7 +6,7 @@ achievements idempotently and credit XP rewards.
 
 import logging
 from datetime import datetime, timezone
-from typing import List, Tuple
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -162,7 +162,9 @@ class AchievementService:
         await db.flush()
 
     @classmethod
-    async def evaluate_achievements(cls, db: AsyncSession, user_id: str) -> List[Tuple[Achievement, int]]:
+    async def evaluate_achievements(
+        cls, db: AsyncSession, user_id: str
+    ) -> list[tuple[Achievement, int]]:
         """Evaluates all locked achievements for a user and unlocks those whose criteria are met.
 
         Returns:
@@ -171,7 +173,9 @@ class AchievementService:
         await cls.ensure_catalog_seeded(db)
 
         # 1. Fetch already unlocked achievement IDs
-        unlocked_stmt = select(UserAchievement.achievement_id).where(UserAchievement.user_id == user_id)
+        unlocked_stmt = select(UserAchievement.achievement_id).where(
+            UserAchievement.user_id == user_id
+        )
         unlocked_ids = set((await db.execute(unlocked_stmt)).scalars().all())
 
         # 2. Fetch all achievement catalog items
@@ -209,7 +213,9 @@ class AchievementService:
         # Fast solves in practice (under 300 seconds)
         fast_solves_stmt = (
             select(func.count(PracticeSessionProblem.id))
-            .join(PracticeSession, PracticeSessionProblem.session_id == PracticeSession.id)
+            .join(
+                PracticeSession, PracticeSessionProblem.session_id == PracticeSession.id
+            )
             .where(
                 PracticeSession.user_id == user_id,
                 PracticeSessionProblem.solved.is_(True),
@@ -219,7 +225,7 @@ class AchievementService:
         )
         fast_solves = (await db.execute(fast_solves_stmt)).scalar() or 0
 
-        newly_unlocked: List[Tuple[Achievement, int]] = []
+        newly_unlocked: list[tuple[Achievement, int]] = []
         now = datetime.now(timezone.utc)
 
         for ach in all_achievements:
@@ -228,25 +234,28 @@ class AchievementService:
 
             should_unlock = False
 
-            if ach.code == "FIRST_SOLVE" and total_solves >= 1:
-                should_unlock = True
-            elif ach.code == "TEN_SOLVES" and total_solves >= 10:
-                should_unlock = True
-            elif ach.code == "FIFTY_SOLVES" and total_solves >= 50:
-                should_unlock = True
-            elif ach.code == "HUNDRED_SOLVES" and total_solves >= 100:
-                should_unlock = True
-            elif ach.code == "SEVEN_DAY_STREAK" and profile.longest_streak >= 7:
-                should_unlock = True
-            elif ach.code == "THIRTY_DAY_STREAK" and profile.longest_streak >= 30:
-                should_unlock = True
-            elif ach.code == "FIRST_DAILY_CHALLENGE" and daily_solves >= 1:
-                should_unlock = True
-            elif ach.code == "REVISION_HERO" and completed_revisions >= 5:
-                should_unlock = True
-            elif ach.code == "FAST_SOLVER" and fast_solves >= 1:
-                should_unlock = True
-            elif ach.code in ("TOPIC_MASTER", "PATTERN_MASTER", "NO_HINT_SOLVE") and total_solves >= 5:
+            if (
+                ach.code == "FIRST_SOLVE"
+                and total_solves >= 1
+                or ach.code == "TEN_SOLVES"
+                and total_solves >= 10
+                or ach.code == "FIFTY_SOLVES"
+                and total_solves >= 50
+                or ach.code == "HUNDRED_SOLVES"
+                and total_solves >= 100
+                or ach.code == "SEVEN_DAY_STREAK"
+                and profile.longest_streak >= 7
+                or ach.code == "THIRTY_DAY_STREAK"
+                and profile.longest_streak >= 30
+                or ach.code == "FIRST_DAILY_CHALLENGE"
+                and daily_solves >= 1
+                or ach.code == "REVISION_HERO"
+                and completed_revisions >= 5
+                or ach.code == "FAST_SOLVER"
+                and fast_solves >= 1
+                or ach.code in ("TOPIC_MASTER", "PATTERN_MASTER", "NO_HINT_SOLVE")
+                and total_solves >= 5
+            ):
                 should_unlock = True
 
             if should_unlock:
@@ -269,6 +278,8 @@ class AchievementService:
                     metadata={"code": ach.code, "title": ach.title},
                 )
                 newly_unlocked.append((ach, ach.xp_reward))
-                logger.info(f"User {user_id} unlocked achievement: {ach.code} (+{ach.xp_reward} XP)")
+                logger.info(
+                    f"User {user_id} unlocked achievement: {ach.code} (+{ach.xp_reward} XP)"
+                )
 
         return newly_unlocked

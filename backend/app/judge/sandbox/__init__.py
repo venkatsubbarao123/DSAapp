@@ -17,9 +17,9 @@ from backend.app.judge.sandbox.mock import MockSandbox
 __all__ = [
     "BaseSandbox",
     "CompilationResult",
+    "DockerSandbox",
     "ExecutionRequest",
     "ExecutionResult",
-    "DockerSandbox",
     "MockSandbox",
     "get_sandbox",
     "get_sandbox_diagnostics",

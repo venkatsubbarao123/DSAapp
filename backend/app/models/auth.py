@@ -2,7 +2,8 @@
 
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 
 class RefreshToken(Base):
     """Server-side record of issued refresh tokens supporting rotation and replay detection."""
+
     __tablename__ = "refresh_tokens"
 
     id: Mapped[str] = mapped_column(
@@ -54,11 +56,11 @@ class RefreshToken(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    ip_address: Mapped[Optional[str]] = mapped_column(
+    ip_address: Mapped[str | None] = mapped_column(
         String(45),
         nullable=True,
     )
-    user_agent: Mapped[Optional[str]] = mapped_column(
+    user_agent: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )

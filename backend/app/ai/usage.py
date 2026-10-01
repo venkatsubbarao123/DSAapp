@@ -4,9 +4,9 @@ Enforces server-side quota limits for Free vs. Premium tiers
 and logs immutable audit telemetry for every AI interaction.
 """
 
-from datetime import datetime, timedelta, timezone
 import logging
-from typing import Optional, Tuple
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +24,7 @@ class AIUsageTracker:
         db: AsyncSession,
         user_id: str,
         is_premium: bool,
-    ) -> Tuple[bool, int, int]:
+    ) -> tuple[bool, int, int]:
         """Checks if learner has remaining daily AI quota.
 
         Returns:
@@ -33,13 +33,10 @@ class AIUsageTracker:
         now = datetime.now(timezone.utc)
         start_of_window = now - timedelta(hours=24)
 
-        stmt = (
-            select(func.count(AIUsage.id))
-            .where(
-                AIUsage.user_id == user_id,
-                AIUsage.created_at >= start_of_window,
-                AIUsage.success.is_(True),
-            )
+        stmt = select(func.count(AIUsage.id)).where(
+            AIUsage.user_id == user_id,
+            AIUsage.created_at >= start_of_window,
+            AIUsage.success.is_(True),
         )
         result = await db.execute(stmt)
         daily_used = result.scalar() or 0
@@ -66,7 +63,7 @@ class AIUsageTracker:
         success: bool = True,
         prompt_tokens: int = 0,
         completion_tokens: int = 0,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> AIUsage:
         """Persists immutable usage record for audit and quota monitoring."""
         record = AIUsage(

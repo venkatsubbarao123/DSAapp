@@ -11,7 +11,7 @@ Implements:
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -51,8 +51,8 @@ class ContestService:
     async def list_contests(
         cls,
         db: AsyncSession,
-        status_filter: Optional[str] = None,
-    ) -> List[ContestSummaryResponse]:
+        status_filter: str | None = None,
+    ) -> list[ContestSummaryResponse]:
         """Lists contests with computed server-authoritative status and participant counts."""
         stmt = select(Contest).order_by(Contest.start_at.desc())
         res = await db.execute(stmt)
@@ -65,7 +65,9 @@ class ContestService:
                 continue
 
             # Count participants
-            p_stmt = select(func.count(ContestParticipant.id)).where(ContestParticipant.contest_id == c.id)
+            p_stmt = select(func.count(ContestParticipant.id)).where(
+                ContestParticipant.contest_id == c.id
+            )
             p_count = (await db.execute(p_stmt)).scalar() or 0
 
             summaries.append(
@@ -91,8 +93,8 @@ class ContestService:
         cls,
         db: AsyncSession,
         slug_or_id: str,
-        user_id: Optional[str] = None,
-    ) -> Optional[ContestDetailResponse]:
+        user_id: str | None = None,
+    ) -> ContestDetailResponse | None:
         """Retrieves full contest details including problem status for authenticated user."""
         stmt = (
             select(Contest)
@@ -109,14 +111,16 @@ class ContestService:
         dynamic_status = contest.compute_dynamic_status().value
 
         # Count participants
-        p_stmt = select(func.count(ContestParticipant.id)).where(ContestParticipant.contest_id == contest.id)
+        p_stmt = select(func.count(ContestParticipant.id)).where(
+            ContestParticipant.contest_id == contest.id
+        )
         p_count = (await db.execute(p_stmt)).scalar() or 0
 
         is_registered = False
         my_score = 0
         my_penalty = 0
         my_rank = None
-        participant: Optional[ContestParticipant] = None
+        participant: ContestParticipant | None = None
 
         if user_id:
             part_stmt = select(ContestParticipant).where(
@@ -131,18 +135,22 @@ class ContestService:
                 my_rank = participant.final_rank
 
         # Problems overview
-        problem_responses: List[ContestProblemResponse] = []
+        problem_responses: list[ContestProblemResponse] = []
         for cp in contest.problems:
             solved = False
             wrong_attempts = 0
 
             if participant:
                 # Check user's submissions for this problem
-                sub_stmt = select(ContestSubmission).where(
-                    ContestSubmission.contest_id == contest.id,
-                    ContestSubmission.participant_id == participant.id,
-                    ContestSubmission.problem_id == cp.problem_id,
-                ).order_by(ContestSubmission.submitted_at.asc())
+                sub_stmt = (
+                    select(ContestSubmission)
+                    .where(
+                        ContestSubmission.contest_id == contest.id,
+                        ContestSubmission.participant_id == participant.id,
+                        ContestSubmission.problem_id == cp.problem_id,
+                    )
+                    .order_by(ContestSubmission.submitted_at.asc())
+                )
                 c_subs = (await db.execute(sub_stmt)).scalars().all()
 
                 for cs in c_subs:
@@ -193,9 +201,11 @@ class ContestService:
         db: AsyncSession,
         slug_or_id: str,
         user: User,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Registers a user for a contest."""
-        stmt = select(Contest).where((Contest.slug == slug_or_id) | (Contest.id == slug_or_id))
+        stmt = select(Contest).where(
+            (Contest.slug == slug_or_id) | (Contest.id == slug_or_id)
+        )
         res = await db.execute(stmt)
         contest = res.scalars().first()
         if not contest:
@@ -204,8 +214,14 @@ class ContestService:
         dynamic_status = contest.compute_dynamic_status()
         if dynamic_status == ContestStatus.ENDED:
             return False, "Cannot join a contest that has already ended."
-        if dynamic_status == ContestStatus.ARCHIVED or dynamic_status == ContestStatus.DRAFT:
-            return False, f"Contest is not open for registration ({dynamic_status.value})."
+        if (
+            dynamic_status == ContestStatus.ARCHIVED
+            or dynamic_status == ContestStatus.DRAFT
+        ):
+            return (
+                False,
+                f"Contest is not open for registration ({dynamic_status.value}).",
+            )
 
         # Check premium requirement
         if contest.premium_required and not getattr(user, "is_premium", False):
@@ -236,9 +252,11 @@ class ContestService:
         user: User,
         payload: ContestSubmitRequest,
         progress_service: ProgressService,
-    ) -> Tuple[Optional[ContestSubmitResponse], Optional[str]]:
+    ) -> tuple[ContestSubmitResponse | None, str | None]:
         """Validates submission timing, runs anti-cheat checks, queues code via Judge, and links contest submission."""
-        stmt = select(Contest).where((Contest.slug == slug_or_id) | (Contest.id == slug_or_id))
+        stmt = select(Contest).where(
+            (Contest.slug == slug_or_id) | (Contest.id == slug_or_id)
+        )
         contest = (await db.execute(stmt)).scalars().first()
         if not contest:
             return None, "Contest not found."
@@ -246,7 +264,10 @@ class ContestService:
         # 1. Server-authoritative timing check: contest MUST be LIVE
         dynamic_status = contest.compute_dynamic_status()
         if dynamic_status != ContestStatus.LIVE:
-            return None, f"Submissions are only accepted while contest is LIVE. Current status: {dynamic_status.value}."
+            return (
+                None,
+                f"Submissions are only accepted while contest is LIVE. Current status: {dynamic_status.value}.",
+            )
 
         # 2. Check participant registration
         part_stmt = select(ContestParticipant).where(
@@ -260,12 +281,15 @@ class ContestService:
         # 3. Check problem is in contest
         prob_stmt = select(ContestProblem).where(
             ContestProblem.contest_id == contest.id,
-            (ContestProblem.problem_id == payload.problem_id) | (ContestProblem.id == payload.problem_id),
+            (ContestProblem.problem_id == payload.problem_id)
+            | (ContestProblem.id == payload.problem_id),
         )
         contest_prob = (await db.execute(prob_stmt)).scalars().first()
         if not contest_prob:
             # Check problem slug or id
-            actual_prob = await progress_service.content_repo.get_problem_by_slug_or_id(payload.problem_id)
+            actual_prob = await progress_service.content_repo.get_problem_by_slug_or_id(
+                payload.problem_id
+            )
             if actual_prob:
                 prob_stmt2 = select(ContestProblem).where(
                     ContestProblem.contest_id == contest.id,
@@ -280,25 +304,40 @@ class ContestService:
 
         # 4. Anti-Cheat: Rapid submission check (< 5 seconds since last submission)
         now_utc = datetime.now(timezone.utc)
-        recent_sub_stmt = select(ContestSubmission).where(
-            ContestSubmission.contest_id == contest.id,
-            ContestSubmission.participant_id == participant.id,
-        ).order_by(ContestSubmission.submitted_at.desc()).limit(1)
+        recent_sub_stmt = (
+            select(ContestSubmission)
+            .where(
+                ContestSubmission.contest_id == contest.id,
+                ContestSubmission.participant_id == participant.id,
+            )
+            .order_by(ContestSubmission.submitted_at.desc())
+            .limit(1)
+        )
         last_sub = (await db.execute(recent_sub_stmt)).scalars().first()
 
         if last_sub:
-            last_dt = last_sub.submitted_at if last_sub.submitted_at.tzinfo else last_sub.submitted_at.replace(tzinfo=timezone.utc)
+            last_dt = (
+                last_sub.submitted_at
+                if last_sub.submitted_at.tzinfo
+                else last_sub.submitted_at.replace(tzinfo=timezone.utc)
+            )
             gap_seconds = (now_utc - last_dt).total_seconds()
             if gap_seconds < 5.0:
                 cheat_sig = ContestCheatSignal(
                     contest_id=contest.id,
                     user_id=user.id,
                     signal_type="RAPID_SUBMISSIONS",
-                    details_json={"gap_seconds": gap_seconds, "problem_id": resolved_problem_id},
+                    details_json={
+                        "gap_seconds": gap_seconds,
+                        "problem_id": resolved_problem_id,
+                    },
                 )
                 db.add(cheat_sig)
                 await db.commit()
-                return None, "Rate limit: Please wait at least 5 seconds between contest submissions."
+                return (
+                    None,
+                    "Rate limit: Please wait at least 5 seconds between contest submissions.",
+                )
 
         # 5. Anti-Cheat: Repeated identical source code check
         recent_identical_stmt = (
@@ -328,7 +367,9 @@ class ContestService:
             source_code=payload.source_code,
             idempotency_key=payload.idempotency_key,
         )
-        submission_detail = await progress_service.create_submission(user.id, submission_create)
+        submission_detail = await progress_service.create_submission(
+            user.id, submission_create
+        )
 
         # 7. Create ContestSubmission link
         c_sub = ContestSubmission(
@@ -362,14 +403,16 @@ class ContestService:
         cls,
         db: AsyncSession,
         slug_or_id: str,
-    ) -> Optional[ContestLeaderboardResponse]:
+    ) -> ContestLeaderboardResponse | None:
         """Calculates live contest scoreboard with deterministic ranking and Redis caching."""
         stmt = (
             select(Contest)
             .where((Contest.slug == slug_or_id) | (Contest.id == slug_or_id))
             .options(
                 selectinload(Contest.problems),
-                selectinload(Contest.participants).selectinload(ContestParticipant.user),
+                selectinload(Contest.participants).selectinload(
+                    ContestParticipant.user
+                ),
             )
         )
         contest = (await db.execute(stmt)).scalars().first()
@@ -396,7 +439,7 @@ class ContestService:
 
         # Group submissions by (participant_id, problem_id)
         # item: { participant_id: { problem_id: [ (submitted_at, status) ] } }
-        part_subs: Dict[str, Dict[str, list]] = {}
+        part_subs: dict[str, dict[str, list]] = {}
         for cs, status in sub_results:
             pid = cs.participant_id
             prob_id = cs.problem_id
@@ -417,7 +460,7 @@ class ContestService:
             total_penalty = 0
             solved_count = 0
             last_accepted_time = None
-            problem_results_map: Dict[str, ProblemResultDetail] = {}
+            problem_results_map: dict[str, ProblemResultDetail] = {}
 
             p_submissions = part_subs.get(p.id, {})
 
@@ -430,8 +473,16 @@ class ContestService:
                 for sub_time, status in attempts:
                     if status == SubmissionStatus.ACCEPTED:
                         is_solved = True
-                        sub_dt = sub_time if sub_time.tzinfo else sub_time.replace(tzinfo=timezone.utc)
-                        c_start = contest.start_at if contest.start_at.tzinfo else contest.start_at.replace(tzinfo=timezone.utc)
+                        sub_dt = (
+                            sub_time
+                            if sub_time.tzinfo
+                            else sub_time.replace(tzinfo=timezone.utc)
+                        )
+                        c_start = (
+                            contest.start_at
+                            if contest.start_at.tzinfo
+                            else contest.start_at.replace(tzinfo=timezone.utc)
+                        )
                         diff_sec = max(0, (sub_dt - c_start).total_seconds())
                         acc_time_min = int(diff_sec / 60)
                         last_accepted_time = max(last_accepted_time or sub_dt, sub_dt)
@@ -440,7 +491,11 @@ class ContestService:
                         wrong_attempts += 1
 
                 pts = cp.points if is_solved else 0
-                problem_penalty = (acc_time_min + wrong_attempts * cp.penalty_minutes) if is_solved else 0
+                problem_penalty = (
+                    (acc_time_min + wrong_attempts * cp.penalty_minutes)
+                    if is_solved
+                    else 0
+                )
 
                 if is_solved:
                     total_score += pts
@@ -459,16 +514,19 @@ class ContestService:
             if p.user and hasattr(p.user, "email") and p.user.email:
                 display_name = p.user.email.split("@")[0]
 
-            raw_leaderboard.append({
-                "participant_id": p.id,
-                "display_name": display_name,
-                "user_id": p.user_id,
-                "score": total_score,
-                "penalty": total_penalty,
-                "problems_solved": solved_count,
-                "last_accepted_time": last_accepted_time or datetime.max.replace(tzinfo=timezone.utc),
-                "problem_results": problem_results_map,
-            })
+            raw_leaderboard.append(
+                {
+                    "participant_id": p.id,
+                    "display_name": display_name,
+                    "user_id": p.user_id,
+                    "score": total_score,
+                    "penalty": total_penalty,
+                    "problems_solved": solved_count,
+                    "last_accepted_time": last_accepted_time
+                    or datetime.max.replace(tzinfo=timezone.utc),
+                    "problem_results": problem_results_map,
+                }
+            )
 
         # Deterministic Ranking Sort:
         # 1. Score DESC (higher score wins)
@@ -519,7 +577,7 @@ class ContestService:
         cls,
         db: AsyncSession,
         user_id: str,
-    ) -> List[UserContestHistoryEntry]:
+    ) -> list[UserContestHistoryEntry]:
         """Returns contest participation history for the authenticated user."""
         stmt = (
             select(ContestParticipant)
@@ -534,7 +592,9 @@ class ContestService:
         history = []
         for p in participants:
             c = p.contest
-            p_stmt = select(func.count(ContestParticipant.id)).where(ContestParticipant.contest_id == c.id)
+            p_stmt = select(func.count(ContestParticipant.id)).where(
+                ContestParticipant.contest_id == c.id
+            )
             p_count = (await db.execute(p_stmt)).scalar() or 0
 
             history.append(

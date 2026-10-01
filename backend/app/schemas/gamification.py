@@ -1,25 +1,37 @@
 """Pydantic request and response schemas for Phase 7 Practice & Gamification."""
 
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field
 
+from pydantic import BaseModel, Field
 
 # ─────────────────────────────────────────────────────────────
 # 1. PRACTICE SESSIONS
 # ─────────────────────────────────────────────────────────────
 
+
 class CreatePracticeSessionRequest(BaseModel):
     """Payload to launch a practice session."""
-    mode: str = Field("QUICK", description="Practice mode: QUICK, TOPIC, PATTERN, DIFFICULTY, WEAK_AREA, MISTAKES, REVISION")
-    topic_id: Optional[str] = Field(None, description="Optional target topic identifier")
-    pattern_id: Optional[str] = Field(None, description="Optional target algorithmic pattern identifier")
-    difficulty: Optional[str] = Field(None, description="Optional preferred difficulty tier: EASY, MEDIUM, HARD, EXPERT")
-    target_count: int = Field(3, ge=1, le=10, description="Target problem batch size (1 to 10)")
+
+    mode: str = Field(
+        "QUICK",
+        description="Practice mode: QUICK, TOPIC, PATTERN, DIFFICULTY, WEAK_AREA, MISTAKES, REVISION",
+    )
+    topic_id: str | None = Field(None, description="Optional target topic identifier")
+    pattern_id: str | None = Field(
+        None, description="Optional target algorithmic pattern identifier"
+    )
+    difficulty: str | None = Field(
+        None,
+        description="Optional preferred difficulty tier: EASY, MEDIUM, HARD, EXPERT",
+    )
+    target_count: int = Field(
+        3, ge=1, le=10, description="Target problem batch size (1 to 10)"
+    )
 
 
 class PracticeSessionProblemResponse(BaseModel):
     """Problem item rendered inside an active practice session."""
+
     id: str
     problem_id: str
     sequence: int
@@ -33,6 +45,7 @@ class PracticeSessionProblemResponse(BaseModel):
 
 class PracticeSessionResponse(BaseModel):
     """Complete practice session state."""
+
     id: str
     user_id: str
     mode: str
@@ -44,20 +57,22 @@ class PracticeSessionResponse(BaseModel):
     accuracy: float
     duration_seconds: int
     started_at: datetime
-    completed_at: Optional[datetime] = None
-    problems: List[PracticeSessionProblemResponse] = []
+    completed_at: datetime | None = None
+    problems: list[PracticeSessionProblemResponse] = []
 
 
 class RecordProblemResultRequest(BaseModel):
     """Payload to record the outcome of a practice problem attempt."""
+
     problem_id: str
     solved: bool
     time_spent_seconds: int = Field(0, ge=0)
-    submission_id: Optional[str] = None
+    submission_id: str | None = None
 
 
 class RecordProblemResultResponse(BaseModel):
     """Result of problem attempt recording."""
+
     session_id: str
     problem_id: str
     solved: bool
@@ -69,37 +84,43 @@ class RecordProblemResultResponse(BaseModel):
 # 2. RECOMMENDATIONS
 # ─────────────────────────────────────────────────────────────
 
+
 class RecommendationItemResponse(BaseModel):
     """Individually scored problem recommendation candidate."""
+
     problem_id: str
     slug: str
     title: str
     difficulty: str
     score: float
-    reasons: List[str]
+    reasons: list[str]
     category: str
 
 
 class PracticeRecommendationsResponse(BaseModel):
     """Curated list of practice recommendations."""
+
     mode: str
-    recommendations: List[RecommendationItemResponse]
+    recommendations: list[RecommendationItemResponse]
 
 
 class ExplainRecommendationResponse(BaseModel):
     """Pedagogical explanation of why a problem was selected."""
+
     problem_id: str
     title: str
     explanation: str
-    pedagogical_factors: List[str]
+    pedagogical_factors: list[str]
 
 
 # ─────────────────────────────────────────────────────────────
 # 3. DAILY CHALLENGE
 # ─────────────────────────────────────────────────────────────
 
+
 class DailyChallengeResponse(BaseModel):
     """Authoritative daily challenge state."""
+
     id: str
     challenge_date: str
     problem_id: str
@@ -116,6 +137,7 @@ class DailyChallengeResponse(BaseModel):
 
 class ClaimDailyRewardResponse(BaseModel):
     """Result of claiming daily challenge reward."""
+
     success: bool
     xp_awarded: int
     message: str
@@ -125,8 +147,10 @@ class ClaimDailyRewardResponse(BaseModel):
 # 4. GAMIFICATION PROFILE & XP
 # ─────────────────────────────────────────────────────────────
 
+
 class GamificationProfileResponse(BaseModel):
     """Learner profile overview with level, streak, and rating."""
+
     total_xp: int
     current_level: int
     level_floor_xp: int
@@ -142,6 +166,7 @@ class GamificationProfileResponse(BaseModel):
 
 class XPTransactionItem(BaseModel):
     """Individual record in the immutable XP ledger."""
+
     id: str
     event_type: str
     source_id: str
@@ -151,25 +176,29 @@ class XPTransactionItem(BaseModel):
 
 class XPTransactionsResponse(BaseModel):
     """Paginated XP history."""
+
     total_count: int
-    transactions: List[XPTransactionItem]
+    transactions: list[XPTransactionItem]
 
 
 # ─────────────────────────────────────────────────────────────
 # 5. STREAK & ACHIEVEMENTS
 # ─────────────────────────────────────────────────────────────
 
+
 class StreakResponse(BaseModel):
     """Learner streak details."""
+
     current_streak: int
     longest_streak: int
-    last_activity_date: Optional[str] = None
+    last_activity_date: str | None = None
     streak_freeze_count: int
     active_today: bool
 
 
 class AchievementItem(BaseModel):
     """Badge item with unlock status."""
+
     id: str
     code: str
     title: str
@@ -179,22 +208,25 @@ class AchievementItem(BaseModel):
     xp_reward: int
     icon: str
     unlocked: bool
-    unlocked_at: Optional[datetime] = None
+    unlocked_at: datetime | None = None
 
 
 class AchievementsResponse(BaseModel):
     """Learner achievement catalog and progress."""
+
     total_achievements: int
     unlocked_count: int
-    achievements: List[AchievementItem]
+    achievements: list[AchievementItem]
 
 
 # ─────────────────────────────────────────────────────────────
 # 6. RATING
 # ─────────────────────────────────────────────────────────────
 
+
 class RatingHistoryItem(BaseModel):
     """Individual skill rating change log."""
+
     id: str
     previous_rating: int
     new_rating: int
@@ -205,5 +237,6 @@ class RatingHistoryItem(BaseModel):
 
 class RatingResponse(BaseModel):
     """Learner rating overview and audit log."""
+
     current_rating: int
-    history: List[RatingHistoryItem]
+    history: list[RatingHistoryItem]

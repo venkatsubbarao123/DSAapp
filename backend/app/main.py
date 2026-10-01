@@ -1,8 +1,9 @@
 """DSAapp Production-Grade FastAPI Application Entrypoint."""
 
 import asyncio
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -25,15 +26,22 @@ from backend.app.services.redis import redis_service
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan managing startup validation and clean shutdown."""
-    logger.info(f"Starting {settings.APP_NAME} in '{settings.ENVIRONMENT}' environment...")
+    logger.info(
+        f"Starting {settings.APP_NAME} in '{settings.ENVIRONMENT}' environment..."
+    )
 
     # Strict Production Configuration Validation
     is_valid, issues = settings.validate_production_config()
     if not is_valid:
-        error_msg = f"CONFIGURATION INVALID: {len(issues)} critical issue(s) detected.\n" + "\n".join(f"- {i}" for i in issues)
+        error_msg = (
+            f"CONFIGURATION INVALID: {len(issues)} critical issue(s) detected.\n"
+            + "\n".join(f"- {i}" for i in issues)
+        )
         logger.critical(error_msg)
         if settings.ENVIRONMENT == "production":
-            raise RuntimeError(f"Startup aborted due to invalid production configuration:\n{error_msg}")
+            raise RuntimeError(
+                f"Startup aborted due to invalid production configuration:\n{error_msg}"
+            )
     else:
         logger.info(settings.get_config_diagnostic())
 
@@ -52,6 +60,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     judge_worker_task = None
     if settings.ENVIRONMENT != "test":
         from backend.app.judge.runner import run_judge_worker_loop
+
         judge_worker_task = asyncio.create_task(run_judge_worker_loop())
 
     yield
@@ -120,7 +129,9 @@ def create_application() -> FastAPI:
         req_id = getattr(request.state, "request_id", None)
 
         return JSONResponse(
-            status_code=status.HTTP_200_OK if db_healthy else status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_200_OK
+            if db_healthy
+            else status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "success": db_healthy,
                 "data": {
@@ -171,7 +182,9 @@ def create_application() -> FastAPI:
         req_id = getattr(request.state, "request_id", None)
 
         return JSONResponse(
-            status_code=status.HTTP_200_OK if is_ready else status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_200_OK
+            if is_ready
+            else status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "success": is_ready,
                 "data": {

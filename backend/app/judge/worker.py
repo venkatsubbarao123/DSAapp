@@ -5,10 +5,10 @@ evaluates hidden and visible test cases, determines definitive verdicts,
 persists execution metrics, and updates user problem progress upon acceptance.
 """
 
-from datetime import datetime, timezone
 import logging
 import uuid
-from typing import Optional
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -33,7 +33,9 @@ logger = logging.getLogger(__name__)
 class JudgeWorker:
     """Worker instance that claims and executes judge jobs."""
 
-    def __init__(self, worker_id: Optional[str] = None, sandbox: Optional[BaseSandbox] = None) -> None:
+    def __init__(
+        self, worker_id: str | None = None, sandbox: BaseSandbox | None = None
+    ) -> None:
         self.worker_id = worker_id or f"worker-{uuid.uuid4().hex[:8]}"
         self.sandbox = sandbox or get_sandbox()
 
@@ -45,9 +47,7 @@ class JudgeWorker:
         stmt = (
             select(Submission)
             .where(Submission.id == job.submission_id)
-            .options(
-                selectinload(Submission.problem).selectinload(Problem.test_cases)
-            )
+            .options(selectinload(Submission.problem).selectinload(Problem.test_cases))
         )
         result = await db.execute(stmt)
         submission = result.scalars().first()
@@ -146,7 +146,7 @@ class JudgeWorker:
         peak_time_ms = 0
         peak_memory_bytes = 0
         final_verdict = Verdict.ACCEPTED
-        runtime_error_output: Optional[str] = None
+        runtime_error_output: str | None = None
 
         time_limit = problem.time_limit_ms or lang_def.default_time_limit_ms
         mem_limit = problem.memory_limit_mb or lang_def.default_memory_limit_mb
@@ -187,12 +187,16 @@ class JudgeWorker:
 
             if exec_res.exit_code != 0:
                 final_verdict = Verdict.RUNTIME_ERROR
-                err_text = exec_res.stderr or exec_res.error_message or f"Process exited with code {exec_res.exit_code}"
+                err_text = (
+                    exec_res.stderr
+                    or exec_res.error_message
+                    or f"Process exited with code {exec_res.exit_code}"
+                )
                 runtime_error_output = err_text[:4096]
                 break
 
             # Compare output
-            is_match, diff_msg = compare_outputs(
+            is_match, _diff_msg = compare_outputs(
                 exec_res.stdout,
                 tc.expected_output,
                 mode=cmp_mode,
@@ -245,7 +249,9 @@ class JudgeWorker:
             progress = UserProblemProgress(
                 user_id=submission.user_id,
                 problem_id=submission.problem_id,
-                status=ProblemProgressStatus.SOLVED if final_verdict == Verdict.ACCEPTED else ProblemProgressStatus.ATTEMPTED,
+                status=ProblemProgressStatus.SOLVED
+                if final_verdict == Verdict.ACCEPTED
+                else ProblemProgressStatus.ATTEMPTED,
                 attempts_count=1,
                 successful_attempts=1 if final_verdict == Verdict.ACCEPTED else 0,
                 first_attempted_at=now_utc,

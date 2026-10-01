@@ -1,7 +1,7 @@
 """Refresh token repository managing session tokens and family revocation."""
 
 from datetime import datetime
-from typing import Optional
+
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,8 +20,8 @@ class AuthRepository:
         token_jti: str,
         family_id: str,
         expires_at: datetime,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> RefreshToken:
         """Stores newly issued refresh token."""
         token_record = RefreshToken(
@@ -36,7 +36,7 @@ class AuthRepository:
         await self.session.flush()
         return token_record
 
-    async def get_by_jti(self, token_jti: str) -> Optional[RefreshToken]:
+    async def get_by_jti(self, token_jti: str) -> RefreshToken | None:
         """Finds token record by unique JTI."""
         stmt = select(RefreshToken).where(RefreshToken.token_jti == token_jti)
         result = await self.session.execute(stmt)

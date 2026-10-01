@@ -1,5 +1,13 @@
-from typing import Optional
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.deps import (
@@ -30,7 +38,7 @@ async def submit_code(
     payload: SubmissionCreate,
     request: Request,
     background_tasks: BackgroundTasks,
-    idempotency_key_header: Optional[str] = Header(None, alias="Idempotency-Key"),
+    idempotency_key_header: str | None = Header(None, alias="Idempotency-Key"),
     current_user: User = Depends(get_current_user),
     service: ProgressService = Depends(get_progress_service),
 ):
@@ -42,7 +50,9 @@ async def submit_code(
     validates language allowlists, advances problem status to ATTEMPTED, and stores
     the submission for isolated containerized judge execution.
     """
-    await rate_limiter.check_rate_limit(f"sub:{current_user.id}", max_requests=30, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"sub:{current_user.id}", max_requests=30, window_seconds=60
+    )
 
     # Use header or body idempotency key
     effective_idempotency_key = idempotency_key_header or payload.idempotency_key
@@ -62,7 +72,7 @@ async def run_code(
     payload: RunCodeRequest,
     problem_id: str = Query(..., description="Problem UUID or slug"),
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """Direct sample case RUN endpoint without mutating user progress or submissions."""
     rate_key = f"run:{current_user.id}" if current_user else "run:guest"
@@ -77,12 +87,11 @@ async def run_code(
     return {"success": True, "data": result.model_dump()}
 
 
-
 @router.get("", response_model=dict)
 async def list_submissions(
-    problem_id: Optional[str] = Query(None, description="Filter by problem slug or ID"),
-    language: Optional[str] = Query(None, description="Filter by programming language"),
-    status_filter: Optional[SubmissionStatus] = Query(None, alias="status"),
+    problem_id: str | None = Query(None, description="Filter by problem slug or ID"),
+    language: str | None = Query(None, description="Filter by programming language"),
+    status_filter: SubmissionStatus | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -138,7 +147,9 @@ async def get_submission_result(
 
     STRICT IDOR DEFENSE: Strictly owner-only or staff.
     """
-    result = await JudgeService.get_submission_result_safe(db, submission_id, current_user)
+    result = await JudgeService.get_submission_result_safe(
+        db, submission_id, current_user
+    )
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -155,7 +166,9 @@ async def cancel_submission(
     db: AsyncSession = Depends(get_db),
 ):
     """Cancels a queued submission before execution begins."""
-    cancelled = await JudgeService.cancel_user_submission(db, submission_id, current_user)
+    cancelled = await JudgeService.cancel_user_submission(
+        db, submission_id, current_user
+    )
     if not cancelled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -176,4 +189,3 @@ async def evaluate_submission(
     await execute_submission_now(submission_id)
     updated = await service.get_submission_detail(submission_id, current_user.id)
     return {"success": True, "data": updated.model_dump()}
-

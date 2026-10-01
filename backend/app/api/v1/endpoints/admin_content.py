@@ -1,6 +1,7 @@
 """Admin and Content Editor management APIs for authoring and publishing educational content."""
 
 import json
+
 from fastapi import APIRouter, Depends, Request, status
 
 from backend.app.api.deps import get_content_service, require_admin, require_role
@@ -130,5 +131,9 @@ async def update_content_status(
     )
     return {
         "success": True,
-        "data": {"entity_type": entity_type, "id": entity_id, "status": payload.status.value},
+        "data": {
+            "entity_type": entity_type,
+            "id": entity_id,
+            "status": payload.status.value,
+        },
     }

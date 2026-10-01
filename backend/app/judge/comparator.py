@@ -5,7 +5,6 @@ Compares actual output with expected output using specified comparison modes
 """
 
 from enum import Enum
-from typing import Tuple
 
 
 class ComparisonMode(str, Enum):
@@ -33,10 +32,8 @@ def normalize_output(text: str) -> str:
 
 
 def compare_outputs(
-    actual: str,
-    expected: str,
-    mode: str = ComparisonMode.NORMALIZED.value
-) -> Tuple[bool, str]:
+    actual: str, expected: str, mode: str = ComparisonMode.NORMALIZED.value
+) -> tuple[bool, str]:
     """Compares actual output against expected output.
 
     Returns:

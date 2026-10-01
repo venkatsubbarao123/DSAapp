@@ -8,7 +8,8 @@ Server-authoritative XP accounting ensuring:
 
 import json
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,9 +40,13 @@ class XPService:
     """Manages XP rewards, ledgers, and profile balance updates."""
 
     @staticmethod
-    async def get_or_create_profile(db: AsyncSession, user_id: str) -> UserGamificationProfile:
+    async def get_or_create_profile(
+        db: AsyncSession, user_id: str
+    ) -> UserGamificationProfile:
         """Retrieves or initializes the authoritative gamification profile for a user."""
-        stmt = select(UserGamificationProfile).where(UserGamificationProfile.user_id == user_id)
+        stmt = select(UserGamificationProfile).where(
+            UserGamificationProfile.user_id == user_id
+        )
         result = await db.execute(stmt)
         profile = result.scalar_one_or_none()
 
@@ -70,8 +75,8 @@ class XPService:
         event_type: str,
         source_id: str,
         amount: int,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Optional[XPTransaction], bool, int]:
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[XPTransaction | None, bool, int]:
         """Atomically records an XP event in the ledger if not already granted.
 
         Returns:
@@ -83,7 +88,9 @@ class XPService:
         idempotency_key = f"{user_id}:{event_type}:{source_id}"
 
         # Check existing transaction
-        check_stmt = select(XPTransaction).where(XPTransaction.idempotency_key == idempotency_key)
+        check_stmt = select(XPTransaction).where(
+            XPTransaction.idempotency_key == idempotency_key
+        )
         existing = (await db.execute(check_stmt)).scalar_one_or_none()
         if existing:
             # Already awarded, do not double-count
@@ -113,6 +120,8 @@ class XPService:
 
         level_up = new_level > old_level
         if level_up:
-            logger.info(f"User {user_id} leveled up from {old_level} to {new_level} (Total XP: {profile.total_xp})")
+            logger.info(
+                f"User {user_id} leveled up from {old_level} to {new_level} (Total XP: {profile.total_xp})"
+            )
 
         return tx, True, new_level

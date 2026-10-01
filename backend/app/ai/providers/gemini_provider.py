@@ -2,16 +2,17 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 
 try:
     import truststore
+
     truststore.inject_into_ssl()
 except Exception:
     pass
 
-from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.prompts import (
     COMPLEXITY_SYSTEM_PROMPT,
     EXPLAIN_SYSTEM_PROMPT,
@@ -21,9 +22,10 @@ from backend.app.ai.prompts import (
     build_tutor_user_message,
     get_hint_tier_guideline,
 )
-from backend.app.ai.security.prompt_guard import PromptGuard
+from backend.app.ai.providers.base import AIProvider
 from backend.app.ai.security.output_guard import OutputGuard
 from backend.app.ai.security.pii_guard import PIIGuard
+from backend.app.ai.security.prompt_guard import PromptGuard
 from backend.app.core.config import settings
 from backend.app.schemas.ai import (
     ComplexityRequest,
@@ -54,9 +56,13 @@ class GeminiProvider(AIProvider):
 
     def is_available(self) -> bool:
         """Returns True only if a valid Google Gemini API key is configured."""
-        return bool(self.api_key and not self.api_key.startswith("test_") and len(self.api_key) >= 10)
+        return bool(
+            self.api_key
+            and not self.api_key.startswith("test_")
+            and len(self.api_key) >= 10
+        )
 
-    def get_diagnostics(self) -> Dict[str, Any]:
+    def get_diagnostics(self) -> dict[str, Any]:
         """Provides status diagnostics without leaking secrets."""
         available = self.is_available()
         return {
@@ -67,10 +73,14 @@ class GeminiProvider(AIProvider):
             "api_endpoint": self.base_url,
         }
 
-    async def _call_api(self, system_prompt: str, user_content: str, json_mode: bool = True) -> str:
+    async def _call_api(
+        self, system_prompt: str, user_content: str, json_mode: bool = True
+    ) -> str:
         """Executes HTTP request to Gemini REST API generateContent endpoint with safety guards."""
         if not self.is_available():
-            raise RuntimeError("Live Gemini provider is unavailable: GOOGLE_AI_API_KEY not configured.")
+            raise RuntimeError(
+                "Live Gemini provider is unavailable: GOOGLE_AI_API_KEY not configured."
+            )
 
         # 1. PII Redaction
         redacted_user_content = PIIGuard.redact_pii(user_content)
@@ -78,20 +88,13 @@ class GeminiProvider(AIProvider):
         url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
         headers = {"Content-Type": "application/json"}
 
-        payload: Dict[str, Any] = {
-            "systemInstruction": {
-                "parts": [{"text": system_prompt}]
-            },
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": redacted_user_content}]
-                }
-            ],
+        payload: dict[str, Any] = {
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": redacted_user_content}]}],
             "generationConfig": {
                 "temperature": 0.2,
                 "maxOutputTokens": settings.AI_MAX_OUTPUT_TOKENS,
-            }
+            },
         }
 
         if json_mode:
@@ -114,9 +117,9 @@ class GeminiProvider(AIProvider):
     async def tutor(
         self,
         request: TutorRequest,
-        problem_title: Optional[str] = None,
-        problem_description: Optional[str] = None,
-        lesson_title: Optional[str] = None,
+        problem_title: str | None = None,
+        problem_description: str | None = None,
+        lesson_title: str | None = None,
     ) -> TutorResponse:
         """Calls Gemini for pedagogical tutor guidance."""
         user_msg = build_tutor_user_message(
@@ -128,12 +131,15 @@ class GeminiProvider(AIProvider):
         )
 
         contained_prompt = PromptGuard.build_contained_prompt(
-            system_instruction=TUTOR_SYSTEM_PROMPT + "\n\nFormat your response as valid JSON with keys: explanation, key_idea, example, next_step, related_concept, visualization_suggestion (null or object with visualizer_type, title, description).",
+            system_instruction=TUTOR_SYSTEM_PROMPT
+            + "\n\nFormat your response as valid JSON with keys: explanation, key_idea, example, next_step, related_concept, visualization_suggestion (null or object with visualizer_type, title, description).",
             trusted_metadata=f"Context Problem: {problem_title or 'None'}",
             untrusted_user_content=user_msg,
         )
 
-        res_json_str = await self._call_api(TUTOR_SYSTEM_PROMPT, contained_prompt, json_mode=True)
+        res_json_str = await self._call_api(
+            TUTOR_SYSTEM_PROMPT, contained_prompt, json_mode=True
+        )
         parsed = json.loads(res_json_str)
 
         vis = None
@@ -161,7 +167,7 @@ class GeminiProvider(AIProvider):
         request: HintRequest,
         problem_title: str,
         problem_description: str,
-        problem_hints: Optional[List[str]] = None,
+        problem_hints: list[str] | None = None,
     ) -> HintResponse:
         """Calls Gemini for progressive tiered hint."""
         tier_rule = get_hint_tier_guideline(request.hint_level)
@@ -173,13 +179,16 @@ class GeminiProvider(AIProvider):
         )
 
         user_content = (
-            f"Problem: {problem_title}\n"
-            f"Description: {problem_description[:1000]}\n"
+            f"Problem: {problem_title}\nDescription: {problem_description[:1000]}\n"
         )
         if request.current_code:
-            user_content += f"\nLearner's Current Draft:\n```\n{request.current_code[:2000]}\n```"
+            user_content += (
+                f"\nLearner's Current Draft:\n```\n{request.current_code[:2000]}\n```"
+            )
 
-        res_json = await self._call_api(prompt_instruction, user_content, json_mode=True)
+        res_json = await self._call_api(
+            prompt_instruction, user_content, json_mode=True
+        )
         parsed = json.loads(res_json)
 
         return HintResponse(
@@ -196,7 +205,7 @@ class GeminiProvider(AIProvider):
     async def explain(
         self,
         request: ExplainRequest,
-        problem_title: Optional[str] = None,
+        problem_title: str | None = None,
     ) -> ExplainResponse:
         """Calls Gemini for conceptual or diagnostic code review."""
         sys_prompt = (
@@ -229,7 +238,9 @@ class GeminiProvider(AIProvider):
             "reasoning, confidence (HIGH, MEDIUM, or LOW), caveats (list of str)."
         )
 
-        user_content = f"Code snippet for Big-O complexity derivation:\n```\n{request.code}\n```"
+        user_content = (
+            f"Code snippet for Big-O complexity derivation:\n```\n{request.code}\n```"
+        )
         res_json = await self._call_api(sys_prompt, user_content, json_mode=True)
         parsed = json.loads(res_json)
 
@@ -247,7 +258,7 @@ class GeminiProvider(AIProvider):
     async def pattern(
         self,
         request: PatternRequest,
-        problem_title: Optional[str] = None,
+        problem_title: str | None = None,
     ) -> PatternResponse:
         """Calls Gemini for pattern detection."""
         sys_prompt = (
@@ -257,19 +268,27 @@ class GeminiProvider(AIProvider):
             "alternative_patterns (list of str), explanation."
         )
 
-        user_content = f"Identify algorithmic pattern for: {problem_title or 'Problem'}\n"
+        user_content = (
+            f"Identify algorithmic pattern for: {problem_title or 'Problem'}\n"
+        )
         if request.problem_description:
-            user_content += f"Problem Description:\n{request.problem_description[:2000]}\n"
+            user_content += (
+                f"Problem Description:\n{request.problem_description[:2000]}\n"
+            )
         if request.code:
             user_content += f"Implementation Snippet:\n```\n{request.code[:2000]}\n```"
 
         res_json = await self._call_api(sys_prompt, user_content, json_mode=True)
         parsed = json.loads(res_json)
 
-        evidence_list: List[PatternEvidence] = []
+        evidence_list: list[PatternEvidence] = []
         for ev in parsed.get("evidence", []):
             if isinstance(ev, dict) and "indicator" in ev and "relevance" in ev:
-                evidence_list.append(PatternEvidence(indicator=ev["indicator"], relevance=ev["relevance"]))
+                evidence_list.append(
+                    PatternEvidence(
+                        indicator=ev["indicator"], relevance=ev["relevance"]
+                    )
+                )
 
         return PatternResponse(
             primary_pattern=parsed.get("primary_pattern", "Array Iteration"),
@@ -277,5 +296,8 @@ class GeminiProvider(AIProvider):
             detected_patterns=parsed.get("detected_patterns", ["Array Iteration"]),
             evidence=evidence_list,
             alternative_patterns=parsed.get("alternative_patterns", []),
-            explanation=parsed.get("explanation", "Recognized algorithmic pattern based on structural indicators."),
+            explanation=parsed.get(
+                "explanation",
+                "Recognized algorithmic pattern based on structural indicators.",
+            ),
         )

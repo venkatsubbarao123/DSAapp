@@ -9,8 +9,6 @@ Protects the AI system against:
 """
 
 import re
-from typing import Optional, Tuple
-
 
 # Suspicious injection patterns (case-insensitive)
 INJECTION_PATTERNS = [
@@ -39,7 +37,7 @@ class PromptGuard:
     """Sanitizes user input and enforces strict structural containment."""
 
     @staticmethod
-    def sanitize_input(text: Optional[str], max_length: int = MAX_INPUT_CHARS) -> str:
+    def sanitize_input(text: str | None, max_length: int = MAX_INPUT_CHARS) -> str:
         """Sanitizes raw text: strips null bytes, control characters, and truncates to safe length."""
         if not text:
             return ""
@@ -51,7 +49,7 @@ class PromptGuard:
         return cleaned.strip()
 
     @staticmethod
-    def detect_injection(text: str) -> Tuple[bool, Optional[str]]:
+    def detect_injection(text: str) -> tuple[bool, str | None]:
         """Detects high-confidence prompt injection or jailbreak attempts.
 
         Returns:
@@ -70,9 +68,9 @@ class PromptGuard:
     @staticmethod
     def build_contained_prompt(
         system_instruction: str,
-        trusted_metadata: Optional[str] = None,
-        untrusted_user_content: Optional[str] = None,
-        user_code: Optional[str] = None,
+        trusted_metadata: str | None = None,
+        untrusted_user_content: str | None = None,
+        user_code: str | None = None,
     ) -> str:
         """Assembles prompt with strict structural isolation.
 
@@ -91,26 +89,32 @@ class PromptGuard:
         ]
 
         if trusted_metadata:
-            parts.extend([
-                "\n=== TRUSTED APPLICATION METADATA ===",
-                trusted_metadata.strip(),
-            ])
+            parts.extend(
+                [
+                    "\n=== TRUSTED APPLICATION METADATA ===",
+                    trusted_metadata.strip(),
+                ]
+            )
 
         if untrusted_user_content:
             sanitized_content = PromptGuard.sanitize_input(untrusted_user_content)
-            parts.extend([
-                "\n=== UNTRUSTED USER DATA ===",
-                "<UNTRUSTED_STUDENT_QUERY>",
-                sanitized_content,
-                "</UNTRUSTED_STUDENT_QUERY>",
-            ])
+            parts.extend(
+                [
+                    "\n=== UNTRUSTED USER DATA ===",
+                    "<UNTRUSTED_STUDENT_QUERY>",
+                    sanitized_content,
+                    "</UNTRUSTED_STUDENT_QUERY>",
+                ]
+            )
 
         if user_code:
             sanitized_code = PromptGuard.sanitize_input(user_code)
-            parts.extend([
-                "\n<STUDENT_CODE>",
-                sanitized_code,
-                "</STUDENT_CODE>",
-            ])
+            parts.extend(
+                [
+                    "\n<STUDENT_CODE>",
+                    sanitized_code,
+                    "</STUDENT_CODE>",
+                ]
+            )
 
         return "\n".join(parts)

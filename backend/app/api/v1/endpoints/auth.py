@@ -1,6 +1,5 @@
 """Authentication API endpoints for registration, login, token refresh, and session revocation."""
 
-from typing import Optional
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,7 +62,9 @@ async def register(
     req_id = getattr(request.state, "request_id", None)
 
     # Rate limiting: 10 registrations per minute per IP
-    await rate_limiter.check_rate_limit(f"reg:{client_ip}", max_requests=10, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"reg:{client_ip}", max_requests=10, window_seconds=60
+    )
 
     user, access_token, refresh_token = await auth_service.register(
         payload, ip_address=client_ip, request_id=req_id
@@ -72,7 +73,9 @@ async def register(
     # Dispatch registration alert to admin
     try:
         from datetime import datetime, timezone
+
         from backend.app.services.notification.email_provider import get_email_provider
+
         email_provider = get_email_provider()
         admin_alert_email = "venkatsubbarao000@gmail.com"
         subject = f"[DSAapp Alert] New User Registered: {user.email}"
@@ -91,7 +94,10 @@ async def register(
         )
     except Exception as exc:
         import logging
-        logging.getLogger(__name__).warning(f"Failed to dispatch registration alert email: {exc}")
+
+        logging.getLogger(__name__).warning(
+            f"Failed to dispatch registration alert email: {exc}"
+        )
 
     set_refresh_cookie(response, refresh_token)
 
@@ -123,9 +129,11 @@ async def login(
     req_id = getattr(request.state, "request_id", None)
 
     # Rate limiting: 15 login attempts per minute per IP
-    await rate_limiter.check_rate_limit(f"login:{client_ip}", max_requests=15, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"login:{client_ip}", max_requests=15, window_seconds=60
+    )
 
-    user, access_token, refresh_token = await auth_service.login(
+    _user, access_token, refresh_token = await auth_service.login(
         payload, ip_address=client_ip, request_id=req_id
     )
 
@@ -152,8 +160,8 @@ async def login(
 async def refresh_tokens(
     request: Request,
     response: Response,
-    payload: Optional[RefreshTokenRequest] = None,
-    dsaapp_refresh_token: Optional[str] = Cookie(default=None),
+    payload: RefreshTokenRequest | None = None,
+    dsaapp_refresh_token: str | None = Cookie(default=None),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> APIResponse[TokenResponse]:
     client_ip = request.client.host if request.client else "unknown"
@@ -167,7 +175,9 @@ async def refresh_tokens(
         )
 
     # Rate limiting: 30 refreshes per minute per IP
-    await rate_limiter.check_rate_limit(f"ref:{client_ip}", max_requests=30, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"ref:{client_ip}", max_requests=30, window_seconds=60
+    )
 
     new_access_token, new_refresh_token = await auth_service.refresh_tokens(
         raw_token, ip_address=client_ip, request_id=req_id
@@ -196,8 +206,8 @@ async def refresh_tokens(
 async def logout(
     request: Request,
     response: Response,
-    payload: Optional[RefreshTokenRequest] = None,
-    dsaapp_refresh_token: Optional[str] = Cookie(default=None),
+    payload: RefreshTokenRequest | None = None,
+    dsaapp_refresh_token: str | None = Cookie(default=None),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> APIResponse[dict]:
     client_ip = request.client.host if request.client else "unknown"
@@ -236,7 +246,9 @@ async def get_me(
             id=current_user.id,
             email=current_user.email,
             role=current_user.role.value,
-            display_name=current_user.profile.display_name if current_user.profile else current_user.email.split("@")[0],
+            display_name=current_user.profile.display_name
+            if current_user.profile
+            else current_user.email.split("@")[0],
             plan="PREMIUM" if is_premium else "FREE",
             premium_active=is_premium,
             created_at=current_user.created_at,

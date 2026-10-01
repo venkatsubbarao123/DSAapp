@@ -1,6 +1,7 @@
 """Content repository managing parameterized database operations for curricula, topics, lessons, and problems."""
 
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any
+
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -30,8 +31,8 @@ class ContentRepository:
     # --- Curricula & Tracks ---
 
     async def get_curricula(
-        self, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> List[Curriculum]:
+        self, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> list[Curriculum]:
         """Fetches active curricula ordered by display_order."""
         stmt = select(Curriculum).order_by(Curriculum.display_order.asc())
         if status is not None:
@@ -40,12 +41,18 @@ class ContentRepository:
         return list(result.scalars().all())
 
     async def get_curriculum_by_slug_or_id(
-        self, slug_or_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> Optional[Curriculum]:
+        self, slug_or_id: str, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> Curriculum | None:
         """Fetches curriculum with nested tracks eager-loaded."""
         stmt = (
             select(Curriculum)
-            .where(or_(Curriculum.slug == slug_or_id, Curriculum.id == slug_or_id, Curriculum.public_id == slug_or_id))
+            .where(
+                or_(
+                    Curriculum.slug == slug_or_id,
+                    Curriculum.id == slug_or_id,
+                    Curriculum.public_id == slug_or_id,
+                )
+            )
             .options(selectinload(Curriculum.tracks))
         )
         if status is not None:
@@ -54,8 +61,8 @@ class ContentRepository:
         return result.scalar_one_or_none()
 
     async def get_track_by_slug_or_id(
-        self, slug_or_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> Optional[Track]:
+        self, slug_or_id: str, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> Track | None:
         """Fetches track with nested topics eager-loaded."""
         stmt = (
             select(Track)
@@ -71,14 +78,16 @@ class ContentRepository:
 
     async def get_topics(
         self,
-        track_id: Optional[str] = None,
-        difficulty: Optional[ContentLevel] = None,
+        track_id: str | None = None,
+        difficulty: ContentLevel | None = None,
         page: int = 1,
         page_size: int = 20,
-        status: Optional[ContentStatus] = ContentStatus.PUBLISHED,
-    ) -> Tuple[List[Topic], int]:
+        status: ContentStatus | None = ContentStatus.PUBLISHED,
+    ) -> tuple[list[Topic], int]:
         """Returns paginated list of topics with filters."""
-        stmt = select(Topic).order_by(Topic.display_order.asc(), Topic.created_at.desc())
+        stmt = select(Topic).order_by(
+            Topic.display_order.asc(), Topic.created_at.desc()
+        )
         count_stmt = select(func.count(Topic.id))
 
         if status is not None:
@@ -103,12 +112,18 @@ class ContentRepository:
         return list(result.scalars().all()), total
 
     async def get_topic_by_slug_or_id(
-        self, slug_or_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> Optional[Topic]:
+        self, slug_or_id: str, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> Topic | None:
         """Fetches topic with subtopics eager-loaded."""
         stmt = (
             select(Topic)
-            .where(or_(Topic.slug == slug_or_id, Topic.id == slug_or_id, Topic.public_id == slug_or_id))
+            .where(
+                or_(
+                    Topic.slug == slug_or_id,
+                    Topic.id == slug_or_id,
+                    Topic.public_id == slug_or_id,
+                )
+            )
             .options(selectinload(Topic.subtopics))
         )
         if status is not None:
@@ -117,8 +132,8 @@ class ContentRepository:
         return result.scalar_one_or_none()
 
     async def get_subtopic_by_id(
-        self, subtopic_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> Optional[Subtopic]:
+        self, subtopic_id: str, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> Subtopic | None:
         """Fetches subtopic by ID."""
         stmt = select(Subtopic).where(Subtopic.id == subtopic_id)
         if status is not None:
@@ -130,13 +145,15 @@ class ContentRepository:
 
     async def get_lessons(
         self,
-        subtopic_id: Optional[str] = None,
+        subtopic_id: str | None = None,
         page: int = 1,
         page_size: int = 20,
-        status: Optional[ContentStatus] = ContentStatus.PUBLISHED,
-    ) -> Tuple[List[Lesson], int]:
+        status: ContentStatus | None = ContentStatus.PUBLISHED,
+    ) -> tuple[list[Lesson], int]:
         """Returns paginated lessons list."""
-        stmt = select(Lesson).order_by(Lesson.display_order.asc(), Lesson.created_at.desc())
+        stmt = select(Lesson).order_by(
+            Lesson.display_order.asc(), Lesson.created_at.desc()
+        )
         count_stmt = select(func.count(Lesson.id))
 
         if status is not None:
@@ -157,11 +174,15 @@ class ContentRepository:
         return list(result.scalars().all()), total
 
     async def get_lesson_by_slug_or_id(
-        self, slug_or_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> Optional[Lesson]:
+        self, slug_or_id: str, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> Lesson | None:
         """Fetches single lesson by unique identifier."""
         stmt = select(Lesson).where(
-            or_(Lesson.slug == slug_or_id, Lesson.id == slug_or_id, Lesson.public_id == slug_or_id)
+            or_(
+                Lesson.slug == slug_or_id,
+                Lesson.id == slug_or_id,
+                Lesson.public_id == slug_or_id,
+            )
         )
         if status is not None:
             stmt = stmt.where(Lesson.status == status)
@@ -172,16 +193,16 @@ class ContentRepository:
 
     async def get_problems(
         self,
-        topic_slug: Optional[str] = None,
-        difficulty: Optional[ProblemDifficulty] = None,
-        access_level: Optional[ContentAccessLevel] = None,
-        tag_slug: Optional[str] = None,
-        pattern_slug: Optional[str] = None,
-        search: Optional[str] = None,
+        topic_slug: str | None = None,
+        difficulty: ProblemDifficulty | None = None,
+        access_level: ContentAccessLevel | None = None,
+        tag_slug: str | None = None,
+        pattern_slug: str | None = None,
+        search: str | None = None,
         page: int = 1,
         page_size: int = 20,
-        status: Optional[ContentStatus] = ContentStatus.PUBLISHED,
-    ) -> Tuple[List[Problem], int]:
+        status: ContentStatus | None = ContentStatus.PUBLISHED,
+    ) -> tuple[list[Problem], int]:
         """Fetches filtered and paginated problem summaries."""
         stmt = (
             select(Problem)
@@ -214,8 +235,12 @@ class ContentRepository:
             count_stmt = count_stmt.join(Problem.tags).where(Tag.slug == tag_slug)
 
         if pattern_slug:
-            stmt = stmt.join(Problem.patterns).where(ProblemPattern.slug == pattern_slug)
-            count_stmt = count_stmt.join(Problem.patterns).where(ProblemPattern.slug == pattern_slug)
+            stmt = stmt.join(Problem.patterns).where(
+                ProblemPattern.slug == pattern_slug
+            )
+            count_stmt = count_stmt.join(Problem.patterns).where(
+                ProblemPattern.slug == pattern_slug
+            )
 
         if search:
             # Safe parameterized search across title, slug, topic title, and tags
@@ -239,8 +264,8 @@ class ContentRepository:
         return list(result.scalars().all()), total
 
     async def get_problem_by_slug_or_id(
-        self, slug_or_id: str, status: Optional[ContentStatus] = ContentStatus.PUBLISHED
-    ) -> Optional[Problem]:
+        self, slug_or_id: str, status: ContentStatus | None = ContentStatus.PUBLISHED
+    ) -> Problem | None:
         """Fetches problem with full relations eager-loaded.
 
         SECURITY INVARIANT:
@@ -248,7 +273,13 @@ class ContentRepository:
         """
         stmt = (
             select(Problem)
-            .where(or_(Problem.slug == slug_or_id, Problem.id == slug_or_id, Problem.public_id == slug_or_id))
+            .where(
+                or_(
+                    Problem.slug == slug_or_id,
+                    Problem.id == slug_or_id,
+                    Problem.public_id == slug_or_id,
+                )
+            )
             .options(
                 selectinload(Problem.examples),
                 selectinload(Problem.hints),
@@ -276,45 +307,49 @@ class ContentRepository:
             await self.session.flush()
         return tag
 
-    async def get_or_create_pattern(self, name: str, description: str = "") -> ProblemPattern:
+    async def get_or_create_pattern(
+        self, name: str, description: str = ""
+    ) -> ProblemPattern:
         """Retrieves existing pattern or registers new pattern."""
         slug = name.strip().lower().replace(" ", "-")
         stmt = select(ProblemPattern).where(ProblemPattern.slug == slug)
         res = await self.session.execute(stmt)
         pattern = res.scalar_one_or_none()
         if not pattern:
-            pattern = ProblemPattern(slug=slug, name=name.strip(), description=description)
+            pattern = ProblemPattern(
+                slug=slug, name=name.strip(), description=description
+            )
             self.session.add(pattern)
             await self.session.flush()
         return pattern
 
     # --- Authoring & Administration Writes ---
 
-    async def create_curriculum(self, data: Dict[str, Any]) -> Curriculum:
+    async def create_curriculum(self, data: dict[str, Any]) -> Curriculum:
         curriculum = Curriculum(**data)
         self.session.add(curriculum)
         await self.session.flush()
         return curriculum
 
-    async def create_track(self, data: Dict[str, Any]) -> Track:
+    async def create_track(self, data: dict[str, Any]) -> Track:
         track = Track(**data)
         self.session.add(track)
         await self.session.flush()
         return track
 
-    async def create_topic(self, data: Dict[str, Any]) -> Topic:
+    async def create_topic(self, data: dict[str, Any]) -> Topic:
         topic = Topic(**data)
         self.session.add(topic)
         await self.session.flush()
         return topic
 
-    async def create_subtopic(self, data: Dict[str, Any]) -> Subtopic:
+    async def create_subtopic(self, data: dict[str, Any]) -> Subtopic:
         subtopic = Subtopic(**data)
         self.session.add(subtopic)
         await self.session.flush()
         return subtopic
 
-    async def create_lesson(self, data: Dict[str, Any]) -> Lesson:
+    async def create_lesson(self, data: dict[str, Any]) -> Lesson:
         lesson = Lesson(**data)
         self.session.add(lesson)
         await self.session.flush()
@@ -322,10 +357,14 @@ class ContentRepository:
 
     async def create_problem(
         self,
-        problem_data: Dict[str, Any],
-        tag_names: List[str] = [],
-        pattern_names: List[str] = [],
+        problem_data: dict[str, Any],
+        tag_names: list[str] | None = None,
+        pattern_names: list[str] | None = None,
     ) -> Problem:
+        if pattern_names is None:
+            pattern_names = []
+        if tag_names is None:
+            tag_names = []
         problem = Problem(**problem_data)
         for tname in tag_names:
             tag = await self.get_or_create_tag(tname)
@@ -339,13 +378,13 @@ class ContentRepository:
 
     async def update_status(
         self,
-        model: Type[Any],
+        model: type[Any],
         entity_id: str,
         status: ContentStatus,
-        updated_by: Optional[str] = None,
+        updated_by: str | None = None,
     ) -> bool:
         """Updates publishing status for content models."""
-        values: Dict[str, Any] = {"status": status}
+        values: dict[str, Any] = {"status": status}
         if updated_by and hasattr(model, "updated_by"):
             values["updated_by"] = updated_by
         stmt = update(model).where(model.id == entity_id).values(**values)

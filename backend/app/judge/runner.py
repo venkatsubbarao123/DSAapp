@@ -7,9 +7,9 @@ Provides:
 """
 
 import asyncio
-from datetime import datetime, timezone
 import logging
-from typing import Optional
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +33,7 @@ async def run_sample_test_cases(
     problem_id_or_slug: str,
     language: str,
     source_code: str,
-    custom_input: Optional[str] = None,
+    custom_input: str | None = None,
 ) -> RunCodeResponse:
     """Executes code against public/sample test cases without mutating submission history.
 
@@ -124,14 +124,22 @@ async def run_sample_test_cases(
         )
         exec_res = sandbox.run(exec_req)
 
-        passed = (exec_res.exit_code == 0 and not exec_res.timed_out and not exec_res.memory_exceeded)
+        passed = (
+            exec_res.exit_code == 0
+            and not exec_res.timed_out
+            and not exec_res.memory_exceeded
+        )
         case_status = (
             "ACCEPTED"
             if passed
             else (
                 "TIME_LIMIT_EXCEEDED"
                 if exec_res.timed_out
-                else ("MEMORY_LIMIT_EXCEEDED" if exec_res.memory_exceeded else "RUNTIME_ERROR")
+                else (
+                    "MEMORY_LIMIT_EXCEEDED"
+                    if exec_res.memory_exceeded
+                    else "RUNTIME_ERROR"
+                )
             )
         )
 
@@ -203,7 +211,9 @@ async def run_sample_test_cases(
             case_status = "RUNTIME_ERROR"
             passed = False
         else:
-            is_match, _ = compare_outputs(exec_res.stdout, tc.expected_output, mode=cmp_mode)
+            is_match, _ = compare_outputs(
+                exec_res.stdout, tc.expected_output, mode=cmp_mode
+            )
             case_status = "ACCEPTED" if is_match else "WRONG_ANSWER"
             passed = is_match
 
@@ -213,7 +223,9 @@ async def run_sample_test_cases(
                 input=tc.input or "",
                 expected_output=tc.expected_output or "",
                 actual_output=exec_res.stdout or "",
-                stderr=(exec_res.stderr or exec_res.error_message or "")[:2048] if not passed else None,
+                stderr=(exec_res.stderr or exec_res.error_message or "")[:2048]
+                if not passed
+                else None,
                 passed=passed,
                 execution_time_ms=exec_res.execution_time_ms,
                 status=case_status,
@@ -248,6 +260,7 @@ async def run_sample_test_cases(
 async def execute_submission_now(submission_id: str) -> bool:
     """Executes a queued judge job immediately using an isolated session."""
     from backend.app.db.session import async_session_factory
+
     async with async_session_factory() as session:
         stmt = select(JudgeJob).where(JudgeJob.submission_id == submission_id)
         res = await session.execute(stmt)
@@ -265,15 +278,20 @@ async def execute_submission_now(submission_id: str) -> bool:
 async def run_judge_worker_loop(interval_seconds: float = 0.5) -> None:
     """Continuously claims and evaluates queued judge jobs in the background."""
     from backend.app.db.session import async_session_factory
+
     worker = JudgeWorker()
-    logger.info(f"Online Judge background worker loop initialized (worker={worker.worker_id}).")
+    logger.info(
+        f"Online Judge background worker loop initialized (worker={worker.worker_id})."
+    )
 
     while True:
         try:
             async with async_session_factory() as session:
                 job = await JudgeQueue.claim_next_job(session, worker.worker_id)
                 if job:
-                    logger.info(f"Worker {worker.worker_id} processing job {job.id} (submission={job.submission_id})")
+                    logger.info(
+                        f"Worker {worker.worker_id} processing job {job.id} (submission={job.submission_id})"
+                    )
                     await worker.execute_job(session, job)
                     continue
         except asyncio.CancelledError:

@@ -4,10 +4,10 @@ Integrates AI providers with database records, curriculum metadata,
 progress tracking, mistake notebook patterns, and security guardrails.
 """
 
-from datetime import datetime, timezone
 import logging
 import time
-from typing import List
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,7 @@ from backend.app.ai.providers import get_ai_provider
 from backend.app.ai.usage import AIUsageTracker
 from backend.app.core.config import settings
 from backend.app.models.ai import AIConversation, AIHintUsage, AIMessage, AIRequestType
-from backend.app.models.content import Problem, ContentStatus
+from backend.app.models.content import ContentStatus, Problem
 from backend.app.models.progress import (
     Mistake,
     ProblemProgressStatus,
@@ -26,7 +26,6 @@ from backend.app.models.progress import (
     Submission,
     UserProblemProgress,
 )
-
 from backend.app.models.user import User
 from backend.app.schemas.ai import (
     AIUsageSummaryResponse,
@@ -59,7 +58,9 @@ class AIService:
     ) -> None:
         """Enforces daily quota limit server-side."""
         is_premium = bool(getattr(user, "is_premium", False))
-        can_proceed, daily_used, remaining = await AIUsageTracker.check_quota(db, user.id, is_premium)
+        can_proceed, daily_used, _remaining = await AIUsageTracker.check_quota(
+            db, user.id, is_premium
+        )
         if not can_proceed:
             tier_name = "Premium" if is_premium else "Free"
             limit = (
@@ -86,7 +87,9 @@ class AIService:
         resolved_problem_id = None
         if request.problem_id:
             prob_stmt = select(Problem).where(
-                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id),
+                or_(
+                    Problem.id == request.problem_id, Problem.slug == request.problem_id
+                ),
                 Problem.status == ContentStatus.PUBLISHED,
             )
             prob_res = await db.execute(prob_stmt)
@@ -123,7 +126,9 @@ class AIService:
                 conv_id = conv.id
 
             # Save user query & assistant answer
-            user_msg = AIMessage(conversation_id=conv_id, role="user", content=request.question)
+            user_msg = AIMessage(
+                conversation_id=conv_id, role="user", content=request.question
+            )
             assistant_msg = AIMessage(
                 conversation_id=conv_id,
                 role="assistant",
@@ -148,7 +153,7 @@ class AIService:
                     problem_title=problem_title,
                     problem_description=problem_desc,
                 )
-                err_msg = f"Fallback activated due to primary failure: {str(e)}"
+                err_msg = f"Fallback activated due to primary failure: {e!s}"
                 return response
             success = False
             err_msg = str(e)
@@ -183,7 +188,9 @@ class AIService:
         stmt = (
             select(Problem)
             .where(
-                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id),
+                or_(
+                    Problem.id == request.problem_id, Problem.slug == request.problem_id
+                ),
                 Problem.status == ContentStatus.PUBLISHED,
             )
             .options(selectinload(Problem.hints))
@@ -240,7 +247,10 @@ class AIService:
 
         except Exception as e:
             if provider.get_diagnostics().get("provider") != "mock":
-                logger.warning("Primary AI Provider failed: %s. Safely activating mock hint fallback.", e)
+                logger.warning(
+                    "Primary AI Provider failed: %s. Safely activating mock hint fallback.",
+                    e,
+                )
                 fallback = get_ai_provider(override_driver="mock")
                 return await fallback.hint(
                     request=request,
@@ -280,7 +290,9 @@ class AIService:
         problem_title = None
         if request.problem_id:
             p_stmt = select(Problem.title).where(
-                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id)
+                or_(
+                    Problem.id == request.problem_id, Problem.slug == request.problem_id
+                )
             )
             prob_res = await db.execute(p_stmt)
             problem_title = prob_res.scalar_one_or_none()
@@ -289,8 +301,15 @@ class AIService:
         if request.submission_id:
             sub_stmt = (
                 select(Submission)
-                .where(or_(Submission.id == request.submission_id, Submission.public_id == request.submission_id))
-                .options(selectinload(Submission.problem), selectinload(Submission.result))
+                .where(
+                    or_(
+                        Submission.id == request.submission_id,
+                        Submission.public_id == request.submission_id,
+                    )
+                )
+                .options(
+                    selectinload(Submission.problem), selectinload(Submission.result)
+                )
             )
             sub_res = await db.execute(sub_stmt)
             sub = sub_res.scalars().first()
@@ -300,7 +319,9 @@ class AIService:
                 verdict_str = (
                     sub.result.verdict.value
                     if (sub.result and hasattr(sub.result.verdict, "value"))
-                    else str(sub.status.value if hasattr(sub.status, "value") else sub.status)
+                    else str(
+                        sub.status.value if hasattr(sub.status, "value") else sub.status
+                    )
                 )
                 comp_out = (sub.result.compiler_output_safe or "") if sub.result else ""
                 run_out = (sub.result.runtime_output_safe or "") if sub.result else ""
@@ -322,14 +343,23 @@ class AIService:
             effective_request = request
             if submission_context:
                 effective_request = request.model_copy(
-                    update={"context_text": f"{request.context_text}\n{submission_context}"}
+                    update={
+                        "context_text": f"{request.context_text}\n{submission_context}"
+                    }
                 )
-            return await provider.explain(effective_request, problem_title=problem_title)
+            return await provider.explain(
+                effective_request, problem_title=problem_title
+            )
         except Exception as e:
             if provider.get_diagnostics().get("provider") != "mock":
-                logger.warning("Primary AI Provider failed: %s. Safely falling back to mock explain.", e)
+                logger.warning(
+                    "Primary AI Provider failed: %s. Safely falling back to mock explain.",
+                    e,
+                )
                 fallback = get_ai_provider(override_driver="mock")
-                return await fallback.explain(effective_request, problem_title=problem_title)
+                return await fallback.explain(
+                    effective_request, problem_title=problem_title
+                )
             success = False
             err_msg = str(e)
             logger.error("AI Explain call failed: %s", err_msg)
@@ -357,7 +387,9 @@ class AIService:
         request: ComplexityRequest,
     ) -> ComplexityResponse:
         """Performs Big-O time and space complexity evaluation."""
-        await AIService._enforce_quota_and_track(db, user, AIRequestType.COMPLEXITY.value)
+        await AIService._enforce_quota_and_track(
+            db, user, AIRequestType.COMPLEXITY.value
+        )
 
         start_time = time.monotonic()
         provider = get_ai_provider()
@@ -368,7 +400,10 @@ class AIService:
             return await provider.complexity(request)
         except Exception as e:
             if provider.get_diagnostics().get("provider") != "mock":
-                logger.warning("Primary AI Provider failed: %s. Safely falling back to mock complexity.", e)
+                logger.warning(
+                    "Primary AI Provider failed: %s. Safely falling back to mock complexity.",
+                    e,
+                )
                 fallback = get_ai_provider(override_driver="mock")
                 return await fallback.complexity(request)
             success = False
@@ -404,14 +439,18 @@ class AIService:
         effective_request = request
         if request.problem_id:
             p_stmt = select(Problem.title, Problem.statement).where(
-                or_(Problem.id == request.problem_id, Problem.slug == request.problem_id)
+                or_(
+                    Problem.id == request.problem_id, Problem.slug == request.problem_id
+                )
             )
             prob_res = await db.execute(p_stmt)
             row = prob_res.first()
             if row:
                 problem_title = row[0]
                 if not request.problem_description:
-                    effective_request = request.model_copy(update={"problem_description": row[1]})
+                    effective_request = request.model_copy(
+                        update={"problem_description": row[1]}
+                    )
 
         start_time = time.monotonic()
         provider = get_ai_provider()
@@ -419,12 +458,19 @@ class AIService:
         err_msg = None
 
         try:
-            return await provider.pattern(effective_request, problem_title=problem_title)
+            return await provider.pattern(
+                effective_request, problem_title=problem_title
+            )
         except Exception as e:
             if provider.get_diagnostics().get("provider") != "mock":
-                logger.warning("Primary AI Provider failed: %s. Safely falling back to mock pattern.", e)
+                logger.warning(
+                    "Primary AI Provider failed: %s. Safely falling back to mock pattern.",
+                    e,
+                )
                 fallback = get_ai_provider(override_driver="mock")
-                return await fallback.pattern(effective_request, problem_title=problem_title)
+                return await fallback.pattern(
+                    effective_request, problem_title=problem_title
+                )
             success = False
             err_msg = str(e)
             logger.error("AI Pattern call failed: %s", err_msg)
@@ -452,7 +498,9 @@ class AIService:
     ) -> RecommendationResponse:
         """Synthesizes recommendations using actual Phase 4 progress, mistakes, and revision data."""
         # 1. Fetch user progress records
-        prog_stmt = select(UserProblemProgress).where(UserProblemProgress.user_id == user.id)
+        prog_stmt = select(UserProblemProgress).where(
+            UserProblemProgress.user_id == user.id
+        )
         prog_res = await db.execute(prog_stmt)
         progress_items = prog_res.scalars().all()
 
@@ -465,7 +513,9 @@ class AIService:
         now_utc = datetime.now(timezone.utc)
         rev_stmt = (
             select(RevisionItem)
-            .join(RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id)
+            .join(
+                RevisionSchedule, RevisionItem.id == RevisionSchedule.revision_item_id
+            )
             .where(
                 RevisionItem.user_id == user.id,
                 RevisionItem.is_active.is_(True),
@@ -474,7 +524,6 @@ class AIService:
         )
         rev_res = await db.execute(rev_stmt)
         due_revisions = rev_res.scalars().all()
-
 
         has_data = len(progress_items) > 0 or len(mistakes) > 0
 
@@ -495,7 +544,11 @@ class AIService:
                     topic_title="Foundations & Arrays",
                     problem_id=p.id,
                     problem_title=p.title,
-                    difficulty=str(p.difficulty.value if hasattr(p.difficulty, "value") else p.difficulty),
+                    difficulty=str(
+                        p.difficulty.value
+                        if hasattr(p.difficulty, "value")
+                        else p.difficulty
+                    ),
                     reason="Begin your learning journey with introductory array and string challenges.",
                     priority="HIGH",
                     estimated_effort_minutes=20,
@@ -513,52 +566,74 @@ class AIService:
             )
 
         # Process real progress data
-        unsolved_problems = [p for p in progress_items if p.status == ProblemProgressStatus.ATTEMPTED]
-        solved_count = len([p for p in progress_items if p.status == ProblemProgressStatus.SOLVED])
+        unsolved_problems = [
+            p for p in progress_items if p.status == ProblemProgressStatus.ATTEMPTED
+        ]
+        solved_count = len(
+            [p for p in progress_items if p.status == ProblemProgressStatus.SOLVED]
+        )
 
         # Analyze mistake patterns
         mistake_type_counts: dict = {}
         for m in mistakes:
-            m_type = m.mistake_type.value if hasattr(m.mistake_type, "value") else str(m.mistake_type)
+            m_type = (
+                m.mistake_type.value
+                if hasattr(m.mistake_type, "value")
+                else str(m.mistake_type)
+            )
             mistake_type_counts[m_type] = mistake_type_counts.get(m_type, 0) + 1
 
         weak_topics = []
         if mistake_type_counts:
             most_frequent_err = max(mistake_type_counts.items(), key=lambda x: x[1])
-            weak_topics.append(WeakTopicItem(
-                topic_id="cognitive-focus",
-                topic_title=f"Common Error: {most_frequent_err[0]}",
-                mistake_count=most_frequent_err[1],
-                unsolved_attempts=len(unsolved_problems),
-                suggested_action=f"Review logic handling for {most_frequent_err[0]} before submitting.",
-            ))
+            weak_topics.append(
+                WeakTopicItem(
+                    topic_id="cognitive-focus",
+                    topic_title=f"Common Error: {most_frequent_err[0]}",
+                    mistake_count=most_frequent_err[1],
+                    unsolved_attempts=len(unsolved_problems),
+                    suggested_action=f"Review logic handling for {most_frequent_err[0]} before submitting.",
+                )
+            )
 
         # Build recommendations
-        recs: List[RecommendationItem] = []
+        recs: list[RecommendationItem] = []
 
         # A. Priority 1: Unsolved attempted problems
         for unp in unsolved_problems[:2]:
             prob_stmt = select(Problem).where(Problem.id == unp.problem_id)
             p_obj = (await db.execute(prob_stmt)).scalars().first()
             if p_obj:
-                recs.append(RecommendationItem(
-                    topic_id="active-challenges",
-                    topic_title="Attempted Problems",
-                    problem_id=p_obj.id,
-                    problem_title=p_obj.title,
-                    difficulty=str(p_obj.difficulty.value if hasattr(p_obj.difficulty, "value") else p_obj.difficulty),
-                    reason=f"You previously attempted this problem ({unp.attempts_count} attempts) but have not solved it yet. Use hints to complete it.",
-                    priority="HIGH",
-                    estimated_effort_minutes=25,
-                    related_pattern=None,
-                ))
+                recs.append(
+                    RecommendationItem(
+                        topic_id="active-challenges",
+                        topic_title="Attempted Problems",
+                        problem_id=p_obj.id,
+                        problem_title=p_obj.title,
+                        difficulty=str(
+                            p_obj.difficulty.value
+                            if hasattr(p_obj.difficulty, "value")
+                            else p_obj.difficulty
+                        ),
+                        reason=f"You previously attempted this problem ({unp.attempts_count} attempts) but have not solved it yet. Use hints to complete it.",
+                        priority="HIGH",
+                        estimated_effort_minutes=25,
+                        related_pattern=None,
+                    )
+                )
 
         # B. Priority 2: Next published problem to advance difficulty
         next_prob_stmt = (
             select(Problem)
             .where(
                 Problem.status == ContentStatus.PUBLISHED,
-                Problem.id.notin_([p.problem_id for p in progress_items if p.status == ProblemProgressStatus.SOLVED]),
+                Problem.id.notin_(
+                    [
+                        p.problem_id
+                        for p in progress_items
+                        if p.status == ProblemProgressStatus.SOLVED
+                    ]
+                ),
             )
             .order_by(Problem.display_order.asc())
             .limit(2)
@@ -566,17 +641,23 @@ class AIService:
         next_probs = (await db.execute(next_prob_stmt)).scalars().all()
         for np in next_probs:
             if not any(r.problem_id == np.id for r in recs):
-                recs.append(RecommendationItem(
-                    topic_id="curriculum-advance",
-                    topic_title="Curriculum Progression",
-                    problem_id=np.id,
-                    problem_title=np.title,
-                    difficulty=str(np.difficulty.value if hasattr(np.difficulty, "value") else np.difficulty),
-                    reason="Recommended next step in your curriculum pathway.",
-                    priority="MEDIUM",
-                    estimated_effort_minutes=30,
-                    related_pattern=None,
-                ))
+                recs.append(
+                    RecommendationItem(
+                        topic_id="curriculum-advance",
+                        topic_title="Curriculum Progression",
+                        problem_id=np.id,
+                        problem_title=np.title,
+                        difficulty=str(
+                            np.difficulty.value
+                            if hasattr(np.difficulty, "value")
+                            else np.difficulty
+                        ),
+                        reason="Recommended next step in your curriculum pathway.",
+                        priority="MEDIUM",
+                        estimated_effort_minutes=30,
+                        related_pattern=None,
+                    )
+                )
 
         insight = (
             f"You have solved {solved_count} problem(s) and recorded {len(mistakes)} mistake insight(s). "
@@ -598,7 +679,9 @@ class AIService:
     ) -> AIUsageSummaryResponse:
         """Returns the current daily AI quota usage and limits."""
         is_premium = bool(getattr(user, "is_premium", False))
-        can_proceed, daily_used, remaining = await AIUsageTracker.check_quota(db, user.id, is_premium)
+        can_proceed, daily_used, remaining = await AIUsageTracker.check_quota(
+            db, user.id, is_premium
+        )
         provider = get_ai_provider()
         diag = provider.get_diagnostics()
 

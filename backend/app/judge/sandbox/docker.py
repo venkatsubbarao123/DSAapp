@@ -25,7 +25,7 @@ Security controls:
 import base64
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from backend.app.judge.languages import get_language_definition
 from backend.app.judge.sandbox.base import (
@@ -55,6 +55,7 @@ class DockerSandbox(BaseSandbox):
     def _init_docker(self) -> None:
         try:
             import docker
+
             self._docker_client = docker.from_env()
             # Verify connectivity to docker daemon
             self._docker_client.ping()
@@ -73,7 +74,7 @@ class DockerSandbox(BaseSandbox):
         except Exception:
             return False
 
-    def get_diagnostics(self) -> Dict[str, Any]:
+    def get_diagnostics(self) -> dict[str, Any]:
         """Provides diagnostic information about Docker engine and isolation flags."""
         available = self.is_available()
         version_info = {}
@@ -86,7 +87,9 @@ class DockerSandbox(BaseSandbox):
         return {
             "driver": "docker",
             "available": available,
-            "status": "READY" if available else "UNAVAILABLE (DOCKER DAEMON NOT REACHABLE)",
+            "status": "READY"
+            if available
+            else "UNAVAILABLE (DOCKER DAEMON NOT REACHABLE)",
             "isolation": {
                 "network": "none",
                 "read_only_rootfs": True,
@@ -107,7 +110,7 @@ class DockerSandbox(BaseSandbox):
         """Base64-encodes source code for safe injection into shell command."""
         return base64.b64encode(source_code.encode("utf-8")).decode("ascii")
 
-    def _encode_stdin(self, stdin: Optional[str]) -> str:
+    def _encode_stdin(self, stdin: str | None) -> str:
         """Base64-encodes stdin for safe injection into shell command."""
         return base64.b64encode((stdin or "").encode("utf-8")).decode("ascii")
 
@@ -116,12 +119,15 @@ class DockerSandbox(BaseSandbox):
         src_b64 = self._encode_source(source_code)
         compile_cmd = " ".join(lang_def.compile_command)
         return [
-            "sh", "-c",
-            f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
-            f"{compile_cmd} 2>&1"
+            "sh",
+            "-c",
+            (
+                f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
+                f"{compile_cmd} 2>&1"
+            ),
         ]
 
-    def _build_run_command(self, lang_def, source_code: str, stdin: Optional[str]):
+    def _build_run_command(self, lang_def, source_code: str, stdin: str | None):
         """Builds shell command: decode source → write to workspace → [compile if needed] → run with stdin."""
         src_b64 = self._encode_source(source_code)
         stdin_b64 = self._encode_stdin(stdin)
@@ -130,16 +136,22 @@ class DockerSandbox(BaseSandbox):
         if lang_def.is_compiled and lang_def.compile_command:
             compile_cmd = " ".join(lang_def.compile_command)
             return [
-                "sh", "-c",
-                f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
-                f"{compile_cmd} 2>/dev/null && "
-                f"printf '%s' '{stdin_b64}' | base64 -d | {run_cmd}"
+                "sh",
+                "-c",
+                (
+                    f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
+                    f"{compile_cmd} 2>/dev/null && "
+                    f"printf '%s' '{stdin_b64}' | base64 -d | {run_cmd}"
+                ),
             ]
         else:
             return [
-                "sh", "-c",
-                f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
-                f"printf '%s' '{stdin_b64}' | base64 -d | {run_cmd}"
+                "sh",
+                "-c",
+                (
+                    f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
+                    f"printf '%s' '{stdin_b64}' | base64 -d | {run_cmd}"
+                ),
             ]
 
     def _create_container(self, image: str, command, mem_limit_mb: int):
@@ -191,7 +203,9 @@ class DockerSandbox(BaseSandbox):
         try:
             command = self._build_compile_command(lang_def, request.source_code)
             mem_limit = max(request.memory_limit_mb or 256, 256)
-            container = self._create_container(lang_def.docker_image, command, mem_limit)
+            container = self._create_container(
+                lang_def.docker_image, command, mem_limit
+            )
             container.start()
 
             # 30s hard compilation timeout
@@ -218,7 +232,7 @@ class DockerSandbox(BaseSandbox):
         except Exception as e:
             return CompilationResult(
                 success=False,
-                compiler_output=f"Compilation error: {str(e)}",
+                compiler_output=f"Compilation error: {e!s}",
                 exit_code=-1,
                 compilation_time_ms=int((time.monotonic() - start_time) * 1000),
             )
@@ -232,7 +246,7 @@ class DockerSandbox(BaseSandbox):
     def run(
         self,
         request: ExecutionRequest,
-        workspace_id: Optional[str] = None,
+        workspace_id: str | None = None,
     ) -> ExecutionResult:
         """Executes the untrusted program against given stdin inside Docker."""
         lang_def = get_language_definition(request.language_id)
@@ -253,9 +267,13 @@ class DockerSandbox(BaseSandbox):
         time_limit_sec = request.time_limit_ms / 1000.0
 
         try:
-            command = self._build_run_command(lang_def, request.source_code, request.stdin)
+            command = self._build_run_command(
+                lang_def, request.source_code, request.stdin
+            )
             mem_limit = request.memory_limit_mb or lang_def.default_memory_limit_mb
-            container = self._create_container(lang_def.docker_image, command, mem_limit)
+            container = self._create_container(
+                lang_def.docker_image, command, mem_limit
+            )
             container.start()
 
             # Wait for execution with wall-clock timeout buffer (+1.0s)
@@ -284,7 +302,9 @@ class DockerSandbox(BaseSandbox):
             output_limit = request.output_limit_bytes or MAX_SAFE_OUTPUT_BYTES
             output_exceeded = len(out_str.encode("utf-8")) > output_limit
             if output_exceeded:
-                out_str = out_str[:output_limit] + "\n[OUTPUT TRUNCATED: Limit Exceeded]"
+                out_str = (
+                    out_str[:output_limit] + "\n[OUTPUT TRUNCATED: Limit Exceeded]"
+                )
 
             # Check TLE: container wait timed out OR elapsed exceeds configured limit
             if timed_out or elapsed_ms > request.time_limit_ms:
@@ -316,7 +336,7 @@ class DockerSandbox(BaseSandbox):
             return ExecutionResult(
                 exit_code=-1,
                 execution_time_ms=elapsed_ms,
-                error_message=f"Execution error: {str(e)}",
+                error_message=f"Execution error: {e!s}",
             )
         finally:
             if container:

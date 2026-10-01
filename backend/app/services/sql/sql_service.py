@@ -8,7 +8,7 @@ Manages:
 """
 
 import logging
-from typing import List, Optional
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -166,10 +166,10 @@ class SQLService:
     async def list_problems(
         cls,
         db: AsyncSession,
-        user_id: Optional[str] = None,
-        category: Optional[str] = None,
-        difficulty: Optional[str] = None,
-    ) -> List[SQLProblemSummary]:
+        user_id: str | None = None,
+        category: str | None = None,
+        difficulty: str | None = None,
+    ) -> list[SQLProblemSummary]:
         """Lists published SQL problems with solved status indicator."""
         await cls.ensure_seed_problems(db)
 
@@ -185,10 +185,14 @@ class SQLService:
 
         solved_problem_ids = set()
         if user_id:
-            solved_stmt = select(SQLSubmission.sql_problem_id).where(
-                SQLSubmission.user_id == user_id,
-                SQLSubmission.verdict == "ACCEPTED",
-            ).distinct()
+            solved_stmt = (
+                select(SQLSubmission.sql_problem_id)
+                .where(
+                    SQLSubmission.user_id == user_id,
+                    SQLSubmission.verdict == "ACCEPTED",
+                )
+                .distinct()
+            )
             s_res = await db.execute(solved_stmt)
             solved_problem_ids = {r[0] for r in s_res.all()}
 
@@ -211,8 +215,8 @@ class SQLService:
         cls,
         db: AsyncSession,
         slug_or_id: str,
-        user_id: Optional[str] = None,
-    ) -> Optional[SQLProblemDetail]:
+        user_id: str | None = None,
+    ) -> SQLProblemDetail | None:
         """Retrieves SQL problem specification."""
         await cls.ensure_seed_problems(db)
 
@@ -354,7 +358,7 @@ class SQLService:
         db: AsyncSession,
         user_id: str,
         slug_or_id: str,
-    ) -> List[SQLSubmissionSummary]:
+    ) -> list[SQLSubmissionSummary]:
         """Lists user's submission history for a specific SQL problem."""
         stmt = select(SQLProblem.id).where(
             (SQLProblem.slug == slug_or_id) | (SQLProblem.id == slug_or_id)
@@ -363,10 +367,15 @@ class SQLService:
         if not prob_id:
             return []
 
-        sub_stmt = select(SQLSubmission).where(
-            SQLSubmission.user_id == user_id,
-            SQLSubmission.sql_problem_id == prob_id,
-        ).order_by(SQLSubmission.created_at.desc()).limit(20)
+        sub_stmt = (
+            select(SQLSubmission)
+            .where(
+                SQLSubmission.user_id == user_id,
+                SQLSubmission.sql_problem_id == prob_id,
+            )
+            .order_by(SQLSubmission.created_at.desc())
+            .limit(20)
+        )
 
         res = await db.execute(sub_stmt)
         submissions = res.scalars().all()

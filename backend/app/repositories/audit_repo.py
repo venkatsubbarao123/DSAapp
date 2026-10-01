@@ -1,7 +1,7 @@
 """Audit repository for recording immutable security events."""
 
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.app.models.audit import AuditLog
 
 
@@ -14,12 +14,12 @@ class AuditRepository:
     async def log_event(
         self,
         action: str,
-        actor_id: Optional[str] = None,
-        target_type: Optional[str] = None,
-        target_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
-        metadata_json: Optional[str] = None,
+        actor_id: str | None = None,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        ip_address: str | None = None,
+        request_id: str | None = None,
+        metadata_json: str | None = None,
     ) -> AuditLog:
         """Appends an immutable audit log record."""
         log = AuditLog(

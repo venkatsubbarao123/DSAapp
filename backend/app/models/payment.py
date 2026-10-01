@@ -3,7 +3,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,6 +29,7 @@ class OrderStatus(str, enum.Enum):
 
 class PremiumEntitlement(Base):
     """Authoritative server-side entitlement record granting Premium capability."""
+
     __tablename__ = "premium_entitlements"
 
     id: Mapped[str] = mapped_column(
@@ -62,7 +64,7 @@ class PremiumEntitlement(Base):
         nullable=False,
         index=True,
     )
-    source_order_id: Mapped[Optional[str]] = mapped_column(
+    source_order_id: Mapped[str | None] = mapped_column(
         String(64),
         nullable=True,
     )
@@ -88,6 +90,7 @@ class PremiumEntitlement(Base):
 
 class PaymentOrder(Base):
     """Immutable order record with server-calculated authoritative pricing."""
+
     __tablename__ = "payment_orders"
 
     id: Mapped[str] = mapped_column(
@@ -127,12 +130,12 @@ class PaymentOrder(Base):
         default="phonepe",
         nullable=False,
     )
-    provider_order_id: Mapped[Optional[str]] = mapped_column(
+    provider_order_id: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         index=True,
     )
-    checkout_url: Mapped[Optional[str]] = mapped_column(
+    checkout_url: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
     )
@@ -149,7 +152,7 @@ class PaymentOrder(Base):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="orders")
-    transactions: Mapped[List["PaymentTransaction"]] = relationship(
+    transactions: Mapped[list["PaymentTransaction"]] = relationship(
         "PaymentTransaction",
         back_populates="order",
         cascade="all, delete-orphan",
@@ -158,6 +161,7 @@ class PaymentOrder(Base):
 
 class PaymentTransaction(Base):
     """Payment transaction verification record preserving provider trace data."""
+
     __tablename__ = "payment_transactions"
 
     id: Mapped[str] = mapped_column(
@@ -177,7 +181,7 @@ class PaymentTransaction(Base):
         nullable=False,
         index=True,
     )
-    provider_transaction_id: Mapped[Optional[str]] = mapped_column(
+    provider_transaction_id: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         index=True,
@@ -195,12 +199,12 @@ class PaymentTransaction(Base):
         nullable=False,
         index=True,
     )
-    raw_response_sanitized: Mapped[Optional[str]] = mapped_column(
+    raw_response_sanitized: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
         comment="Sanitized provider response with zero sensitive card/PIN/account data",
     )
-    verified_at: Mapped[Optional[datetime]] = mapped_column(
+    verified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -210,4 +214,6 @@ class PaymentTransaction(Base):
         nullable=False,
     )
 
-    order: Mapped["PaymentOrder"] = relationship("PaymentOrder", back_populates="transactions")
+    order: Mapped["PaymentOrder"] = relationship(
+        "PaymentOrder", back_populates="transactions"
+    )

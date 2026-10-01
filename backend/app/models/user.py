@@ -3,7 +3,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
 class UserRole(str, enum.Enum):
     """Server-side Role-Based Access Control hierarchy."""
+
     STUDENT = "STUDENT"
     CONTENT_EDITOR = "CONTENT_EDITOR"
     MODERATOR = "MODERATOR"
@@ -24,6 +26,7 @@ class UserRole(str, enum.Enum):
 
 class User(Base):
     """Core user entity with non-sequential UUID public identifier."""
+
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(
@@ -77,17 +80,17 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
-    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    entitlements: Mapped[List["PremiumEntitlement"]] = relationship(
+    entitlements: Mapped[list["PremiumEntitlement"]] = relationship(
         "PremiumEntitlement",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    orders: Mapped[List["PaymentOrder"]] = relationship(
+    orders: Mapped[list["PaymentOrder"]] = relationship(
         "PaymentOrder",
         back_populates="user",
         cascade="all, delete-orphan",
@@ -96,6 +99,7 @@ class User(Base):
 
 class UserProfile(Base):
     """Public user profile details separate from core authentication credentials."""
+
     __tablename__ = "user_profiles"
 
     id: Mapped[str] = mapped_column(
@@ -115,19 +119,19 @@ class UserProfile(Base):
         nullable=False,
         default="DSA Explorer",
     )
-    avatar_url: Mapped[Optional[str]] = mapped_column(
+    avatar_url: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
     )
-    bio: Mapped[Optional[str]] = mapped_column(
+    bio: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    country: Mapped[Optional[str]] = mapped_column(
+    country: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
     )
-    college: Mapped[Optional[str]] = mapped_column(
+    college: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True,
     )

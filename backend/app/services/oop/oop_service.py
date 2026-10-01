@@ -4,64 +4,70 @@ Provides structured learning modules, design pattern guides, and OOP coding chal
 for the OOP track.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel
 
 
 class OOPModule(BaseModel):
     """OOP learning module specification."""
+
     id: str
     title: str
     category: str  # PILLARS, SOLID, DESIGN_PATTERNS, ARCHITECTURE
     summary: str
-    key_concepts: List[str]
+    key_concepts: list[str]
     code_example: str
     design_tradeoffs: str
 
 
 class OOPPillar(BaseModel):
     """Four Pillars of Object-Oriented Programming."""
+
     id: str
     name: str
     summary: str
     explanation: str
-    code_examples: Dict[str, str]
-    common_pitfalls: List[str]
+    code_examples: dict[str, str]
+    common_pitfalls: list[str]
 
 
 class SOLIDPrinciple(BaseModel):
     """SOLID software design principles."""
+
     letter: str
     name: str
     summary: str
-    bad_example: Dict[str, str]
-    good_example: Dict[str, str]
-    benefits: List[str]
+    bad_example: dict[str, str]
+    good_example: dict[str, str]
+    benefits: list[str]
 
 
 class OOPDesignPattern(BaseModel):
     """Gang of Four design pattern specification."""
+
     name: str
     category: str  # CREATIONAL, STRUCTURAL, BEHAVIORAL
     intent: str
-    use_cases: List[str]
+    use_cases: list[str]
     structure_diagram_mermaid: str
-    implementation: Dict[str, str]
-    tradeoffs: List[str]
+    implementation: dict[str, str]
+    tradeoffs: list[str]
 
 
 class OOPOverview(BaseModel):
     """Consolidated overview payload for the frontend OOP hub."""
-    pillars: List[OOPPillar]
-    solid_principles: List[SOLIDPrinciple]
-    design_patterns: List[OOPDesignPattern]
+
+    pillars: list[OOPPillar]
+    solid_principles: list[SOLIDPrinciple]
+    design_patterns: list[OOPDesignPattern]
 
 
 # ---------------------------------------------------------------------------
 # Data Definitions
 # ---------------------------------------------------------------------------
 
-OOP_PILLARS_DATA: List[Dict[str, Any]] = [
+OOP_PILLARS_DATA: list[dict[str, Any]] = [
     {
         "id": "encapsulation",
         "name": "Encapsulation",
@@ -267,9 +273,7 @@ OOP_PILLARS_DATA: List[Dict[str, Any]] = [
                 "    return sum(s.area() for s in shapes)  # Polymorphic dispatch\n"
             ),
             "java": (
-                "public abstract class Shape {\n"
-                "    public abstract double area();\n"
-                "}\n"
+                "public abstract class Shape {\n    public abstract double area();\n}\n"
             ),
             "cpp": (
                 "class Shape {\n"
@@ -278,11 +282,7 @@ OOP_PILLARS_DATA: List[Dict[str, Any]] = [
                 "    virtual double area() const = 0;\n"
                 "};\n"
             ),
-            "typescript": (
-                "export interface Shape {\n"
-                "  area(): number;\n"
-                "}\n"
-            ),
+            "typescript": ("export interface Shape {\n  area(): number;\n}\n"),
         },
         "common_pitfalls": [
             "Relying on type checks (isinstance / instanceof) instead of overriding polymorphic methods.",
@@ -291,7 +291,7 @@ OOP_PILLARS_DATA: List[Dict[str, Any]] = [
     },
 ]
 
-OOP_SOLID_DATA: List[Dict[str, Any]] = [
+OOP_SOLID_DATA: list[dict[str, Any]] = [
     {
         "letter": "S",
         "name": "Single Responsibility Principle",
@@ -484,7 +484,7 @@ OOP_SOLID_DATA: List[Dict[str, Any]] = [
     },
 ]
 
-OOP_PATTERNS_DATA: List[Dict[str, Any]] = [
+OOP_PATTERNS_DATA: list[dict[str, Any]] = [
     {
         "name": "Factory Method",
         "category": "CREATIONAL",
@@ -746,13 +746,18 @@ OOP_PATTERNS_DATA: List[Dict[str, Any]] = [
     },
 ]
 
-OOP_CURRICULUM_MODULES: List[Dict[str, Any]] = [
+OOP_CURRICULUM_MODULES: list[dict[str, Any]] = [
     {
         "id": "oop-encapsulation",
         "title": "Encapsulation & Information Hiding",
         "category": "PILLARS",
         "summary": "Bundling data with methods that operate on that data and restricting direct access to object internals.",
-        "key_concepts": ["Private/Protected access modifiers", "Getters and Setters", "Invariants preservation", "Data hiding"],
+        "key_concepts": [
+            "Private/Protected access modifiers",
+            "Getters and Setters",
+            "Invariants preservation",
+            "Data hiding",
+        ],
         "code_example": (
             "class BankAccount:\n"
             "    def __init__(self, initial_balance: float):\n"
@@ -773,7 +778,12 @@ OOP_CURRICULUM_MODULES: List[Dict[str, Any]] = [
         "title": "Inheritance & Polymorphism",
         "category": "PILLARS",
         "summary": "Subtyping mechanisms allowing specialized subclasses to override base class behavior while preserving interface substitutability.",
-        "key_concepts": ["Method overriding", "Dynamic dispatch", "Abstract Base Classes (ABCs)", "Subtype polymorphism"],
+        "key_concepts": [
+            "Method overriding",
+            "Dynamic dispatch",
+            "Abstract Base Classes (ABCs)",
+            "Subtype polymorphism",
+        ],
         "code_example": (
             "from abc import ABC, abstractmethod\n\n"
             "class Shape(ABC):\n"
@@ -799,7 +809,12 @@ OOP_CURRICULUM_MODULES: List[Dict[str, Any]] = [
         "title": "Composition over Inheritance",
         "category": "ARCHITECTURE",
         "summary": "Designing systems by combining simpler objects into complex ones rather than inheriting behaviors.",
-        "key_concepts": ["Has-a vs Is-a relationships", "Delegation", "Loose coupling", "Runtime flexibility"],
+        "key_concepts": [
+            "Has-a vs Is-a relationships",
+            "Delegation",
+            "Loose coupling",
+            "Runtime flexibility",
+        ],
         "code_example": (
             "class Engine:\n"
             "    def start(self) -> str:\n"
@@ -844,7 +859,12 @@ OOP_CURRICULUM_MODULES: List[Dict[str, Any]] = [
         "title": "Essential Design Patterns",
         "category": "DESIGN_PATTERNS",
         "summary": "Proven software solutions: Factory, Singleton, Strategy, Observer, and Decorator.",
-        "key_concepts": ["Factory Method", "Strategy Pattern", "Observer Pattern", "Decorator Pattern"],
+        "key_concepts": [
+            "Factory Method",
+            "Strategy Pattern",
+            "Observer Pattern",
+            "Decorator Pattern",
+        ],
         "code_example": (
             "# Strategy Pattern:\n"
             "class PaymentStrategy(ABC):\n"
@@ -866,12 +886,12 @@ class OOPService:
     """Delivers OOP learning modules, GoF patterns, and SOLID guides."""
 
     @classmethod
-    def list_modules(cls) -> List[OOPModule]:
+    def list_modules(cls) -> list[OOPModule]:
         """Returns all structured OOP learning modules."""
         return [OOPModule(**m) for m in OOP_CURRICULUM_MODULES]
 
     @classmethod
-    def get_module(cls, module_id: str) -> Optional[OOPModule]:
+    def get_module(cls, module_id: str) -> OOPModule | None:
         """Retrieves an individual OOP module by ID."""
         for m in OOP_CURRICULUM_MODULES:
             if m["id"] == module_id:
@@ -879,17 +899,17 @@ class OOPService:
         return None
 
     @classmethod
-    def get_pillars(cls) -> List[OOPPillar]:
+    def get_pillars(cls) -> list[OOPPillar]:
         """Returns the Four Pillars of OOP."""
         return [OOPPillar(**p) for p in OOP_PILLARS_DATA]
 
     @classmethod
-    def get_solid_principles(cls) -> List[SOLIDPrinciple]:
+    def get_solid_principles(cls) -> list[SOLIDPrinciple]:
         """Returns the five SOLID software design principles."""
         return [SOLIDPrinciple(**s) for s in OOP_SOLID_DATA]
 
     @classmethod
-    def get_design_patterns(cls) -> List[OOPDesignPattern]:
+    def get_design_patterns(cls) -> list[OOPDesignPattern]:
         """Returns the Gang of Four design patterns."""
         return [OOPDesignPattern(**dp) for dp in OOP_PATTERNS_DATA]
 

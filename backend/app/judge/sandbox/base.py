@@ -2,12 +2,13 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
 class ExecutionRequest:
     """Request payload for compiling or running untrusted student code."""
+
     language_id: str
     source_code: str
     stdin: str = ""
@@ -19,6 +20,7 @@ class ExecutionRequest:
 @dataclass
 class CompilationResult:
     """Result of an optional compilation step for compiled languages."""
+
     success: bool
     compiler_output: str = ""
     exit_code: int = 0
@@ -28,6 +30,7 @@ class CompilationResult:
 @dataclass
 class ExecutionResult:
     """Result of executing the program against a single test case."""
+
     exit_code: int = 0
     stdout: str = ""
     stderr: str = ""
@@ -36,7 +39,7 @@ class ExecutionResult:
     timed_out: bool = False
     memory_exceeded: bool = False
     output_exceeded: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class BaseSandbox(ABC):
@@ -45,23 +48,19 @@ class BaseSandbox(ABC):
     @abstractmethod
     def is_available(self) -> bool:
         """Returns True if the sandbox runtime (e.g., Docker daemon) is available."""
-        pass
 
     @abstractmethod
-    def get_diagnostics(self) -> Dict[str, Any]:
+    def get_diagnostics(self) -> dict[str, Any]:
         """Returns diagnostic information about sandbox status, engine, and capabilities."""
-        pass
 
     @abstractmethod
     def compile(self, request: ExecutionRequest) -> CompilationResult:
         """Compiles student code if the language requires compilation."""
-        pass
 
     @abstractmethod
     def run(
         self,
         request: ExecutionRequest,
-        workspace_id: Optional[str] = None,
+        workspace_id: str | None = None,
     ) -> ExecutionResult:
         """Executes student code within an isolated, resource-constrained sandbox."""
-        pass

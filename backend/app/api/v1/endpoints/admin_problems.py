@@ -1,10 +1,13 @@
 """Administrative endpoints for problem management and test case configuration (including hidden verification cases)."""
 
-from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from backend.app.api.deps import get_admin_service, require_role
-from backend.app.models.content import ContentAccessLevel, ContentStatus, ProblemDifficulty
+from backend.app.models.content import (
+    ContentAccessLevel,
+    ContentStatus,
+    ProblemDifficulty,
+)
 from backend.app.models.user import User, UserRole
 from backend.app.schemas.admin import (
     AdminCreateTestCaseRequest,
@@ -24,10 +27,10 @@ require_content_staff = require_role([UserRole.ADMIN, UserRole.CONTENT_EDITOR])
 async def list_problems(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    search: Optional[str] = Query(default=None),
-    difficulty: Optional[ProblemDifficulty] = Query(default=None),
-    status_filter: Optional[ContentStatus] = Query(default=None),
-    access_level: Optional[ContentAccessLevel] = Query(default=None),
+    search: str | None = Query(default=None),
+    difficulty: ProblemDifficulty | None = Query(default=None),
+    status_filter: ContentStatus | None = Query(default=None),
+    access_level: ContentAccessLevel | None = Query(default=None),
     current_user: User = Depends(require_content_staff),
     admin_service: AdminService = Depends(get_admin_service),
 ):
@@ -42,7 +45,7 @@ async def list_problems(
     )
 
 
-@router.get("/{problem_id}/test-cases", response_model=List[AdminTestCaseItem])
+@router.get("/{problem_id}/test-cases", response_model=list[AdminTestCaseItem])
 async def list_test_cases(
     problem_id: str,
     current_user: User = Depends(require_content_staff),
@@ -52,7 +55,11 @@ async def list_test_cases(
     return await admin_service.list_test_cases(problem_id=problem_id)
 
 
-@router.post("/{problem_id}/test-cases", response_model=AdminTestCaseItem, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{problem_id}/test-cases",
+    response_model=AdminTestCaseItem,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_test_case(
     problem_id: str,
     payload: AdminCreateTestCaseRequest,

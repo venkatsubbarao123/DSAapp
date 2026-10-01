@@ -17,4 +17,5 @@ metadata = MetaData(naming_convention=POSTGRES_INDEX_NAMING_CONVENTIONS)
 
 class Base(DeclarativeBase):
     """Base class for all future SQLAlchemy database models."""
+
     metadata = metadata

@@ -3,7 +3,8 @@
 import re
 import time
 import uuid
-from typing import Callable
+from collections.abc import Callable
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -39,7 +40,7 @@ class RequestCorrelationMiddleware(BaseHTTPMiddleware):
         except Exception as exc:
             status_code = 500
             logger.exception(
-                f"Unhandled exception during {request.method} {request.url.path}: {str(exc)}",
+                f"Unhandled exception during {request.method} {request.url.path}: {exc!s}",
                 extra={"request_id": request_id, "error_code": "INTERNAL_SERVER_ERROR"},
             )
             response = JSONResponse(
@@ -82,7 +83,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
 
         # Baseline Content-Security-Policy
         # Restricts frame ancestors, scripts, objects, and base URI
@@ -113,7 +116,10 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
             try:
                 length = int(content_length)
                 if length > settings.MAX_REQUEST_SIZE_BYTES:
-                    req_id = getattr(request.state, "request_id", None) or request_id_ctx.get()
+                    req_id = (
+                        getattr(request.state, "request_id", None)
+                        or request_id_ctx.get()
+                    )
                     return JSONResponse(
                         status_code=413,
                         content={

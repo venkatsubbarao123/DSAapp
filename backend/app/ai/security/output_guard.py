@@ -9,8 +9,6 @@ Verifies that model responses do not accidentally disclose:
 """
 
 import re
-from typing import Optional, Tuple
-
 
 # Regex patterns identifying potential secret leakage
 LEAKAGE_PATTERNS = [
@@ -32,7 +30,7 @@ class OutputGuard:
     """Scans and sanitizes outgoing AI responses to protect system integrity."""
 
     @staticmethod
-    def inspect_output(text: Optional[str]) -> Tuple[bool, Optional[str]]:
+    def inspect_output(text: str | None) -> tuple[bool, str | None]:
         """Scans response text for credential or secret leakage.
 
         Returns:
@@ -44,17 +42,20 @@ class OutputGuard:
         for pattern in COMPILED_LEAKAGE_REGEX:
             match = pattern.search(text)
             if match:
-                return False, f"Potential credential pattern detected: {match.group(0)[:10]}..."
+                return (
+                    False,
+                    f"Potential credential pattern detected: {match.group(0)[:10]}...",
+                )
 
         return True, None
 
     @staticmethod
-    def sanitize_output(text: str, fallback_message: Optional[str] = None) -> str:
+    def sanitize_output(text: str, fallback_message: str | None = None) -> str:
         """Sanitizes output, redacts sensitive patterns if detected, and truncates length."""
         if not text:
             return ""
 
-        is_safe, reason = OutputGuard.inspect_output(text)
+        is_safe, _reason = OutputGuard.inspect_output(text)
         if not is_safe:
             return fallback_message or (
                 "Response was withheld by security guardrails because it contained "

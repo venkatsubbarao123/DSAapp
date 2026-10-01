@@ -4,9 +4,10 @@ import base64
 import hashlib
 import json
 import uuid
-from typing import Any, Dict, List, Optional
-from fastapi import HTTPException, status
+from typing import Any
+
 import httpx
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.config import settings
@@ -14,7 +15,11 @@ from backend.app.core.logging import logger
 from backend.app.models.payment import OrderStatus, PremiumEntitlement
 from backend.app.repositories.audit_repo import AuditRepository
 from backend.app.repositories.payment_repo import PaymentRepository
-from backend.app.schemas.payment import OrderResponse, OrderStatusResponse, PaymentHistoryItem
+from backend.app.schemas.payment import (
+    OrderResponse,
+    OrderStatusResponse,
+    PaymentHistoryItem,
+)
 
 
 class PaymentService:
@@ -25,7 +30,9 @@ class PaymentService:
         self.payment_repo = PaymentRepository(session)
         self.audit_repo = AuditRepository(session)
 
-    def _generate_checksum(self, payload_base64: str, api_path: str = "/pg/v1/pay") -> str:
+    def _generate_checksum(
+        self, payload_base64: str, api_path: str = "/pg/v1/pay"
+    ) -> str:
         """Computes PhonePe SHA256 signature with salt key and salt index."""
         # Signature format: SHA256(payload_base64 + api_path + salt_key) + "###" + salt_index
         salt_key = settings.PHONEPE_SALT_KEY or "dummy_salt_key_for_dev_mode"
@@ -34,7 +41,9 @@ class PaymentService:
         sha256_hash = hashlib.sha256(string_to_hash.encode("utf-8")).hexdigest()
         return f"{sha256_hash}###{salt_index}"
 
-    def verify_webhook_checksum(self, response_base64: str, received_checksum: str) -> bool:
+    def verify_webhook_checksum(
+        self, response_base64: str, received_checksum: str
+    ) -> bool:
         """Verifies incoming webhook X-VERIFY header against calculated checksum."""
         salt_key = settings.PHONEPE_SALT_KEY
         salt_index = settings.PHONEPE_SALT_INDEX
@@ -46,14 +55,15 @@ class PaymentService:
         expected_checksum = f"{sha256_hash}###{salt_index}"
         # Constant-time comparison
         import hmac
+
         return hmac.compare_digest(expected_checksum, received_checksum)
 
     async def create_payment_order(
         self,
         user_id: str,
-        plan_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
+        plan_id: str | None = None,
+        ip_address: str | None = None,
+        request_id: str | None = None,
     ) -> OrderResponse:
         """Creates an order with server-calculated authoritative pricing."""
         chosen_plan = plan_id or settings.PREMIUM_PLAN_ID
@@ -73,7 +83,10 @@ class PaymentService:
 
         checkout_url = None
 
-        if settings.PAYMENT_MODE in ("phonepe_production", "phonepe_sandbox") and settings.PHONEPE_MERCHANT_ID:
+        if (
+            settings.PAYMENT_MODE in ("phonepe_production", "phonepe_sandbox")
+            and settings.PHONEPE_MERCHANT_ID
+        ):
             # Build PhonePe standard checkout request
             phonepe_payload = {
                 "merchantId": settings.PHONEPE_MERCHANT_ID,
@@ -103,7 +116,12 @@ class PaymentService:
                     )
                     resp_data = resp.json()
                     if resp_data.get("success"):
-                        checkout_url = resp_data.get("data", {}).get("instrumentResponse", {}).get("redirectInfo", {}).get("url")
+                        checkout_url = (
+                            resp_data.get("data", {})
+                            .get("instrumentResponse", {})
+                            .get("redirectInfo", {})
+                            .get("url")
+                        )
             except Exception as exc:
                 logger.error(f"PhonePe order creation request failed: {exc}")
                 # Keep order in PENDING; client can inspect status
@@ -122,7 +140,9 @@ class PaymentService:
             target_id=order.id,
             ip_address=ip_address,
             request_id=request_id,
-            metadata_json=json.dumps({"amount": amount, "currency": currency, "plan_id": chosen_plan}),
+            metadata_json=json.dumps(
+                {"amount": amount, "currency": currency, "plan_id": chosen_plan}
+            ),
         )
 
         return OrderResponse(
@@ -169,9 +189,9 @@ class PaymentService:
         self,
         order_id: str,
         user_id: str,
-        provider_transaction_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
+        provider_transaction_id: str | None = None,
+        ip_address: str | None = None,
+        request_id: str | None = None,
     ) -> PremiumEntitlement:
         """Verifies order status with provider and activates Premium entitlement idempotently."""
         order = await self.payment_repo.get_order_by_id(order_id)
@@ -188,7 +208,10 @@ class PaymentService:
             )
 
         # In production mode: Query PhonePe status API directly
-        if settings.PAYMENT_MODE in ("phonepe_production", "phonepe_sandbox") and settings.PHONEPE_MERCHANT_ID:
+        if (
+            settings.PAYMENT_MODE in ("phonepe_production", "phonepe_sandbox")
+            and settings.PHONEPE_MERCHANT_ID
+        ):
             api_path = f"/pg/v1/status/{settings.PHONEPE_MERCHANT_ID}/{order.id}"
             checksum = self._generate_checksum("", api_path)
             try:
@@ -260,9 +283,9 @@ class PaymentService:
         self,
         base64_response: str,
         received_checksum: str,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        ip_address: str | None = None,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
         """Processes and verifies PhonePe server-to-server webhook callback."""
         # 1. Verify cryptographic signature
         if not self.verify_webhook_checksum(base64_response, received_checksum):
@@ -295,7 +318,9 @@ class PaymentService:
 
         order = await self.payment_repo.get_order_by_id(merchant_tx_id)
         if not order:
-            logger.warning(f"PhonePe callback received for non-existent order: {merchant_tx_id}")
+            logger.warning(
+                f"PhonePe callback received for non-existent order: {merchant_tx_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Associated payment order not found.",
@@ -326,7 +351,9 @@ class PaymentService:
                 currency=order.currency,
                 status="SUCCESS",
                 provider_transaction_id=tx_id,
-                raw_response_sanitized=json.dumps({"state": payment_state, "tx": tx_id}),
+                raw_response_sanitized=json.dumps(
+                    {"state": payment_state, "tx": tx_id}
+                ),
             )
             await self.payment_repo.activate_or_extend_entitlement(
                 user_id=order.user_id,
@@ -355,7 +382,7 @@ class PaymentService:
 
         return {"success": True}
 
-    async def get_payment_history(self, user_id: str) -> List[PaymentHistoryItem]:
+    async def get_payment_history(self, user_id: str) -> list[PaymentHistoryItem]:
         """Returns safe user payment history list."""
         txs = await self.payment_repo.get_user_transactions(user_id)
         return [

@@ -4,7 +4,8 @@ Strictly validates production configuration while providing safe defaults for de
 Never prints or leaks secrets in logs or diagnostics.
 """
 
-from typing import List, Literal, Tuple
+from typing import Literal
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -41,15 +42,15 @@ class Settings(BaseSettings):
     REDIS_REQUIRED: bool = False
 
     # CORS & Hosts
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "testserver"]
+    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "testserver"]
 
     # Security Limits & Flags
     MAX_REQUEST_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB boundary
-    MAX_JSON_SIZE_BYTES: int = 1 * 1024 * 1024       # 1 MB boundary
+    MAX_JSON_SIZE_BYTES: int = 1 * 1024 * 1024  # 1 MB boundary
     SECURE_COOKIES: bool = False
     SESSION_COOKIE_SECURE: bool = False
     RATE_LIMIT_ENABLED: bool = True
@@ -66,7 +67,9 @@ class Settings(BaseSettings):
     PREMIUM_DURATION_DAYS: int = 30
 
     # PhonePe Payment Gateway (Phase 2)
-    PAYMENT_MODE: Literal["phonepe_production", "phonepe_sandbox", "development_manual"] = "development_manual"
+    PAYMENT_MODE: Literal[
+        "phonepe_production", "phonepe_sandbox", "development_manual"
+    ] = "development_manual"
     PHONEPE_MERCHANT_ID: str = ""
     PHONEPE_SALT_KEY: str = ""
     PHONEPE_SALT_INDEX: str = "1"
@@ -98,12 +101,12 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     STRUCTURED_LOGS: bool = True
 
-
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: object) -> List[str]:
+    def assemble_cors_origins(cls, v: object) -> list[str]:
         if isinstance(v, str):
             import json
+
             try:
                 parsed = json.loads(v)
                 if isinstance(parsed, list):
@@ -116,9 +119,10 @@ class Settings(BaseSettings):
 
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod
-    def assemble_allowed_hosts(cls, v: object) -> List[str]:
+    def assemble_allowed_hosts(cls, v: object) -> list[str]:
         if isinstance(v, str):
             import json
+
             try:
                 parsed = json.loads(v)
                 if isinstance(parsed, list):
@@ -129,26 +133,36 @@ class Settings(BaseSettings):
             return v
         return ["localhost", "127.0.0.1"]
 
-    def validate_production_config(self) -> Tuple[bool, List[str]]:
+    def validate_production_config(self) -> tuple[bool, list[str]]:
         """Validates configuration for production deployment without revealing secrets.
 
         Returns:
             Tuple of (is_valid, list of missing or invalid setting descriptions).
         """
-        issues: List[str] = []
+        issues: list[str] = []
 
         if self.ENVIRONMENT == "production":
             # 1. SECRET_KEY security check
-            if not self.SECRET_KEY or self.SECRET_KEY.startswith("dev_") or len(self.SECRET_KEY) < 64:
-                issues.append("SECRET_KEY must be a cryptographically secure random string with >= 64 characters.")
+            if (
+                not self.SECRET_KEY
+                or self.SECRET_KEY.startswith("dev_")
+                or len(self.SECRET_KEY) < 64
+            ):
+                issues.append(
+                    "SECRET_KEY must be a cryptographically secure random string with >= 64 characters."
+                )
 
             # 2. Database validation
             if "sqlite" in self.DATABASE_URL.lower():
-                issues.append("Production requires PostgreSQL (DATABASE_URL must not use SQLite).")
+                issues.append(
+                    "Production requires PostgreSQL (DATABASE_URL must not use SQLite)."
+                )
 
             # 3. CORS validation
             if "*" in self.CORS_ORIGINS:
-                issues.append("CORS_ORIGINS must not contain wildcard '*' in production.")
+                issues.append(
+                    "CORS_ORIGINS must not contain wildcard '*' in production."
+                )
 
             if not self.CORS_ORIGINS:
                 issues.append("CORS_ORIGINS must define at least one trusted origin.")
@@ -165,9 +179,9 @@ class Settings(BaseSettings):
 
         return len(issues) == 0, issues
 
-    def validate_payment_config(self) -> Tuple[bool, List[str]]:
+    def validate_payment_config(self) -> tuple[bool, list[str]]:
         """Validates PhonePe configuration without disclosing secret values."""
-        missing: List[str] = []
+        missing: list[str] = []
         if self.PAYMENT_MODE in ("phonepe_production", "phonepe_sandbox"):
             if not self.PHONEPE_MERCHANT_ID:
                 missing.append("PHONEPE_MERCHANT_ID")
@@ -183,17 +197,31 @@ class Settings(BaseSettings):
         if is_valid:
             return "PHONEPE CONFIGURATION VALID"
         else:
-            return "PHONEPE CONFIGURATION INVALID\nMissing:\n" + "\n".join(f"- {name}" for name in missing)
+            return "PHONEPE CONFIGURATION INVALID\nMissing:\n" + "\n".join(
+                f"- {name}" for name in missing
+            )
 
-    def validate_ai_config(self) -> Tuple[bool, List[str]]:
+    def validate_ai_config(self) -> tuple[bool, list[str]]:
         """Validates AI configuration without leaking API keys."""
-        missing: List[str] = []
+        missing: list[str] = []
         if self.AI_PROVIDER == "openai":
-            if not self.AI_API_KEY or self.AI_API_KEY.startswith("test_") or len(self.AI_API_KEY) < 8:
-                missing.append("AI_API_KEY (valid OpenAI API key required for live AI provider)")
+            if (
+                not self.AI_API_KEY
+                or self.AI_API_KEY.startswith("test_")
+                or len(self.AI_API_KEY) < 8
+            ):
+                missing.append(
+                    "AI_API_KEY (valid OpenAI API key required for live AI provider)"
+                )
         elif self.AI_PROVIDER == "gemini":
-            if not self.GOOGLE_AI_API_KEY or self.GOOGLE_AI_API_KEY.startswith("test_") or len(self.GOOGLE_AI_API_KEY) < 8:
-                missing.append("GOOGLE_AI_API_KEY (valid Google Gemini API key required for live AI provider)")
+            if (
+                not self.GOOGLE_AI_API_KEY
+                or self.GOOGLE_AI_API_KEY.startswith("test_")
+                or len(self.GOOGLE_AI_API_KEY) < 8
+            ):
+                missing.append(
+                    "GOOGLE_AI_API_KEY (valid Google Gemini API key required for live AI provider)"
+                )
         return len(missing) == 0, missing
 
     def get_ai_config_diagnostic(self) -> str:
@@ -201,12 +229,16 @@ class Settings(BaseSettings):
         is_valid, missing = self.validate_ai_config()
         if self.AI_PROVIDER == "mock":
             return "AI CONFIGURATION: MOCK (DETERMINISTIC TEST/DEVELOPMENT PROVIDER)"
-        active_model = self.GOOGLE_AI_MODEL if self.AI_PROVIDER == "gemini" else self.AI_MODEL
+        active_model = (
+            self.GOOGLE_AI_MODEL if self.AI_PROVIDER == "gemini" else self.AI_MODEL
+        )
         if is_valid:
             return f"AI CONFIGURATION VALID (Provider: {self.AI_PROVIDER}, Model: {active_model})"
         else:
-            return f"AI CONFIGURATION INVALID (Provider: {self.AI_PROVIDER})\nMissing:\n" + "\n".join(f"- {m}" for m in missing)
-
+            return (
+                f"AI CONFIGURATION INVALID (Provider: {self.AI_PROVIDER})\nMissing:\n"
+                + "\n".join(f"- {m}" for m in missing)
+            )
 
     def get_config_diagnostic(self) -> str:
         """Returns safe configuration diagnostic status without exposing sensitive values."""
@@ -214,7 +246,9 @@ class Settings(BaseSettings):
         if is_valid:
             return "CONFIGURATION VALID"
         else:
-            return "CONFIGURATION INVALID\nMissing or invalid settings:\n" + "\n".join(f"- {issue}" for issue in issues)
+            return "CONFIGURATION INVALID\nMissing or invalid settings:\n" + "\n".join(
+                f"- {issue}" for issue in issues
+            )
 
 
 settings = Settings()

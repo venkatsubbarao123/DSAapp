@@ -26,6 +26,7 @@ router = APIRouter()
 # USER NOTIFICATIONS
 # =============================================================================
 
+
 @router.get("", response_model=NotificationListResponse)
 async def list_notifications(
     page: int = Query(default=1, ge=1),
@@ -80,6 +81,7 @@ async def mark_all_notifications_as_read(
 # PREFERENCES
 # =============================================================================
 
+
 @router.get("/preferences", response_model=NotificationPreferencesResponse)
 async def get_notification_preferences(
     current_user: User = Depends(get_current_user),
@@ -105,6 +107,7 @@ async def update_notification_preferences(
 # =============================================================================
 # ADMIN BROADCAST
 # =============================================================================
+
 
 @router.post("/broadcast", response_model=AdminBroadcastResponse)
 async def broadcast_notification(

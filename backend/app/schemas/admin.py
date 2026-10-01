@@ -1,17 +1,23 @@
 """Pydantic schemas for Admin operations: User management, Content & Test cases, System health, and Audit logs."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
+from backend.app.models.content import (
+    ContentAccessLevel,
+    ContentStatus,
+    ProblemDifficulty,
+)
 from backend.app.models.user import UserRole
-from backend.app.models.content import ProblemDifficulty, ContentAccessLevel, ContentStatus
-
 
 # --- Admin User Management Schemas ---
 
+
 class AdminUserListItem(BaseModel):
     """Summarized user entry for administrative listing."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -28,7 +34,8 @@ class AdminUserListItem(BaseModel):
 
 class AdminUserListResponse(BaseModel):
     """Paginated user list response for admin."""
-    items: List[AdminUserListItem]
+
+    items: list[AdminUserListItem]
     total: int
     page: int
     page_size: int
@@ -37,19 +44,20 @@ class AdminUserListResponse(BaseModel):
 
 class AdminUserDetail(BaseModel):
     """In-depth user profile for administrative inspection."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
     email: str
     display_name: str
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    bio: str | None = None
+    avatar_url: str | None = None
     role: UserRole
     is_active: bool
     is_verified: bool
     plan: str = "FREE"
     premium_active: bool = False
-    premium_expires_at: Optional[datetime] = None
+    premium_expires_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -62,24 +70,32 @@ class AdminUserDetail(BaseModel):
 
 class AdminUpdateUserRoleRequest(BaseModel):
     """Admin request to change a user's role."""
+
     model_config = ConfigDict(extra="forbid")
 
     role: UserRole = Field(..., description="Target role to assign")
-    reason: Optional[str] = Field(default=None, max_length=255, description="Administrative rationale")
+    reason: str | None = Field(
+        default=None, max_length=255, description="Administrative rationale"
+    )
 
 
 class AdminUpdateUserStatusRequest(BaseModel):
     """Admin request to suspend or reactivate a user account."""
+
     model_config = ConfigDict(extra="forbid")
 
     is_active: bool = Field(..., description="True to activate, False to suspend")
-    reason: Optional[str] = Field(default=None, max_length=255, description="Administrative rationale")
+    reason: str | None = Field(
+        default=None, max_length=255, description="Administrative rationale"
+    )
 
 
 # --- Admin Test Case & Problem Schemas ---
 
+
 class AdminTestCaseItem(BaseModel):
     """Test case schema for admin with hidden test case visibility."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -94,28 +110,37 @@ class AdminTestCaseItem(BaseModel):
 
 class AdminCreateTestCaseRequest(BaseModel):
     """Admin payload to create a new test case."""
+
     model_config = ConfigDict(extra="forbid")
 
     input: str = Field(..., description="Standard input string for test runner")
     expected_output: str = Field(..., description="Expected standard output string")
-    is_sample: bool = Field(default=False, description="Whether this is a public sample test case")
-    is_hidden: bool = Field(default=False, description="Whether this test case is hidden from students")
-    display_order: int = Field(default=0, ge=0, description="Sort order within problem test suite")
+    is_sample: bool = Field(
+        default=False, description="Whether this is a public sample test case"
+    )
+    is_hidden: bool = Field(
+        default=False, description="Whether this test case is hidden from students"
+    )
+    display_order: int = Field(
+        default=0, ge=0, description="Sort order within problem test suite"
+    )
 
 
 class AdminUpdateTestCaseRequest(BaseModel):
     """Admin payload to update an existing test case."""
+
     model_config = ConfigDict(extra="forbid")
 
-    input: Optional[str] = None
-    expected_output: Optional[str] = None
-    is_sample: Optional[bool] = None
-    is_hidden: Optional[bool] = None
-    display_order: Optional[int] = Field(default=None, ge=0)
+    input: str | None = None
+    expected_output: str | None = None
+    is_sample: bool | None = None
+    is_hidden: bool | None = None
+    display_order: int | None = Field(default=None, ge=0)
 
 
 class AdminProblemListItem(BaseModel):
     """Admin view of a problem including editorial metadata."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -135,7 +160,8 @@ class AdminProblemListItem(BaseModel):
 
 class AdminProblemListResponse(BaseModel):
     """Paginated problem response for admin."""
-    items: List[AdminProblemListItem]
+
+    items: list[AdminProblemListItem]
     total: int
     page: int
     page_size: int
@@ -144,16 +170,19 @@ class AdminProblemListResponse(BaseModel):
 
 # --- Admin System Health & Diagnostics Schemas ---
 
+
 class ServiceHealthStatus(BaseModel):
     """Status details for an individual subsystem."""
+
     status: str = Field(..., description="'healthy', 'degraded', or 'unhealthy'")
-    message: Optional[str] = None
-    latency_ms: Optional[float] = None
-    details: Optional[Dict[str, Any]] = None
+    message: str | None = None
+    latency_ms: float | None = None
+    details: dict[str, Any] | None = None
 
 
 class SystemDiagnosticsResponse(BaseModel):
     """Comprehensive system diagnostic report with strict zero-secret leakage."""
+
     app_name: str
     app_version: str
     environment: str
@@ -168,29 +197,32 @@ class SystemDiagnosticsResponse(BaseModel):
     ai_provider: ServiceHealthStatus
 
     # Migration info
-    current_migration_revision: Optional[str] = None
+    current_migration_revision: str | None = None
 
 
 # --- Admin Audit Log Schemas ---
 
+
 class AuditLogItem(BaseModel):
     """Sanitized individual audit trail entry."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    actor_id: Optional[str]
+    actor_id: str | None
     action: str
-    target_type: Optional[str]
-    target_id: Optional[str]
-    ip_address: Optional[str]
-    request_id: Optional[str]
-    metadata_json: Optional[str]
+    target_type: str | None
+    target_id: str | None
+    ip_address: str | None
+    request_id: str | None
+    metadata_json: str | None
     created_at: datetime
 
 
 class AuditLogListResponse(BaseModel):
     """Paginated audit log query response."""
-    items: List[AuditLogItem]
+
+    items: list[AuditLogItem]
     total: int
     page: int
     page_size: int

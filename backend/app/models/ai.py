@@ -3,7 +3,7 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
+
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -17,12 +17,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.db.base import Base
 
-if TYPE_CHECKING:
-    pass
-
 
 class AIRequestType(str, enum.Enum):
     """Categorization of AI requests for tracking and quota allocation."""
+
     TUTOR = "tutor"
     HINT = "hint"
     EXPLAIN = "explain"
@@ -33,9 +31,12 @@ class AIRequestType(str, enum.Enum):
 
 class AIUsage(Base):
     """Immutable audit and telemetry record for an AI request."""
+
     __tablename__ = "ai_usage"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -45,12 +46,14 @@ class AIUsage(Base):
     request_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     model: Mapped[str] = mapped_column(String(64), nullable=False)
-    prompt_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=0)
-    completion_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=0)
-    total_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=0)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
+    completion_tokens: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=0
+    )
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
     latency_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -66,22 +69,25 @@ class AIUsage(Base):
 
 class AIConversation(Base):
     """Lightweight session container for AI learning conversations."""
+
     __tablename__ = "ai_conversations"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    problem_id: Mapped[Optional[str]] = mapped_column(
+    problem_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("problems.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
-    lesson_id: Mapped[Optional[str]] = mapped_column(
+    lesson_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("lessons.id", ondelete="SET NULL"),
         nullable=True,
@@ -100,7 +106,7 @@ class AIConversation(Base):
         nullable=False,
     )
 
-    messages: Mapped[List["AIMessage"]] = relationship(
+    messages: Mapped[list["AIMessage"]] = relationship(
         "AIMessage",
         back_populates="conversation",
         cascade="all, delete-orphan",
@@ -115,16 +121,21 @@ class AIConversation(Base):
 
 class AIMessage(Base):
     """Individual message in an AI conversation."""
+
     __tablename__ = "ai_messages"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     conversation_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("ai_conversations.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    role: Mapped[str] = mapped_column(String(16), nullable=False)  # user, assistant, system
+    role: Mapped[str] = mapped_column(
+        String(16), nullable=False
+    )  # user, assistant, system
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -141,9 +152,12 @@ class AIMessage(Base):
 
 class AIHintUsage(Base):
     """Tracking table for progressive hint disclosure per user and problem."""
+
     __tablename__ = "ai_hint_usage"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -162,9 +176,8 @@ class AIHintUsage(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    number_of_hints_used: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-
-    __table_args__ = (
-        Index("ix_ai_hint_usage_user_problem", "user_id", "problem_id"),
+    number_of_hints_used: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1
     )
 
+    __table_args__ = (Index("ix_ai_hint_usage_user_problem", "user_id", "problem_id"),)

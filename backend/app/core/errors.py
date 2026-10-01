@@ -10,14 +10,18 @@ from backend.app.core.logging import logger, request_id_ctx
 
 def get_request_id(request: Request) -> str:
     """Safely extracts request_id from request state or context variable."""
-    return getattr(request.state, "request_id", None) or request_id_ctx.get() or "unknown"
+    return (
+        getattr(request.state, "request_id", None) or request_id_ctx.get() or "unknown"
+    )
 
 
 def register_error_handlers(app: FastAPI) -> None:
     """Registers global exception handlers enforcing uniform API error envelopes."""
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    async def http_exception_handler(
+        request: Request, exc: StarletteHTTPException
+    ) -> JSONResponse:
         req_id = get_request_id(request)
         error_code = f"HTTP_{exc.status_code}"
 
@@ -31,7 +35,11 @@ def register_error_handlers(app: FastAPI) -> None:
         elif exc.status_code == status.HTTP_400_BAD_REQUEST:
             error_code = "BAD_REQUEST"
 
-        message = str(exc.detail) if isinstance(exc.detail, str) else "An HTTP error occurred."
+        message = (
+            str(exc.detail)
+            if isinstance(exc.detail, str)
+            else "An HTTP error occurred."
+        )
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -59,10 +67,12 @@ def register_error_handlers(app: FastAPI) -> None:
         # Sanitize validation error details to avoid raw stack/path leakage
         safe_errors = []
         for err in exc.errors():
-            safe_errors.append({
-                "field": " -> ".join(str(loc) for loc in err.get("loc", [])),
-                "issue": err.get("msg", "Invalid input"),
-            })
+            safe_errors.append(
+                {
+                    "field": " -> ".join(str(loc) for loc in err.get("loc", [])),
+                    "issue": err.get("msg", "Invalid input"),
+                }
+            )
 
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -79,11 +89,13 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    async def unhandled_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
         req_id = get_request_id(request)
         # Log complete exception server-side for debugging
         logger.exception(
-            f"Unhandled internal server error during {request.method} {request.url.path}: {str(exc)}",
+            f"Unhandled internal server error during {request.method} {request.url.path}: {exc!s}",
             extra={"request_id": req_id, "error_code": "INTERNAL_SERVER_ERROR"},
         )
 

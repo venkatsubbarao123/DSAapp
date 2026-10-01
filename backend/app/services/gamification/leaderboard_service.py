@@ -9,7 +9,7 @@ Ensures:
 import json
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+
 from pydantic import BaseModel
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class LeaderboardEntry(BaseModel):
     """Privacy-safe public leaderboard ranking item."""
+
     rank: int
     user_id: str
     display_name: str
@@ -38,17 +39,18 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     """Paginated leaderboard ranking response."""
+
     category: str
     total_participants: int
-    entries: List[LeaderboardEntry]
-    user_rank: Optional[LeaderboardEntry] = None
+    entries: list[LeaderboardEntry]
+    user_rank: LeaderboardEntry | None = None
 
 
 class LeaderboardService:
     """Manages multi-category competitive ranking calculations."""
 
     @staticmethod
-    def _sanitize_name(user_id: str, display_name: Optional[str]) -> str:
+    def _sanitize_name(user_id: str, display_name: str | None) -> str:
         """Returns privacy-safe public handle for a learner without email leakage."""
         if display_name and display_name.strip():
             cleaned = display_name.strip()
@@ -59,7 +61,7 @@ class LeaderboardService:
         return f"Coder-{user_id[:6]}"
 
     @staticmethod
-    def _mask_display_name(user_id: str, profile: Optional[UserProfile]) -> str:
+    def _mask_display_name(user_id: str, profile: UserProfile | None) -> str:
         """Returns privacy-safe public handle for a learner."""
         if profile and profile.display_name and profile.display_name.strip():
             return LeaderboardService._sanitize_name(user_id, profile.display_name)
@@ -72,11 +74,17 @@ class LeaderboardService:
         category: str = "weekly_xp",
         limit: int = 20,
         offset: int = 0,
-        current_user_id: Optional[str] = None,
+        current_user_id: str | None = None,
     ) -> LeaderboardResponse:
         """Calculates or retrieves cached leaderboard rankings for a category."""
         category = category.lower()
-        if category not in ("weekly_xp", "monthly_xp", "all_time_xp", "weekly_solves", "streak"):
+        if category not in (
+            "weekly_xp",
+            "monthly_xp",
+            "all_time_xp",
+            "weekly_solves",
+            "streak",
+        ):
             category = "weekly_xp"
 
         limit = min(max(1, limit), 100)
@@ -96,7 +104,7 @@ class LeaderboardService:
 
         # 2. Compute authoritative SQL query
         now = datetime.now(timezone.utc)
-        entries: List[LeaderboardEntry] = []
+        entries: list[LeaderboardEntry] = []
         total_count = 0
 
         if category == "weekly_xp":
@@ -120,15 +128,22 @@ class LeaderboardService:
                     UserGamificationProfile.current_streak,
                     UserProfile.display_name,
                 )
-                .join(UserGamificationProfile, subquery.c.user_id == UserGamificationProfile.user_id)
+                .join(
+                    UserGamificationProfile,
+                    subquery.c.user_id == UserGamificationProfile.user_id,
+                )
                 .outerjoin(UserProfile, subquery.c.user_id == UserProfile.user_id)
                 .order_by(desc(subquery.c.score), UserGamificationProfile.user_id.asc())
             )
             rows = (await db.execute(stmt)).all()
             total_count = len(rows)
 
-            for idx, r in enumerate(rows[offset : offset + limit], start=offset + 1):
-                name = r.display_name.strip() if r.display_name else f"Coder-{r.user_id[:6]}"
+            for idx, r in enumerate(rows[offset:offset + limit], start=offset + 1):
+                name = (
+                    r.display_name.strip()
+                    if r.display_name
+                    else f"Coder-{r.user_id[:6]}"
+                )
                 lvl = int(r.current_level or 1)
                 strk = int(r.current_streak or 0)
                 entries.append(
@@ -153,15 +168,24 @@ class LeaderboardService:
                     UserGamificationProfile.current_streak,
                     UserProfile.display_name,
                 )
-                .outerjoin(UserProfile, UserGamificationProfile.user_id == UserProfile.user_id)
+                .outerjoin(
+                    UserProfile, UserGamificationProfile.user_id == UserProfile.user_id
+                )
                 .where(UserGamificationProfile.current_streak > 0)
-                .order_by(desc(UserGamificationProfile.current_streak), UserGamificationProfile.user_id.asc())
+                .order_by(
+                    desc(UserGamificationProfile.current_streak),
+                    UserGamificationProfile.user_id.asc(),
+                )
             )
             rows = (await db.execute(stmt)).all()
             total_count = len(rows)
 
-            for idx, r in enumerate(rows[offset : offset + limit], start=offset + 1):
-                name = r.display_name.strip() if r.display_name else f"Coder-{r.user_id[:6]}"
+            for idx, r in enumerate(rows[offset:offset + limit], start=offset + 1):
+                name = (
+                    r.display_name.strip()
+                    if r.display_name
+                    else f"Coder-{r.user_id[:6]}"
+                )
                 lvl = int(r.current_level or 1)
                 strk = int(r.current_streak or 0)
                 entries.append(
@@ -187,14 +211,23 @@ class LeaderboardService:
                     UserGamificationProfile.current_streak,
                     UserProfile.display_name,
                 )
-                .outerjoin(UserProfile, UserGamificationProfile.user_id == UserProfile.user_id)
-                .order_by(desc(UserGamificationProfile.total_xp), UserGamificationProfile.user_id.asc())
+                .outerjoin(
+                    UserProfile, UserGamificationProfile.user_id == UserProfile.user_id
+                )
+                .order_by(
+                    desc(UserGamificationProfile.total_xp),
+                    UserGamificationProfile.user_id.asc(),
+                )
             )
             rows = (await db.execute(stmt)).all()
             total_count = len(rows)
 
-            for idx, r in enumerate(rows[offset : offset + limit], start=offset + 1):
-                name = r.display_name.strip() if r.display_name else f"Coder-{r.user_id[:6]}"
+            for idx, r in enumerate(rows[offset:offset + limit], start=offset + 1):
+                name = (
+                    r.display_name.strip()
+                    if r.display_name
+                    else f"Coder-{r.user_id[:6]}"
+                )
                 lvl = int(r.current_level or 1)
                 strk = int(r.current_streak or 0)
                 entries.append(
@@ -213,7 +246,9 @@ class LeaderboardService:
         # Find current user entry if requested
         user_rank_entry = None
         if current_user_id:
-            user_rank_entry = next((e for e in entries if e.user_id == current_user_id), None)
+            user_rank_entry = next(
+                (e for e in entries if e.user_id == current_user_id), None
+            )
 
         res = LeaderboardResponse(
             category=category,

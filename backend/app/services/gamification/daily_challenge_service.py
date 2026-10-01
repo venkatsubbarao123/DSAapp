@@ -7,7 +7,7 @@ timezone-aware day boundaries, completion verification, and idempotent reward cl
 import hashlib
 import logging
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,13 +28,15 @@ class DailyChallengeService:
     async def get_or_create_daily_challenge(
         cls,
         db: AsyncSession,
-        date_str: Optional[str] = None,
-    ) -> Optional[DailyChallenge]:
+        date_str: str | None = None,
+    ) -> DailyChallenge | None:
         """Returns or deterministically creates the daily challenge for the specified UTC date."""
         target_date = date_str or StreakService.get_today_str()
 
         # Check existing
-        stmt = select(DailyChallenge).where(DailyChallenge.challenge_date == target_date)
+        stmt = select(DailyChallenge).where(
+            DailyChallenge.challenge_date == target_date
+        )
         existing = (await db.execute(stmt)).scalar_one_or_none()
         if existing:
             return existing
@@ -52,11 +54,17 @@ class DailyChallengeService:
 
         if not problems:
             # Fallback to any published problem
-            fallback_stmt = select(Problem).where(Problem.status == ContentStatus.PUBLISHED).order_by(Problem.id)
+            fallback_stmt = (
+                select(Problem)
+                .where(Problem.status == ContentStatus.PUBLISHED)
+                .order_by(Problem.id)
+            )
             problems = (await db.execute(fallback_stmt)).scalars().all()
 
         if not problems:
-            logger.warning(f"No published problems available for Daily Challenge on {target_date}")
+            logger.warning(
+                f"No published problems available for Daily Challenge on {target_date}"
+            )
             return None
 
         # Compute deterministic integer hash from date string
@@ -72,7 +80,9 @@ class DailyChallengeService:
         )
         db.add(challenge)
         await db.flush()
-        logger.info(f"Initialized Daily Challenge for {target_date} with Problem {selected_problem.title} ({selected_problem.slug})")
+        logger.info(
+            f"Initialized Daily Challenge for {target_date} with Problem {selected_problem.title} ({selected_problem.slug})"
+        )
 
         return challenge
 
@@ -82,7 +92,7 @@ class DailyChallengeService:
         db: AsyncSession,
         user_id: str,
         challenge: DailyChallenge,
-    ) -> Optional[UserDailyChallenge]:
+    ) -> UserDailyChallenge | None:
         """Retrieves user participation status for a daily challenge."""
         stmt = select(UserDailyChallenge).where(
             UserDailyChallenge.user_id == user_id,
@@ -95,8 +105,8 @@ class DailyChallengeService:
         cls,
         db: AsyncSession,
         user_id: str,
-        date_str: Optional[str] = None,
-    ) -> Tuple[bool, int, str]:
+        date_str: str | None = None,
+    ) -> tuple[bool, int, str]:
         """Verifies solution and credits XP reward idempotently.
 
         Returns:
@@ -116,12 +126,20 @@ class DailyChallengeService:
         user_progress = (await db.execute(prog_stmt)).scalar_one_or_none()
 
         if not user_progress or user_progress.status != ProblemProgressStatus.SOLVED:
-            return False, 0, "You must solve the problem first before claiming the Daily Challenge reward."
+            return (
+                False,
+                0,
+                "You must solve the problem first before claiming the Daily Challenge reward.",
+            )
 
         # 2. Check user challenge participation record
         user_challenge = await cls.get_user_challenge_status(db, user_id, challenge)
         if user_challenge and user_challenge.solved:
-            return False, 0, "Daily Challenge reward has already been claimed for this date."
+            return (
+                False,
+                0,
+                "Daily Challenge reward has already been claimed for this date.",
+            )
 
         first_attempt = user_progress.attempts_count == 1
         base_xp = challenge.xp_reward

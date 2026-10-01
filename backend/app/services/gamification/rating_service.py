@@ -5,7 +5,7 @@ and session performance with full historical auditing.
 """
 
 import logging
-from typing import Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.content import ProblemDifficulty
@@ -32,7 +32,7 @@ class RatingService:
         user_id: str,
         delta: int,
         reason: str,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
     ) -> int:
         """Applies a rating delta and logs the transaction in RatingHistory.
 
@@ -57,7 +57,9 @@ class RatingService:
         db.add(history)
         await db.flush()
 
-        logger.info(f"User {user_id} rating adjusted: {prev_rating} -> {new_rating} ({'+' if delta >= 0 else ''}{delta}) [{reason}]")
+        logger.info(
+            f"User {user_id} rating adjusted: {prev_rating} -> {new_rating} ({'+' if delta >= 0 else ''}{delta}) [{reason}]"
+        )
         return new_rating
 
     @classmethod
@@ -85,7 +87,7 @@ class RatingService:
         user_id: str,
         session_id: str,
         accuracy: float,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Awards bonus rating for high-accuracy session completion."""
         if accuracy >= 0.8:
             return await cls.adjust_rating(

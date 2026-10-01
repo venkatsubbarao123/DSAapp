@@ -1,7 +1,7 @@
 """Payment, order, transaction, and premium entitlement repository operations."""
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +27,7 @@ class PaymentRepository:
         amount: int,
         currency: str,
         provider: str = "phonepe",
-        checkout_url: Optional[str] = None,
+        checkout_url: str | None = None,
     ) -> PaymentOrder:
         """Stores a new authoritative payment order."""
         order = PaymentOrder(
@@ -43,7 +43,7 @@ class PaymentRepository:
         await self.session.flush()
         return order
 
-    async def get_order_by_id(self, order_id: str) -> Optional[PaymentOrder]:
+    async def get_order_by_id(self, order_id: str) -> PaymentOrder | None:
         """Fetches payment order by internal ID."""
         stmt = select(PaymentOrder).where(PaymentOrder.id == order_id)
         result = await self.session.execute(stmt)
@@ -53,7 +53,7 @@ class PaymentRepository:
         self,
         order_id: str,
         status: OrderStatus,
-        provider_order_id: Optional[str] = None,
+        provider_order_id: str | None = None,
     ) -> None:
         """Updates order status atomically."""
         values = {"status": status}
@@ -69,9 +69,9 @@ class PaymentRepository:
         amount: int,
         currency: str,
         status: str,
-        provider_transaction_id: Optional[str] = None,
-        raw_response_sanitized: Optional[str] = None,
-        verified_at: Optional[datetime] = None,
+        provider_transaction_id: str | None = None,
+        raw_response_sanitized: str | None = None,
+        verified_at: datetime | None = None,
     ) -> PaymentTransaction:
         """Records a payment provider transaction result."""
         tx = PaymentTransaction(
@@ -90,7 +90,7 @@ class PaymentRepository:
 
     async def get_transaction_by_provider_id(
         self, provider_transaction_id: str
-    ) -> Optional[PaymentTransaction]:
+    ) -> PaymentTransaction | None:
         """Finds transaction by provider's transaction ID (for idempotency checks)."""
         stmt = select(PaymentTransaction).where(
             PaymentTransaction.provider_transaction_id == provider_transaction_id
@@ -150,7 +150,7 @@ class PaymentRepository:
             await self.session.flush()
             return entitlement
 
-    async def get_user_transactions(self, user_id: str) -> List[PaymentTransaction]:
+    async def get_user_transactions(self, user_id: str) -> list[PaymentTransaction]:
         """Fetches payment history for an authenticated user."""
         stmt = (
             select(PaymentTransaction)

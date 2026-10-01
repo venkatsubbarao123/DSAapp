@@ -13,15 +13,21 @@ router = APIRouter()
 
 class HealthData(BaseModel):
     """Safe health metrics payload."""
-    status: str = Field(..., description="Overall health state ('healthy' or 'degraded')")
+
+    status: str = Field(
+        ..., description="Overall health state ('healthy' or 'degraded')"
+    )
     service: str = Field(default=settings.APP_NAME, description="Service identifier")
-    environment: str = Field(default=settings.ENVIRONMENT, description="Current runtime environment")
+    environment: str = Field(
+        default=settings.ENVIRONMENT, description="Current runtime environment"
+    )
     database: str = Field(..., description="Database connectivity status")
     redis: str = Field(..., description="Redis cache/broker status")
 
 
 class ProbeData(BaseModel):
     """Lightweight orchestrator probe payload."""
+
     status: str = Field(..., description="Probe status code ('alive' or 'ready')")
     service: str = Field(default=settings.APP_NAME, description="Service identifier")
 

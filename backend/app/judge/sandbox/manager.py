@@ -4,17 +4,17 @@ Strictly manages sandbox lifecycle according to security configuration.
 NEVER fabricates container execution.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from backend.app.core.config import settings
 from backend.app.judge.sandbox.base import BaseSandbox
 from backend.app.judge.sandbox.docker import DockerSandbox
 from backend.app.judge.sandbox.mock import MockSandbox
 
-_cached_sandbox: Optional[BaseSandbox] = None
+_cached_sandbox: BaseSandbox | None = None
 
 
-def get_sandbox(override_driver: Optional[str] = None) -> BaseSandbox:
+def get_sandbox(override_driver: str | None = None) -> BaseSandbox:
     """Retrieves or instantiates the configured sandbox driver."""
     global _cached_sandbox
 
@@ -36,13 +36,13 @@ def get_sandbox(override_driver: Optional[str] = None) -> BaseSandbox:
     return _cached_sandbox
 
 
-def set_sandbox_instance(sandbox: Optional[BaseSandbox]) -> None:
+def set_sandbox_instance(sandbox: BaseSandbox | None) -> None:
     """Allows setting an explicit sandbox instance (e.g. for unit and integration test fixtures)."""
     global _cached_sandbox
     _cached_sandbox = sandbox
 
 
-def get_sandbox_diagnostics() -> Dict[str, Any]:
+def get_sandbox_diagnostics() -> dict[str, Any]:
     """Returns safe diagnostic information regarding the sandbox execution environment."""
     sandbox = get_sandbox()
     return sandbox.get_diagnostics()

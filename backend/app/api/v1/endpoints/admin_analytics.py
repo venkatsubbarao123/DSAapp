@@ -33,7 +33,9 @@ async def get_comprehensive_analytics(
     analytics_service: AnalyticsService = Depends(get_analytics_service),
 ):
     """Admin-only: Full cross-subsystem analytics aggregated with Redis caching."""
-    return await analytics_service.get_comprehensive_analytics(force_refresh=force_refresh)
+    return await analytics_service.get_comprehensive_analytics(
+        force_refresh=force_refresh
+    )
 
 
 @router.get("/users", response_model=UserAnalyticsResponse)

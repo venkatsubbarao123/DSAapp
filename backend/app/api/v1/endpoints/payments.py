@@ -1,6 +1,5 @@
 """Payment endpoints for order creation, status inspection, verification, and webhooks."""
 
-from typing import List, Optional
 from fastapi import APIRouter, Depends, Header, Request, status
 
 from backend.app.api.deps import get_current_user, get_payment_service
@@ -37,7 +36,9 @@ async def create_order(
     req_id = getattr(request.state, "request_id", None)
 
     # Rate limiting: 5 order creations per minute per user/IP
-    await rate_limiter.check_rate_limit(f"order:{current_user.id}", max_requests=5, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"order:{current_user.id}", max_requests=5, window_seconds=60
+    )
 
     order_resp = await payment_service.create_payment_order(
         user_id=current_user.id,
@@ -92,7 +93,7 @@ async def get_order_status(
 async def verify_payment(
     order_id: str,
     request: Request,
-    payload: Optional[ManualPaymentVerifyRequest] = None,
+    payload: ManualPaymentVerifyRequest | None = None,
     current_user: User = Depends(get_current_user),
     payment_service: PaymentService = Depends(get_payment_service),
 ) -> APIResponse[dict]:
@@ -100,7 +101,9 @@ async def verify_payment(
     req_id = getattr(request.state, "request_id", None)
 
     # Rate limiting: 10 verifications per minute
-    await rate_limiter.check_rate_limit(f"verify:{current_user.id}", max_requests=10, window_seconds=60)
+    await rate_limiter.check_rate_limit(
+        f"verify:{current_user.id}", max_requests=10, window_seconds=60
+    )
 
     tx_id = payload.transaction_id if payload else None
     entitlement = await payment_service.verify_and_activate_order(
@@ -149,7 +152,7 @@ async def phonepe_webhook(
 
 @router.get(
     "/history",
-    response_model=APIResponse[List[PaymentHistoryItem]],
+    response_model=APIResponse[list[PaymentHistoryItem]],
     status_code=status.HTTP_200_OK,
     summary="User Payment History",
     description="Returns authenticated user's own past transactions.",
@@ -158,7 +161,7 @@ async def get_history(
     request: Request,
     current_user: User = Depends(get_current_user),
     payment_service: PaymentService = Depends(get_payment_service),
-) -> APIResponse[List[PaymentHistoryItem]]:
+) -> APIResponse[list[PaymentHistoryItem]]:
     req_id = getattr(request.state, "request_id", None)
     history = await payment_service.get_payment_history(current_user.id)
 
