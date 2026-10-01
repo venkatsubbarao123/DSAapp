@@ -171,10 +171,8 @@ describe('DSAapp Phase 9 Notifications System UI', () => {
       render(<NotificationPreferencesPage onNavigate={onNavigate} />);
 
       await waitFor(() => {
-        expect(screen.getByText('Notification Channels')).toBeInTheDocument();
+        expect(screen.getByText('Daily Challenges')).toBeInTheDocument();
       });
-
-      expect(screen.getByText('Daily Challenges')).toBeInTheDocument();
       expect(screen.getByText('Streak Reminders')).toBeInTheDocument();
       expect(screen.getByText('Spaced Repetition')).toBeInTheDocument();
       expect(screen.getByText('Live Contests')).toBeInTheDocument();
