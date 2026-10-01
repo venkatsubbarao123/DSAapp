@@ -43,7 +43,7 @@ services:
       - REDIS_REQUIRED=true
       - SECRET_KEY=replace_with_a_64_character_hex_random_key_in_production_environment_here
       - CORS_ORIGINS=["https://dsaapp.com"]
-      - ALLOWED_HOSTS=["dsaapp.com","backend"]
+      - ALLOWED_HOSTS=["dsaapp.com","backend","localhost","127.0.0.1"]
       - SECURE_COOKIES=true
     ports:
       - "8000:8000"
