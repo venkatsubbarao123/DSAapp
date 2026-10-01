@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchApi } from "../services/apiClient.ts";
+import { useAuth } from "../context/AuthContext.tsx";
 import { PaginatedData, ProblemDifficulty, ProblemSummary } from "../types/curriculum.ts";
 import { LoadingSpinner } from "../components/common/LoadingSpinner.tsx";
 
@@ -9,6 +10,7 @@ interface ProblemsPageProps {
 }
 
 export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialTopicSlug }) => {
+  const { isAuthenticated } = useAuth();
   const getInitialTopic = () => {
     if (initialTopicSlug) return initialTopicSlug;
     if (typeof window !== "undefined" && window.location.search) {
@@ -21,6 +23,8 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
   const [problems, setProblems] = useState<ProblemSummary[]>([]);
   const [topics, setTopics] = useState<Array<{ id: string; slug: string; title: string }>>([]);
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>(getInitialTopic());
+  const [userProgressMap, setUserProgressMap] = useState<Record<string, { status: string; attempts_count: number; slug?: string }>>({});
+  const [solvedCount, setSolvedCount] = useState<number>(0);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -48,6 +52,29 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
       })
       .catch(() => {});
   }, []);
+
+  // Load user problem progress when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUserProgressMap({});
+      setSolvedCount(0);
+      return;
+    }
+    fetchApi<Record<string, { status: string; attempts_count: number; slug?: string }>>("/api/v1/progress/problems")
+      .then((res) => {
+        if (res.data) {
+          setUserProgressMap(res.data);
+          const solvedIds = new Set<string>();
+          Object.entries(res.data).forEach(([key, val]) => {
+            if (val.status === "SOLVED") {
+              solvedIds.add(val.slug || key);
+            }
+          });
+          setSolvedCount(solvedIds.size);
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
 
   // Debounce search input
   useEffect(() => {
