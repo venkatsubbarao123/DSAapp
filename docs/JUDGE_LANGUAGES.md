@@ -21,3 +21,4 @@ Sandbox container definitions are located in `infra/judge/`:
 - `infra/judge/cpp/Dockerfile`
 - `infra/judge/java/Dockerfile`
 - `infra/judge/javascript/Dockerfile`
+- `infra/judge/typescript/Dockerfile`
