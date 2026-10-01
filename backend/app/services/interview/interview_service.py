@@ -607,19 +607,20 @@ class InterviewService:
 
         # Award interview completion XP
         try:
-            await XPService.record_xp_event(
-                db=db,
-                user_id=session.user_id,
-                event_type="INTERVIEW_COMPLETE",
-                source_id=f"interview:{session.id}",
-                amount=75,
-                metadata={
-                    "session_id": session.id,
-                    "mode": session.mode,
-                    "score": session.score,
-                },
-            )
-            await StreakService.record_activity(db=db, user_id=session.user_id)
+            async with db.begin_nested():
+                await XPService.record_xp_event(
+                    db=db,
+                    user_id=session.user_id,
+                    event_type="INTERVIEW_COMPLETE",
+                    source_id=f"interview:{session.id}",
+                    amount=75,
+                    metadata={
+                        "session_id": session.id,
+                        "mode": session.mode,
+                        "score": session.score,
+                    },
+                )
+                await StreakService.record_activity(db=db, user_id=session.user_id)
         except Exception as e:
             logger.warning(f"Could not record gamification for interview: {e}")
 

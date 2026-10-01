@@ -11,6 +11,7 @@ import logging
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.gamification import (
@@ -107,21 +108,30 @@ class XPService:
             amount=amount,
             metadata_json=metadata_str,
         )
-        db.add(tx)
 
-        # Update profile
-        profile = await cls.get_or_create_profile(db, user_id)
-        old_level = profile.current_level
-        profile.total_xp += amount
+        try:
+            async with db.begin_nested():
+                db.add(tx)
 
-        new_level = LevelService.calculate_level(profile.total_xp)
-        profile.current_level = new_level
-        await db.flush()
+                # Update profile
+                profile = await cls.get_or_create_profile(db, user_id)
+                old_level = profile.current_level
+                profile.total_xp += amount
 
-        level_up = new_level > old_level
-        if level_up:
-            logger.info(
-                f"User {user_id} leveled up from {old_level} to {new_level} (Total XP: {profile.total_xp})"
-            )
+                new_level = LevelService.calculate_level(profile.total_xp)
+                profile.current_level = new_level
+                await db.flush()
 
-        return tx, True, new_level
+                level_up = new_level > old_level
+                if level_up:
+                    logger.info(
+                        f"User {user_id} leveled up from {old_level} to {new_level} (Total XP: {profile.total_xp})"
+                    )
+
+                return tx, True, new_level
+        except IntegrityError:
+            # Race condition / idempotency constraint: another concurrent request already recorded this XP
+            logger.info(f"Duplicate XP event ignored via idempotency key: {idempotency_key}")
+            existing_tx = (await db.execute(check_stmt)).scalar_one_or_none()
+            profile = await cls.get_or_create_profile(db, user_id)
+            return existing_tx, False, profile.current_level
