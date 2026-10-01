@@ -3,7 +3,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -14,14 +15,18 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.db.base import Base
+
+if TYPE_CHECKING:
+    from backend.app.models.user import User
 
 
 class NotificationType(str, enum.Enum):
     """Categorical classification of notification events."""
+
     ACHIEVEMENT_UNLOCKED = "ACHIEVEMENT_UNLOCKED"
     DAILY_CHALLENGE = "DAILY_CHALLENGE"
     STREAK_REMINDER = "STREAK_REMINDER"
@@ -35,12 +40,14 @@ class NotificationType(str, enum.Enum):
 
 class NotificationChannel(str, enum.Enum):
     """Delivery transport channel."""
+
     IN_APP = "IN_APP"
     EMAIL = "EMAIL"
 
 
 class DeliveryStatus(str, enum.Enum):
     """Delivery lifecycle status."""
+
     QUEUED = "QUEUED"
     SENDING = "SENDING"
     SENT = "SENT"
@@ -49,6 +56,7 @@ class DeliveryStatus(str, enum.Enum):
 
 class Notification(Base):
     """In-app persistent notification entity for learners."""
+
     __tablename__ = "notifications"
 
     id: Mapped[str] = mapped_column(
@@ -76,12 +84,12 @@ class Notification(Base):
         Text,
         nullable=False,
     )
-    metadata_json: Mapped[Optional[str]] = mapped_column(
+    metadata_json: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
         comment="Sanitized JSON metadata e.g. target URLs, entities",
     )
-    read_at: Mapped[Optional[datetime]] = mapped_column(
+    read_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         index=True,
@@ -107,6 +115,7 @@ class Notification(Base):
 
     def __init__(self, **kwargs):
         import json
+
         is_read = kwargs.pop("is_read", None)
         dedup_key = kwargs.pop("deduplication_key", None)
         data_json = kwargs.pop("data_json", None)
@@ -114,7 +123,7 @@ class Notification(Base):
             kwargs["metadata_json"] = data_json
         if dedup_key:
             meta = {}
-            if "metadata_json" in kwargs and kwargs["metadata_json"]:
+            if kwargs.get("metadata_json"):
                 try:
                     meta = json.loads(kwargs["metadata_json"])
                 except Exception:
@@ -142,12 +151,13 @@ class Notification(Base):
         return cls.read_at.isnot(None)
 
     @property
-    def data_json(self) -> Optional[str]:
+    def data_json(self) -> str | None:
         return self.metadata_json
 
     @property
-    def deduplication_key(self) -> Optional[str]:
+    def deduplication_key(self) -> str | None:
         import json
+
         if not self.metadata_json:
             return None
         try:
@@ -156,9 +166,9 @@ class Notification(Base):
             return None
 
 
-
 class NotificationPreference(Base):
     """User-level notification channel and category opt-in preferences."""
+
     __tablename__ = "notification_preferences"
 
     id: Mapped[str] = mapped_column(
@@ -176,11 +186,21 @@ class NotificationPreference(Base):
     email_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     daily_challenge: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    streak_reminders: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    revision_reminders: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    contest_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    achievement_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    system_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    streak_reminders: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    revision_reminders: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    contest_notifications: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    achievement_notifications: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    system_notifications: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -193,6 +213,7 @@ class NotificationPreference(Base):
 
 class NotificationDelivery(Base):
     """Delivery log record for multi-channel transmission audit."""
+
     __tablename__ = "notification_deliveries"
 
     id: Mapped[str] = mapped_column(
@@ -219,9 +240,11 @@ class NotificationDelivery(Base):
         index=True,
     )
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    provider_message_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_message_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -229,4 +252,6 @@ class NotificationDelivery(Base):
         index=True,
     )
 
-    notification: Mapped["Notification"] = relationship("Notification", back_populates="deliveries")
+    notification: Mapped["Notification"] = relationship(
+        "Notification", back_populates="deliveries"
+    )
