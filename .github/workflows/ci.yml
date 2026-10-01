@@ -36,7 +36,7 @@ jobs:
         run: flake8 app/ --max-line-length=120 --ignore=E501,W503,F401,W293,E712,W391,E303,E203,F821,E402,F841,F541
 
       - name: mypy type check
-        run: mypy app/ --ignore-missing-imports --no-strict-optional --disable-error-code=var-annotated,attr-defined,name-defined,no-redef,valid-type,return-value
+        run: mypy app/ --ignore-missing-imports --no-strict-optional --disable-error-code=var-annotated --disable-error-code=attr-defined --disable-error-code=name-defined --disable-error-code=no-redef --disable-error-code=valid-type --disable-error-code=return-value
 
   # ─────────────────────────────────────────────
   backend-test:
