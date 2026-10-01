@@ -42,7 +42,7 @@ class AuthService:
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="An account with this email address already exists.",
+                detail="An account with this email address already exists. Please sign in instead.",
             )
 
         # 2. Validate password strength
@@ -177,10 +177,30 @@ class AuthService:
         if not token_record:
             raise unauthorized_exc
 
-        # REPLAY ATTACK DETECTION: If an already-revoked token is presented, revoke entire family!
+        # REPLAY ATTACK DETECTION: If an already-revoked token is presented
         if token_record.is_revoked:
+            # Check for concurrent requests within a 30-second window
+            now = datetime.now(timezone.utc)
+            rec_created = token_record.created_at
+            if rec_created.tzinfo is None:
+                rec_created = rec_created.replace(tzinfo=timezone.utc)
+            is_recent = (now - rec_created).total_seconds() < 30
+
+            active_token = await self.auth_repo.get_active_token_in_family(token_family)
+            if is_recent and active_token:
+                logger.info(
+                    "Concurrent refresh token presentation within 30s grace window for family %s. Preserving active session.",
+                    token_family,
+                )
+                user = await self.user_repo.get_by_id(user_id)
+                if user and user.is_active:
+                    new_access_token = create_access_token(user.id, user.role.value)
+                    return new_access_token, raw_refresh_token
+
             logger.critical(
-                f"SECURITY ALERT: Refresh token replay detected for user {user_id}, family {token_family}. Revoking token family."
+                "SECURITY ALERT: Refresh token replay detected for user %s, family %s. Revoking token family.",
+                user_id,
+                token_family,
             )
             await self.auth_repo.revoke_token_family(token_family)
             await self.audit_repo.log_event(
