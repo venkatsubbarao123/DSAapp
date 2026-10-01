@@ -649,7 +649,7 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
                     </button>
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>
