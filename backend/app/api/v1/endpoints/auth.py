@@ -55,7 +55,6 @@ def _extract_display_name(user_obj: User, fallback_display_name: str | None = No
     return user_obj.email.split("@")[0]
 
 
-
 @router.post(
     "/register",
     response_model=APIResponse[TokenResponse],
