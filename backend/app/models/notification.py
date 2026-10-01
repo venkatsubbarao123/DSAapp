@@ -3,7 +3,7 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -18,6 +18,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from backend.app.db.base import Base
+
+if TYPE_CHECKING:
+    from backend.app.models.user import User
 
 
 class NotificationType(str, enum.Enum):
