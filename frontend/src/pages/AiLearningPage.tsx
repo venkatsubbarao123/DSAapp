@@ -57,6 +57,33 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
   // 6. Recommendations State
   const [recommendations, setRecommendations] = useState<RecommendationResponseData | null>(null);
 
+  // Parse URL parameters on mount to hydrate problem context and active tab
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const prob = params.get("problem") || params.get("problem_id");
+      if (prob) {
+        setTutorProblemId(prob);
+        setHintProblemId(prob);
+      }
+      const tabParam = params.get("tab");
+      if (
+        tabParam &&
+        ["tutor", "hint", "explain", "complexity", "pattern", "recommendations"].includes(tabParam)
+      ) {
+        setActiveTab(tabParam as any);
+      }
+      const codeParam = params.get("code");
+      if (codeParam) {
+        setTutorCode(decodeURIComponent(codeParam));
+      }
+      const qParam = params.get("q") || params.get("question");
+      if (qParam) {
+        setTutorQuestion(decodeURIComponent(qParam));
+      }
+    } catch {}
+  }, []);
+
   // Fetch usage stats on mount if authenticated
   useEffect(() => {
     if (isAuthenticated) {

@@ -486,7 +486,37 @@ export const ProblemDetailPage: React.FC<ProblemDetailPageProps> = ({
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+          <button
+            onClick={() => onNavigate(`/ai?problem=${problem.slug}&tab=tutor`)}
+            style={{
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              border: "1px solid var(--brand-primary)",
+              color: "var(--brand-primary)",
+              padding: "4px 10px",
+              borderRadius: "var(--radius-md)",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            🤖 AI Tutor
+          </button>
+          <button
+            onClick={() => onNavigate(`/ai?problem=${problem.slug}&tab=hint`)}
+            style={{
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px solid var(--border-subtle)",
+              color: "var(--text-secondary)",
+              padding: "4px 10px",
+              borderRadius: "var(--radius-md)",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            💡 AI Hints
+          </button>
           <button
             onClick={handleAddToRevision}
             style={{
