@@ -119,7 +119,7 @@ class PaymentRepository:
             .limit(1)
         )
         result = await self.session.execute(stmt)
-        existing = result.scalar_one_or_none()
+        existing: PremiumEntitlement | None = result.scalar_one_or_none()
 
         if existing:
             rec_expires = existing.expires_at

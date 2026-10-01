@@ -300,7 +300,7 @@ class ContentRepository:
         slug = name.strip().lower().replace(" ", "-")
         stmt = select(Tag).where(Tag.slug == slug)
         res = await self.session.execute(stmt)
-        tag = res.scalar_one_or_none()
+        tag: Tag | None = res.scalar_one_or_none()
         if not tag:
             tag = Tag(slug=slug, name=name.strip())
             self.session.add(tag)
@@ -314,7 +314,7 @@ class ContentRepository:
         slug = name.strip().lower().replace(" ", "-")
         stmt = select(ProblemPattern).where(ProblemPattern.slug == slug)
         res = await self.session.execute(stmt)
-        pattern = res.scalar_one_or_none()
+        pattern: ProblemPattern | None = res.scalar_one_or_none()
         if not pattern:
             pattern = ProblemPattern(
                 slug=slug, name=name.strip(), description=description
@@ -389,4 +389,4 @@ class ContentRepository:
             values["updated_by"] = updated_by
         stmt = update(model).where(model.id == entity_id).values(**values)
         res = await self.session.execute(stmt)
-        return res.rowcount > 0
+        return getattr(res, "rowcount", 0) > 0

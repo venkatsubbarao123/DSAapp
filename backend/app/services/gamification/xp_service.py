@@ -48,7 +48,7 @@ class XPService:
             UserGamificationProfile.user_id == user_id
         )
         result = await db.execute(stmt)
-        profile = result.scalar_one_or_none()
+        profile: UserGamificationProfile | None = result.scalar_one_or_none()
 
         if not profile:
             profile = UserGamificationProfile(
@@ -91,7 +91,7 @@ class XPService:
         check_stmt = select(XPTransaction).where(
             XPTransaction.idempotency_key == idempotency_key
         )
-        existing = (await db.execute(check_stmt)).scalar_one_or_none()
+        existing: XPTransaction | None = (await db.execute(check_stmt)).scalar_one_or_none()
         if existing:
             # Already awarded, do not double-count
             profile = await cls.get_or_create_profile(db, user_id)

@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // Mock window.scrollTo for jsdom test environment
 if (typeof window !== "undefined") {

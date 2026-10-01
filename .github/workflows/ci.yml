@@ -168,7 +168,7 @@ jobs:
 
     strategy:
       matrix:
-        language: [python, cpp, java, javascript]
+        language: [python, cpp, java, javascript, typescript]
 
     steps:
       - uses: actions/checkout@v4
@@ -186,7 +186,6 @@ jobs:
           format: table
           exit-code: 1
           severity: CRITICAL,HIGH
-        continue-on-error: true  # advisory only; fix before release
 
   # ─────────────────────────────────────────────
   security-scan:
@@ -205,7 +204,6 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit -r backend/requirements.txt --ignore-vuln GHSA-jfh8-c2jp-6gph
-        continue-on-error: true  # advisory only
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -215,13 +213,12 @@ jobs:
       - name: npm audit
         run: npm audit --audit-level=high
         working-directory: frontend
-        continue-on-error: true  # advisory only
 
   # ─────────────────────────────────────────────
   release-gate:
     name: Release Gate — All Green
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test, security-scan]
+    needs: [backend-test, frontend-test, docker-images, security-scan]
     if: always()
 
     steps:
@@ -233,6 +230,14 @@ jobs:
           fi
           if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
             echo "❌ Frontend tests failed"
+            exit 1
+          fi
+          if [[ "${{ github.ref }}" == "refs/heads/main" && "${{ needs.docker-images.result }}" != "success" ]]; then
+            echo "❌ Docker image builds or scans failed"
+            exit 1
+          fi
+          if [[ "${{ needs.security-scan.result }}" != "success" ]]; then
+            echo "❌ Security checks failed"
             exit 1
           fi
           echo "✅ All required checks passed — release gate open"

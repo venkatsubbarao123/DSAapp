@@ -7,6 +7,7 @@ progress tracking, mistake notebook patterns, and security guardrails.
 import logging
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
@@ -82,7 +83,7 @@ class AIService:
         """Processes an educational inquiry to the AI Tutor."""
         await AIService._enforce_quota_and_track(db, user, AIRequestType.TUTOR.value)
 
-        problem_title = None
+        problem_title: str | None = None
         problem_desc = None
         resolved_problem_id = None
         if request.problem_id:
@@ -287,7 +288,7 @@ class AIService:
         """Generates conceptual, algorithmic, or diagnostic error explanation."""
         await AIService._enforce_quota_and_track(db, user, AIRequestType.EXPLAIN.value)
 
-        problem_title = None
+        problem_title: str | None = None
         if request.problem_id:
             p_stmt = select(Problem.title).where(
                 or_(
@@ -502,12 +503,12 @@ class AIService:
             UserProblemProgress.user_id == user.id
         )
         prog_res = await db.execute(prog_stmt)
-        progress_items = prog_res.scalars().all()
+        progress_items: list[Any] = list(prog_res.scalars().all())
 
         # 2. Fetch user mistakes
         mistake_stmt = select(Mistake).where(Mistake.user_id == user.id)
         mistake_res = await db.execute(mistake_stmt)
-        mistakes = mistake_res.scalars().all()
+        mistakes: list[Any] = list(mistake_res.scalars().all())
 
         # 3. Fetch due revision items
         now_utc = datetime.now(timezone.utc)
@@ -523,7 +524,7 @@ class AIService:
             )
         )
         rev_res = await db.execute(rev_stmt)
-        due_revisions = rev_res.scalars().all()
+        due_revisions: list[Any] = list(rev_res.scalars().all())
 
         has_data = len(progress_items) > 0 or len(mistakes) > 0
 
@@ -536,7 +537,7 @@ class AIService:
                 .limit(3)
             )
             starter_res = await db.execute(starter_stmt)
-            starters = starter_res.scalars().all()
+            starters: list[Any] = list(starter_res.scalars().all())
 
             recommendations = [
                 RecommendationItem(
@@ -638,7 +639,7 @@ class AIService:
             .order_by(Problem.display_order.asc())
             .limit(2)
         )
-        next_probs = (await db.execute(next_prob_stmt)).scalars().all()
+        next_probs: list[Any] = list((await db.execute(next_prob_stmt)).scalars().all())
         for np in next_probs:
             if not any(r.problem_id == np.id for r in recs):
                 recs.append(

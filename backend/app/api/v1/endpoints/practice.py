@@ -232,7 +232,7 @@ async def explain_problem_recommendation(
     stmt = select(Problem).where(
         Problem.id == problem_id, Problem.status == ContentStatus.PUBLISHED
     )
-    problem = (await db.execute(stmt)).scalar_one_or_none()
+    problem: Problem | None = (await db.execute(stmt)).scalar_one_or_none()
     if not problem:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found."
@@ -243,7 +243,7 @@ async def explain_problem_recommendation(
         UserProblemProgress.user_id == current_user.id,
         UserProblemProgress.problem_id == problem_id,
     )
-    prog = (await db.execute(prog_stmt)).scalar_one_or_none()
+    prog: UserProblemProgress | None = (await db.execute(prog_stmt)).scalar_one_or_none()
 
     factors: list[str] = [
         f"Difficulty: {problem.difficulty.value} tier calibrated to your current problem-solving momentum.",
@@ -308,7 +308,7 @@ async def get_daily_challenge(
             UserProblemProgress.user_id == current_user.id,
             UserProblemProgress.problem_id == challenge.problem_id,
         )
-        user_prog = (await db.execute(prog_stmt)).scalar_one_or_none()
+        user_prog: UserProblemProgress | None = (await db.execute(prog_stmt)).scalar_one_or_none()
         is_solved = bool(user_prog and user_prog.status == ProblemProgressStatus.SOLVED)
         first_attempt = bool(user_prog and user_prog.attempts_count == 1)
 

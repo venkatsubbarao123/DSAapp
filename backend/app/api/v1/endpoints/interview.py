@@ -1,6 +1,7 @@
 """Technical Interview Simulation API endpoints."""
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -56,7 +57,7 @@ async def list_my_interviews(
         .order_by(InterviewSession.started_at.desc())
     )
     res = await db.execute(stmt)
-    sessions = res.scalars().all()
+    sessions: list[Any] = list(res.scalars().all())
     return [
         {
             "id": s.id,

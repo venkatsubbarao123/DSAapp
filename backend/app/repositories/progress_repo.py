@@ -288,7 +288,7 @@ class ProgressRepository:
             or_(Topic.id == topic_id_or_slug, Topic.slug == topic_id_or_slug),
             Topic.status == ContentStatus.PUBLISHED,
         )
-        topic = (await self.db.execute(topic_stmt)).scalar_one_or_none()
+        topic: Topic | None = (await self.db.execute(topic_stmt)).scalar_one_or_none()
         if not topic:
             return None
 
@@ -300,7 +300,7 @@ class ProgressRepository:
                 Subtopic.topic_id == topic.id, Lesson.status == ContentStatus.PUBLISHED
             )
         )
-        lesson_ids = (await self.db.execute(lessons_stmt)).scalars().all()
+        lesson_ids: list[Any] = list((await self.db.execute(lessons_stmt)).scalars().all())
 
         # Published problems under this topic
         problems_stmt = (
@@ -310,7 +310,7 @@ class ProgressRepository:
                 Subtopic.topic_id == topic.id, Problem.status == ContentStatus.PUBLISHED
             )
         )
-        problem_ids = (await self.db.execute(problems_stmt)).scalars().all()
+        problem_ids: list[Any] = list((await self.db.execute(problems_stmt)).scalars().all())
 
         completed_lessons = 0
         if lesson_ids:
@@ -417,7 +417,7 @@ class ProgressRepository:
             .limit(limit)
             .offset(offset)
         )
-        items = (await self.db.execute(query)).scalars().all()
+        items: list[Submission] = list((await self.db.execute(query)).scalars().all())
         return list(items), total
 
     async def get_user_submission_by_id(
@@ -514,7 +514,7 @@ class ProgressRepository:
             .limit(limit)
             .offset(offset)
         )
-        items = (await self.db.execute(query)).scalars().all()
+        items: list[Mistake] = list((await self.db.execute(query)).scalars().all())
         return list(items), total
 
     async def count_unresolved_mistakes(self, user_id: str) -> int:
@@ -550,7 +550,7 @@ class ProgressRepository:
                 RevisionItem.source_id == source_id,
             )
         )
-        existing = (await self.db.execute(stmt)).scalar_one_or_none()
+        existing: RevisionItem | None = (await self.db.execute(stmt)).scalar_one_or_none()
         if existing:
             existing.title = title
             existing.priority = priority
@@ -629,7 +629,7 @@ class ProgressRepository:
             .limit(limit)
             .offset(offset)
         )
-        items = (await self.db.execute(query)).scalars().all()
+        items: list[RevisionItem] = list((await self.db.execute(query)).scalars().all())
         return list(items), total
 
     async def count_due_items(self, user_id: str) -> int:

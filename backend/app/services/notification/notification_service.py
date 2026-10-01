@@ -4,6 +4,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select, update
@@ -272,7 +273,7 @@ class NotificationService:
             .limit(page_size)
         )
         res = await self.db.execute(items_stmt)
-        notifications = res.scalars().all()
+        notifications: list[Any] = list(res.scalars().all())
 
         items = [
             NotificationItem(
@@ -351,7 +352,7 @@ class NotificationService:
         )
         res = await self.db.execute(stmt)
         await self.db.commit()
-        return res.rowcount
+        return getattr(res, "rowcount", 0)
 
     # =========================================================================
     # ADMIN BROADCAST
@@ -380,7 +381,7 @@ class NotificationService:
                 )
 
         u_res = await self.db.execute(user_query)
-        candidates = u_res.scalars().all()
+        candidates: list[Any] = list(u_res.scalars().all())
 
         recipients: list[User] = []
         now = datetime.now(timezone.utc)

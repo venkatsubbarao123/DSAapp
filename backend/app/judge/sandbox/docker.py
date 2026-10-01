@@ -49,7 +49,7 @@ class DockerSandbox(BaseSandbox):
     """
 
     def __init__(self) -> None:
-        self._docker_client = None
+        self._docker_client: Any = None
         self._init_docker()
 
     def _init_docker(self) -> None:
@@ -77,7 +77,7 @@ class DockerSandbox(BaseSandbox):
     def get_diagnostics(self) -> dict[str, Any]:
         """Provides diagnostic information about Docker engine and isolation flags."""
         available = self.is_available()
-        version_info = {}
+        version_info: dict[str, Any] = {}
         if available and self._docker_client:
             try:
                 version_info = self._docker_client.version()
@@ -156,6 +156,8 @@ class DockerSandbox(BaseSandbox):
 
     def _create_container(self, image: str, command, mem_limit_mb: int):
         """Creates a secured, isolated Docker container with all security constraints."""
+        if self._docker_client is None:
+            raise RuntimeError("Docker engine is not available")
         return self._docker_client.containers.create(
             image=image,
             command=command,

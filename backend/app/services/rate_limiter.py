@@ -2,6 +2,7 @@
 
 import time
 from collections import defaultdict
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -32,7 +33,7 @@ class RateLimiter:
         # If Redis is connected, use Redis atomic sliding window
         if redis_service.is_connected and redis_service._client:
             try:
-                client: any = redis_service._client
+                client: Any = redis_service._client
                 redis_key = f"rl:{key}"
                 pipe = client.pipeline()
                 pipe.zremrangebyscore(redis_key, 0, now - window_seconds)

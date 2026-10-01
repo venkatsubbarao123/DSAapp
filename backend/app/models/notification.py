@@ -139,15 +139,15 @@ class Notification(Base):
     def is_read(self) -> bool:
         return self.read_at is not None
 
-    @is_read.setter
+    @is_read.setter  # type: ignore[no-redef]
     def is_read(self, val: bool) -> None:
         if val and self.read_at is None:
             self.read_at = datetime.now(timezone.utc)
         elif not val:
             self.read_at = None
 
-    @is_read.expression
-    def is_read(cls):
+    @is_read.expression  # type: ignore[no-redef]
+    def is_read(cls):  # type: ignore[no-redef]
         return cls.read_at.isnot(None)
 
     @property

@@ -37,7 +37,7 @@ class DailyChallengeService:
         stmt = select(DailyChallenge).where(
             DailyChallenge.challenge_date == target_date
         )
-        existing = (await db.execute(stmt)).scalar_one_or_none()
+        existing: DailyChallenge | None = (await db.execute(stmt)).scalar_one_or_none()
         if existing:
             return existing
 
@@ -50,7 +50,7 @@ class DailyChallengeService:
             )
             .order_by(Problem.id)
         )
-        problems = (await db.execute(prob_stmt)).scalars().all()
+        problems: list[Problem] = list((await db.execute(prob_stmt)).scalars().all())
 
         if not problems:
             # Fallback to any published problem
@@ -59,7 +59,7 @@ class DailyChallengeService:
                 .where(Problem.status == ContentStatus.PUBLISHED)
                 .order_by(Problem.id)
             )
-            problems = (await db.execute(fallback_stmt)).scalars().all()
+            problems = list((await db.execute(fallback_stmt)).scalars().all())
 
         if not problems:
             logger.warning(
@@ -123,7 +123,7 @@ class DailyChallengeService:
             UserProblemProgress.user_id == user_id,
             UserProblemProgress.problem_id == challenge.problem_id,
         )
-        user_progress = (await db.execute(prog_stmt)).scalar_one_or_none()
+        user_progress: UserProblemProgress | None = (await db.execute(prog_stmt)).scalar_one_or_none()
 
         if not user_progress or user_progress.status != ProblemProgressStatus.SOLVED:
             return (

@@ -5,7 +5,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.db.base import Base
@@ -82,10 +83,15 @@ class PremiumEntitlement(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="entitlements")
 
+    @hybrid_property
     def is_active(self) -> bool:
         """Determines if entitlement is currently valid based on status and time bounds."""
         now = datetime.now(timezone.utc)
         return self.status == EntitlementStatus.ACTIVE and self.expires_at > now
+
+    @is_active.expression  # type: ignore[no-redef]
+    def is_active(cls):  # type: ignore[no-redef]
+        return (cls.status == EntitlementStatus.ACTIVE) & (cls.expires_at > func.now())
 
 
 class PaymentOrder(Base):

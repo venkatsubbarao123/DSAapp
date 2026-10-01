@@ -56,7 +56,7 @@ class ContestService:
         """Lists contests with computed server-authoritative status and participant counts."""
         stmt = select(Contest).order_by(Contest.start_at.desc())
         res = await db.execute(stmt)
-        contests = res.scalars().all()
+        contests: list[Contest] = list(res.scalars().all())
 
         summaries = []
         for c in contests:
@@ -587,7 +587,7 @@ class ContestService:
             .order_by(Contest.start_at.desc())
         )
         res = await db.execute(stmt)
-        participants = res.scalars().all()
+        participants: list[ContestParticipant] = list(res.scalars().all())
 
         history = []
         for p in participants:

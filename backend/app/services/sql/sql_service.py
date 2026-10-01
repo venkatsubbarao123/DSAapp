@@ -181,7 +181,7 @@ class SQLService:
 
         stmt = stmt.order_by(SQLProblem.difficulty, SQLProblem.title)
         res = await db.execute(stmt)
-        problems = res.scalars().all()
+        problems: list[SQLProblem] = list(res.scalars().all())
 
         solved_problem_ids = set()
         if user_id:
@@ -378,7 +378,7 @@ class SQLService:
         )
 
         res = await db.execute(sub_stmt)
-        submissions = res.scalars().all()
+        submissions: list[SQLSubmission] = list(res.scalars().all())
 
         return [
             SQLSubmissionSummary(

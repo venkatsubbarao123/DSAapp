@@ -140,7 +140,7 @@ class JudgeQueue:
         )
         res = await db.execute(stmt)
         await db.commit()
-        return res.rowcount > 0
+        return getattr(res, "rowcount", 0) > 0
 
     @staticmethod
     async def reclaim_stale_jobs(db: AsyncSession, timeout_seconds: int = 30) -> int:
@@ -154,7 +154,7 @@ class JudgeQueue:
             JudgeJob.heartbeat_at < threshold,
         )
         result = await db.execute(stmt)
-        stale_jobs = result.scalars().all()
+        stale_jobs: list[JudgeJob] = list(result.scalars().all())
 
         reclaimed = 0
         for job in stale_jobs:

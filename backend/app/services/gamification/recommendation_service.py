@@ -10,6 +10,7 @@ Strictly filters:
 """
 
 import logging
+from typing import Any
 
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -79,7 +80,7 @@ class IntelligentProblemSelector:
         if topic_id:
             query = query.where(Problem.topic_id == topic_id)
 
-        all_problems = (await db.execute(query)).scalars().all()
+        all_problems: list[Any] = list((await db.execute(query)).scalars().all())
         if not all_problems:
             return []
 
@@ -88,7 +89,7 @@ class IntelligentProblemSelector:
         prog_stmt = select(UserProblemProgress).where(
             UserProblemProgress.user_id == user.id
         )
-        user_progress_list = (await db.execute(prog_stmt)).scalars().all()
+        user_progress_list: list[Any] = list((await db.execute(prog_stmt)).scalars().all())
         solved_ids: set[str] = {
             p.problem_id
             for p in user_progress_list
@@ -102,7 +103,7 @@ class IntelligentProblemSelector:
 
         # Mistakes
         mistake_stmt = select(Mistake).where(Mistake.user_id == user.id)
-        user_mistakes = (await db.execute(mistake_stmt)).scalars().all()
+        user_mistakes: list[Any] = list((await db.execute(mistake_stmt)).scalars().all())
         mistake_problem_ids: set[str] = {
             m.problem_id for m in user_mistakes if m.problem_id
         }
@@ -112,7 +113,7 @@ class IntelligentProblemSelector:
             RevisionItem.user_id == user.id,
             RevisionItem.is_active.is_(True),
         )
-        due_revisions = (await db.execute(rev_stmt)).scalars().all()
+        due_revisions: list[Any] = list((await db.execute(rev_stmt)).scalars().all())
         revision_problem_ids: set[str] = {
             r.source_id
             for r in due_revisions

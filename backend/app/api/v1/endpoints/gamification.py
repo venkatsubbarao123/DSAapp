@@ -78,7 +78,7 @@ async def get_xp_history(
         .limit(limit)
         .offset(offset)
     )
-    txs = (await db.execute(stmt)).scalars().all()
+    txs: list[XPTransaction] = list((await db.execute(stmt)).scalars().all())
 
     items = [
         XPTransactionItem(
@@ -122,13 +122,13 @@ async def get_achievements(
 
     # 1. Fetch catalog
     catalog_stmt = select(Achievement).order_by(Achievement.tier, Achievement.xp_reward)
-    achievements = (await db.execute(catalog_stmt)).scalars().all()
+    achievements: list[Achievement] = list((await db.execute(catalog_stmt)).scalars().all())
 
     # 2. Fetch user unlocks
     user_ach_stmt = select(UserAchievement).where(
         UserAchievement.user_id == current_user.id
     )
-    user_achievements = (await db.execute(user_ach_stmt)).scalars().all()
+    user_achievements: list[UserAchievement] = list((await db.execute(user_ach_stmt)).scalars().all())
     unlock_map = {ua.achievement_id: ua for ua in user_achievements}
 
     items = [
@@ -168,7 +168,7 @@ async def get_rating_overview(
         .order_by(desc(RatingHistory.created_at))
         .limit(limit)
     )
-    history = (await db.execute(stmt)).scalars().all()
+    history: list[RatingHistory] = list((await db.execute(stmt)).scalars().all())
 
     items = [
         RatingHistoryItem(

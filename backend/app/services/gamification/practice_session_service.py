@@ -6,6 +6,7 @@ accuracy calculation, XP rewards, rating progression, and achievement unlocks.
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc, func, select
@@ -145,7 +146,7 @@ class PracticeSessionService:
                 selectinload(PracticeSession.pattern),
             )
         )
-        session = (await db.execute(stmt)).scalar_one_or_none()
+        session: PracticeSession | None = (await db.execute(stmt)).scalar_one_or_none()
         if not session:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -330,5 +331,5 @@ class PracticeSessionService:
             .limit(limit)
             .offset(offset)
         )
-        sessions = (await db.execute(stmt)).scalars().all()
+        sessions: list[Any] = list((await db.execute(stmt)).scalars().all())
         return sessions, total

@@ -147,7 +147,7 @@ class AchievementService:
         """Seeds the standard achievements catalog idempotently."""
         for item in STANDARD_ACHIEVEMENTS:
             stmt = select(Achievement).where(Achievement.code == item["code"])
-            existing = (await db.execute(stmt)).scalar_one_or_none()
+            existing: Achievement | None = (await db.execute(stmt)).scalar_one_or_none()
             if not existing:
                 achievement = Achievement(
                     code=item["code"],
@@ -176,11 +176,11 @@ class AchievementService:
         unlocked_stmt = select(UserAchievement.achievement_id).where(
             UserAchievement.user_id == user_id
         )
-        unlocked_ids = set((await db.execute(unlocked_stmt)).scalars().all())
+        unlocked_ids: set[str] = set((await db.execute(unlocked_stmt)).scalars().all())
 
         # 2. Fetch all achievement catalog items
         catalog_stmt = select(Achievement)
-        all_achievements = (await db.execute(catalog_stmt)).scalars().all()
+        all_achievements: list[Achievement] = list((await db.execute(catalog_stmt)).scalars().all())
 
         # 3. Gather real user progress metrics
         profile = await XPService.get_or_create_profile(db, user_id)

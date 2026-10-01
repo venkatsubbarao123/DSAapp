@@ -5,6 +5,7 @@ calibrated difficulty tiers (EASY, MEDIUM, HARD, EXPERT) preventing both boredom
 """
 
 import logging
+from typing import Any
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,7 +52,7 @@ class AdaptiveDifficultyService:
             .order_by(desc(Submission.created_at))
             .limit(5)
         )
-        recent_subs = (await db.execute(stmt)).scalars().all()
+        recent_subs: list[Any] = list((await db.execute(stmt)).scalars().all())
 
         curr_diff = current_preferred.upper()
         if curr_diff not in DIFFICULTY_LADDER:

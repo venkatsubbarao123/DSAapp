@@ -40,7 +40,7 @@ async def list_topics_progress(
         .where(Topic.status == ContentStatus.PUBLISHED)
         .order_by(Topic.display_order.asc())
     )
-    topics = (await db.execute(stmt)).scalars().all()
+    topics: list[Topic] = list((await db.execute(stmt)).scalars().all())
     results = []
     for t in topics:
         prog = await service.repo.get_topic_progress(current_user.id, t.id)

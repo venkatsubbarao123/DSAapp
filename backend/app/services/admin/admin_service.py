@@ -4,6 +4,7 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
@@ -101,7 +102,7 @@ class AdminService:
             .limit(page_size)
         )
         result = await self.db.execute(items_stmt)
-        users = result.scalars().all()
+        users: list[Any] = list(result.scalars().all())
 
         # Check premium entitlements in batch for current page
         user_ids = [u.id for u in users]
@@ -383,7 +384,7 @@ class AdminService:
             .limit(page_size)
         )
         res = await self.db.execute(items_stmt)
-        problems = res.scalars().all()
+        problems: list[Any] = list(res.scalars().all())
 
         # Count test cases for each problem
         prob_ids = [p.id for p in problems]
@@ -744,7 +745,7 @@ class AdminService:
             .limit(page_size)
         )
         res = await self.db.execute(items_stmt)
-        logs = res.scalars().all()
+        logs: list[Any] = list(res.scalars().all())
 
         items = [
             AuditLogItem(
