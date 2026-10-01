@@ -154,7 +154,7 @@ class DockerSandbox(BaseSandbox):
                 # /tmp: no exec allowed — scratch data only
                 "/tmp": "rw,noexec,nosuid,size=64m",
                 # /workspace: exec allowed — compiled binaries are placed and run here
-                "/workspace": f"rw,exec,nosuid,size=64m,uid=10001,gid=10001,mode=700",
+                "/workspace": "rw,exec,nosuid,size=64m,uid=10001,gid=10001,mode=700",
             },
             working_dir="/workspace",
             mem_limit=f"{mem_limit_mb}m",

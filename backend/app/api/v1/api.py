@@ -5,6 +5,7 @@ Only routes with actual operational implementations are registered.
 """
 
 from fastapi import APIRouter
+from backend.app.ai import ai_router
 from backend.app.api.v1.endpoints import (
     admin_content,
     admin_judge,
@@ -60,7 +61,6 @@ api_v1_router.include_router(revision.router, prefix="/revision", tags=["Spaced 
 api_v1_router.include_router(admin_judge.router, prefix="/admin/judge", tags=["Online Judge Administration"])
 
 # 7. AI Learning System & Tutor (Phase 6 Implemented)
-from backend.app.ai import ai_router
 api_v1_router.include_router(ai_router, prefix="/ai", tags=["AI Learning System"])
 
 # 8. Practice Engine & Gamification (Phase 7 Implemented)
@@ -81,6 +81,5 @@ api_v1_router.include_router(admin_analytics.router, prefix="/admin", tags=["Adm
 api_v1_router.include_router(admin_system.router, prefix="/admin/system", tags=["Admin System Diagnostics & Audit"])
 api_v1_router.include_router(admin_problems.router, prefix="/admin/problems", tags=["Admin Problem & Test Case Management"])
 api_v1_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
-
 
 

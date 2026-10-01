@@ -264,7 +264,6 @@ async def get_daily_challenge(
     first_attempt = False
     has_claimed = False
     can_claim = False
-    xp_awarded = 0
     user_challenge = None
 
     if current_user:
@@ -280,8 +279,6 @@ async def get_daily_challenge(
         user_challenge = await DailyChallengeService.get_user_challenge_status(db, current_user.id, challenge)
         has_claimed = bool(user_challenge and user_challenge.solved)
         can_claim = is_solved and not has_claimed
-        xp_awarded = user_challenge.xp_awarded if user_challenge else 0
-
     problem = await db.get(Problem, challenge.problem_id)
     return DailyChallengeResponse(
         id=challenge.id,
