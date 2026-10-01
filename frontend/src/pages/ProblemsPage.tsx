@@ -140,6 +140,53 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
         boxSizing: "border-box",
       }}
     >
+      {/* Top Breadcrumb & Progress Banner */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-6)", flexWrap: "wrap", gap: 10 }}>
+        <button
+          onClick={() => onNavigate("/")}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            borderRadius: "var(--radius-md, 8px)",
+            backgroundColor: "var(--bg-secondary, #ffffff)",
+            border: "1px solid var(--border-subtle, #e2e8f0)",
+            color: "var(--text-primary, #0f172a)",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          🏠 Return to Home
+        </button>
+        {isAuthenticated ? (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 14px",
+              borderRadius: "9999px",
+              backgroundColor: "var(--status-success-bg, #ecfdf5)",
+              border: "1px solid rgba(5, 150, 105, 0.2)",
+              color: "var(--status-success, #059669)",
+              fontSize: "0.875rem",
+              fontWeight: 700,
+            }}
+          >
+            <span>✓ Completed: {solvedCount} / {total || 415} solved</span>
+            <span style={{ color: "var(--text-muted, #64748b)", fontWeight: 500 }}>
+              ({(((solvedCount || 0) / Math.max(total || 415, 1)) * 100).toFixed(1)}%)
+            </span>
+          </div>
+        ) : (
+          <span style={{ fontSize: "0.875rem", color: "var(--text-muted, #64748b)" }}>
+            415 Published Problems · Sign in to track completed problems
+          </span>
+        )}
+      </div>
+
       <header style={{ marginBottom: "var(--space-8)" }}>
         <h1 style={{ fontSize: "2.25rem", fontWeight: 800, margin: "0 0 var(--space-2) 0", letterSpacing: "-0.025em" }}>
           Algorithmic Problem Directory
@@ -432,6 +479,7 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
           >
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}>
+                <th style={{ padding: "var(--space-4) var(--space-6)", width: 110 }}>Status</th>
                 <th style={{ padding: "var(--space-4) var(--space-6)" }}>Title</th>
                 <th style={{ padding: "var(--space-4)" }}>Difficulty</th>
                 <th style={{ padding: "var(--space-4)" }}>Patterns / Tags</th>
@@ -440,7 +488,11 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
               </tr>
             </thead>
             <tbody>
-              {problems.map((p) => (
+              {problems.map((p) => {
+                const prog = userProgressMap[p.id] || userProgressMap[p.slug];
+                const isSolved = prog?.status === "SOLVED";
+                const isAttempted = prog?.status === "ATTEMPTED" || (prog?.attempts_count && prog.attempts_count > 0);
+                return (
                 <tr
                   key={p.id}
                   style={{
@@ -448,6 +500,49 @@ export const ProblemsPage: React.FC<ProblemsPageProps> = ({ onNavigate, initialT
                     transition: "background-color 0.15s ease",
                   }}
                 >
+                  <td style={{ padding: "var(--space-4) var(--space-6)" }}>
+                    {isSolved ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: "9999px",
+                          backgroundColor: "#dcfce7",
+                          color: "#15803d",
+                          border: "1px solid rgba(21, 128, 61, 0.2)",
+                        }}
+                        title="Solved"
+                      >
+                        ✓ Solved
+                      </span>
+                    ) : isAttempted ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: "9999px",
+                          backgroundColor: "#fef3c7",
+                          color: "#b45309",
+                          border: "1px solid rgba(180, 83, 9, 0.2)",
+                        }}
+                        title={`Attempted (${prog?.attempts_count} tries)`}
+                      >
+                        • Attempted
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.8125rem", color: "var(--text-muted, #94a3b8)" }}>
+                        —
+                      </span>
+                    )}
+                  </td>
                   <td style={{ padding: "var(--space-4) var(--space-6)", fontWeight: 600 }}>
                     <button
                       onClick={() => onNavigate(`/problems/${p.slug}`)}
