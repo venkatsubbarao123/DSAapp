@@ -120,19 +120,36 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
       <div style={{ maxWidth: 700, margin: "60px auto", padding: 24, textAlign: "center" }}>
         <h2>Session Unavailable</h2>
         <p style={{ color: "#dc2626" }}>{errorMsg || "Unable to join session."}</p>
-        <button
-          onClick={() => onNavigate("/interview")}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: "#2563eb",
-            color: "#fff",
-            borderRadius: 6,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Return to Interviews
-        </button>
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 20 }}>
+          <button
+            onClick={() => onNavigate("/")}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#0f172a",
+              color: "#fff",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            🏠 Return to Home
+          </button>
+          <button
+            onClick={() => onNavigate("/interview")}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#2563eb",
+              color: "#fff",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Return to Interviews
+          </button>
+        </div>
       </div>
     );
   }
@@ -189,6 +206,51 @@ export const InterviewSessionPage: React.FC<InterviewSessionPageProps> = ({
               {formatCountdown(remainingSec)}
             </div>
           </div>
+
+          <button
+            onClick={() => {
+              if (window.confirm("Return to Home? Your interview progress is saved.")) {
+                onNavigate("/");
+              }
+            }}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              backgroundColor: "#f1f5f9",
+              color: "#334155",
+              fontSize: 13,
+              fontWeight: 600,
+              border: "1px solid #cbd5e1",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+            title="Return to Home"
+          >
+            🏠 Home
+          </button>
+
+          <button
+            onClick={() => {
+              if (window.confirm("Exit to Interview Hub? Your interview progress is saved.")) {
+                onNavigate("/interview");
+              }
+            }}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              backgroundColor: "#f1f5f9",
+              color: "#334155",
+              fontSize: 13,
+              fontWeight: 600,
+              border: "1px solid #cbd5e1",
+              cursor: "pointer",
+            }}
+            title="Exit to Interview Tracks"
+          >
+            ← Exit
+          </button>
 
           <button
             onClick={handleEndSession}

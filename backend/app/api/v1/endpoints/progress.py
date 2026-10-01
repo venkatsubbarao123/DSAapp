@@ -10,7 +10,8 @@ from backend.app.api.deps import (
     get_progress_service,
     require_premium,
 )
-from backend.app.models.content import ContentStatus, Topic
+from backend.app.models.content import ContentStatus, Problem, Topic
+from backend.app.models.progress import UserProblemProgress
 from backend.app.models.user import User
 from backend.app.services.progress_service import ProgressService
 from backend.app.services.rate_limiter import rate_limiter
@@ -58,6 +59,42 @@ async def get_topic_progress(
     """Returns aggregated topic progress derived directly from child lessons and problems."""
     topic_prog = await service.get_topic_progress(current_user.id, topic_id)
     return {"success": True, "data": topic_prog.model_dump()}
+
+
+@router.get("/problems", response_model=dict)
+async def list_user_problems_progress(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns mapping of problem IDs and slugs to progress status
+    for current user.
+    """
+    stmt = (
+        select(UserProblemProgress, Problem.slug)
+        .join(Problem, UserProblemProgress.problem_id == Problem.id)
+        .where(UserProblemProgress.user_id == current_user.id)
+    )
+    rows = (await db.execute(stmt)).all()
+    data = {}
+    for prog, slug in rows:
+        status_str = (
+            prog.status.value
+            if hasattr(prog.status, "value")
+            else str(prog.status)
+        )
+        record = {
+            "problem_id": prog.problem_id,
+            "slug": slug,
+            "status": status_str,
+            "attempts_count": prog.attempts_count,
+            "successful_attempts": prog.successful_attempts,
+            "solved_at": (
+                prog.solved_at.isoformat() if prog.solved_at else None
+            ),
+        }
+        data[prog.problem_id] = record
+        data[slug] = record
+    return {"success": True, "data": data}
 
 
 @router.get("/problems/{problem_id}", response_model=dict)

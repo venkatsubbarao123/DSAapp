@@ -42,19 +42,36 @@ export const InterviewReportPage: React.FC<InterviewReportPageProps> = ({
       <div style={{ maxWidth: 700, margin: "60px auto", padding: 24, textAlign: "center" }}>
         <h2>Report Not Available</h2>
         <p style={{ color: "#dc2626" }}>{errorMsg || "Unable to display evaluation report."}</p>
-        <button
-          onClick={() => onNavigate("/interview")}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: "#2563eb",
-            color: "#fff",
-            borderRadius: 6,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Return to Interviews
-        </button>
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 20 }}>
+          <button
+            onClick={() => onNavigate("/")}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#0f172a",
+              color: "#fff",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            🏠 Return to Home
+          </button>
+          <button
+            onClick={() => onNavigate("/interview")}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#2563eb",
+              color: "#fff",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Return to Interviews
+          </button>
+        </div>
       </div>
     );
   }
@@ -76,6 +93,60 @@ export const InterviewReportPage: React.FC<InterviewReportPageProps> = ({
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 20px" }}>
+      {/* Navigation Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <button
+          onClick={() => onNavigate("/")}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 16px",
+            borderRadius: 8,
+            backgroundColor: "#f1f5f9",
+            border: "1px solid #e2e8f0",
+            color: "#0f172a",
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          🏠 Return to Home
+        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={() => onNavigate("/interview")}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 8,
+              backgroundColor: "#f1f5f9",
+              border: "1px solid #e2e8f0",
+              color: "#475569",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            ← All Interviews
+          </button>
+          <button
+            onClick={() => onNavigate("/progress")}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 8,
+              backgroundColor: "#f1f5f9",
+              border: "1px solid #e2e8f0",
+              color: "#475569",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            📊 My Progress
+          </button>
+        </div>
+      </div>
+
       {/* Top Banner */}
       <div
         style={{
@@ -231,15 +302,34 @@ export const InterviewReportPage: React.FC<InterviewReportPageProps> = ({
       )}
 
       {/* Bottom Actions */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginTop: 24 }}>
+        <button
+          onClick={() => onNavigate("/")}
+          style={{
+            padding: "12px 28px",
+            borderRadius: 8,
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            fontWeight: 600,
+            fontSize: 15,
+            border: "none",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          🏠 Return to Home
+        </button>
         <button
           onClick={() => onNavigate("/interview")}
           style={{
-            padding: "10px 24px",
+            padding: "12px 28px",
             borderRadius: 8,
             backgroundColor: "#2563eb",
             color: "#ffffff",
             fontWeight: 600,
+            fontSize: 15,
             border: "none",
             cursor: "pointer",
           }}
@@ -249,11 +339,12 @@ export const InterviewReportPage: React.FC<InterviewReportPageProps> = ({
         <button
           onClick={() => onNavigate("/practice")}
           style={{
-            padding: "10px 24px",
+            padding: "12px 24px",
             borderRadius: 8,
             backgroundColor: "#f1f5f9",
             color: "#334155",
             fontWeight: 600,
+            fontSize: 15,
             border: "1px solid #cbd5e1",
             cursor: "pointer",
           }}

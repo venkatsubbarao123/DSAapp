@@ -123,6 +123,58 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ onNavigate }) => {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 20px" }}>
+      {/* Top Navigation */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>
+        <button
+          onClick={() => onNavigate("/")}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            borderRadius: 8,
+            backgroundColor: "#f1f5f9",
+            border: "1px solid #e2e8f0",
+            color: "#0f172a",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          🏠 Return to Home
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => onNavigate("/practice")}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              backgroundColor: "transparent",
+              border: "1px solid #e2e8f0",
+              color: "#64748b",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Practice Hub
+          </button>
+          <button
+            onClick={() => onNavigate("/problems")}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              backgroundColor: "transparent",
+              border: "1px solid #e2e8f0",
+              color: "#64748b",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Problem Library
+          </button>
+        </div>
+      </div>
+
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ margin: "0 0 8px 0", fontSize: 28, fontWeight: 700, color: "var(--color-text-primary, #0f172a)" }}>
@@ -351,7 +403,7 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ onNavigate }) => {
             {pastSessions.map((s) => (
               <div
                 key={s.id}
-                onClick={() => onNavigate(`/interview/${s.id}`)}
+                onClick={() => onNavigate(s.status === "COMPLETED" ? `/interview/${s.id}/report` : `/interview/${s.id}`)}
                 style={{
                   padding: "16px 20px",
                   borderRadius: 8,
