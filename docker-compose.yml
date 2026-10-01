@@ -37,9 +37,9 @@ services:
     container_name: dsaapp-backend
     restart: unless-stopped
     environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=postgresql+asyncpg://dsaapp_user:dsaapp_secure_password@postgres:5432/dsaapp_prod
-      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://dsaapp_user:dsaapp_secure_password@postgres:5432/dsaapp_prod}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - REDIS_REQUIRED=true
       - SECRET_KEY=replace_with_a_64_character_hex_random_key_in_production_environment_here
       - CORS_ORIGINS=["https://dsaapp.com"]
