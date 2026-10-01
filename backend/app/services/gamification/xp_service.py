@@ -132,6 +132,6 @@ class XPService:
         except IntegrityError:
             # Race condition / idempotency constraint: another concurrent request already recorded this XP
             logger.info(f"Duplicate XP event ignored via idempotency key: {idempotency_key}")
-            existing_tx = (await db.execute(check_stmt)).scalar_one_or_none()
+            existing_tx: XPTransaction | None = (await db.execute(check_stmt)).scalar_one_or_none()
             profile = await cls.get_or_create_profile(db, user_id)
             return existing_tx, False, profile.current_level
