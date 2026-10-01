@@ -455,7 +455,6 @@ describe("DSAapp Phase 4 Progress, Submissions, Mistakes & Revision UI", () => {
 
     render(<App />);
 
-    console.log("RENDERED HTML:", document.body.innerHTML);
     await waitFor(() => {
       expect(screen.getByText("Two Sum")).toBeInTheDocument();
       expect(screen.getByText("Submit Solution Code")).toBeInTheDocument();
