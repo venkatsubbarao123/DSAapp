@@ -309,9 +309,7 @@ async def get_me(
             id=current_user.id,
             email=current_user.email,
             role=current_user.role.value,
-            display_name=current_user.profile.display_name
-            if current_user.profile
-            else current_user.email.split("@")[0],
+            display_name=_extract_display_name(current_user),
             plan="PREMIUM" if is_premium else "FREE",
             premium_active=is_premium,
             created_at=current_user.created_at,
