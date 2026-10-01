@@ -169,9 +169,34 @@ export const AuthModal: React.FC = () => {
               borderRadius: "var(--radius-md)",
               marginBottom: "var(--space-4)",
               fontSize: "0.875rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
             }}
           >
-            {errorMsg}
+            <div>{errorMsg}</div>
+            {errorMsg.toLowerCase().includes("already exists") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setErrorMsg(null);
+                  openAuthModal("login");
+                }}
+                style={{
+                  alignSelf: "flex-start",
+                  background: "var(--brand-primary)",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-sm, 4px)",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Sign In with {email || "this email"} →
+              </button>
+            )}
           </div>
         )}
 
