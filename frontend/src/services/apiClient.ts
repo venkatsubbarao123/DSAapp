@@ -10,13 +10,15 @@ import { APIResponse, APIErrorDetail } from "../types/api.ts";
  * - Local development (default): Vite proxies `/api` and `/health` to
  *   http://localhost:8000, so a same-origin relative path is correct.
  * - Production (Netlify / Vercel / any static host): the frontend and backend
- *   live on DIFFERENT origins, so `VITE_API_BASE_URL` must be injected at
- *   build time (e.g. https://api.dsaapp.com). When it is unset we fall back to
+ *   live on DIFFERENT origins, so `VITE_API_BASE_URL` or `VITE_API_URL` must be injected at
+ *   build time (e.g. https://dsaapp-ciys.onrender.com). When unset we fall back to
  *   a same-origin relative path, which keeps local dev and the Docker/nginx
  *   deployment working unchanged.
  */
 export const API_BASE_URL: string = (
-  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? ""
+  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ??
+  (import.meta.env?.VITE_API_URL as string | undefined) ??
+  ""
 ).replace(/\/+$/, "");
 
 export function apiUrl(path: string): string {
