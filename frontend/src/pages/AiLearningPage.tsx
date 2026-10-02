@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.tsx";
-import { fetchApi } from "../services/apiClient.ts";
+import { AI_REQUEST_TIMEOUT_MS, fetchApi } from "../services/apiClient.ts";
 import {
   AIUsageSummaryData,
   ComplexityResponseData,
@@ -159,7 +159,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
             code_context: tutorCode || undefined,
           }),
         },
-        35000
+        AI_REQUEST_TIMEOUT_MS
       );
       const data = (res as any)?.data ?? res;
       if (data && data.explanation) {
@@ -191,7 +191,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
             hint_level: level,
           }),
         },
-        35000
+        AI_REQUEST_TIMEOUT_MS
       );
       const data = (res as any)?.data ?? res;
       if (data && data.hint_content) {
@@ -222,7 +222,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
             context_text: explainInput,
           }),
         },
-        35000
+        AI_REQUEST_TIMEOUT_MS
       );
       const data = (res as any)?.data ?? res;
       if (data && data.explanation) {
@@ -250,7 +250,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
           method: "POST",
           body: JSON.stringify({ code: complexityCode }),
         },
-        35000
+        AI_REQUEST_TIMEOUT_MS
       );
       const data = (res as any)?.data ?? res;
       if (data && data.time_complexity) {
@@ -278,7 +278,7 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
           method: "POST",
           body: JSON.stringify({ problem_description: patternInput }),
         },
-        35000
+        AI_REQUEST_TIMEOUT_MS
       );
       const data = (res as any)?.data ?? res;
       if (data && data.primary_pattern) {
@@ -404,9 +404,9 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           TAB 1: AI TUTOR
-      ───────────────────────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeTab === "tutor" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-6)" }}>
           <form
@@ -598,9 +598,9 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           TAB 2: PROGRESSIVE HINTS
-      ───────────────────────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeTab === "hint" && (
         <div
           style={{
@@ -745,9 +745,9 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           TAB 3: EXPLAIN CODE & ERRORS
-      ───────────────────────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeTab === "explain" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-6)" }}>
           <div
@@ -869,9 +869,9 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           TAB 4: COMPLEXITY ANALYZER
-      ───────────────────────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeTab === "complexity" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-6)" }}>
           <div
@@ -973,9 +973,9 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           TAB 5: PATTERN DETECTOR
-      ───────────────────────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeTab === "pattern" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-6)" }}>
           <div
@@ -1087,9 +1087,9 @@ export const AiLearningPage: React.FC<AiLearningPageProps> = ({ onNavigate }) =>
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           TAB 6: PERSONALIZED RECOMMENDATIONS
-      ───────────────────────────────────────────────────────────── */}
+      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {activeTab === "recommendations" && (
         <div
           style={{

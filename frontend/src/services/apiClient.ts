@@ -4,6 +4,28 @@
 
 import { APIResponse, APIErrorDetail } from "../types/api.ts";
 
+/**
+ * Base URL for all backend API calls.
+ *
+ * - Local development (default): Vite proxies `/api` and `/health` to
+ *   http://localhost:8000, so a same-origin relative path is correct.
+ * - Production (Netlify / Vercel / any static host): the frontend and backend
+ *   live on DIFFERENT origins, so `VITE_API_BASE_URL` must be injected at
+ *   build time (e.g. https://api.dsaapp.com). When it is unset we fall back to
+ *   a same-origin relative path, which keeps local dev and the Docker/nginx
+ *   deployment working unchanged.
+ */
+export const API_BASE_URL: string = (
+  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? ""
+).replace(/\/+$/, "");
+
+export function apiUrl(path: string): string {
+  if (!path.startsWith("/")) {
+    throw new Error(`apiUrl expects an absolute path starting with '/', got '${path}'`);
+  }
+  return `${API_BASE_URL}${path}`;
+}
+
 export class APIClientError extends Error {
   public readonly code: string;
   public readonly requestId?: string;
@@ -69,6 +91,16 @@ export function getRefreshToken(): string | null {
 }
 
 const DEFAULT_TIMEOUT_MS = 10000;
+
+/**
+ * AI endpoints proxy a third-party LLM provider (Gemini) whose real-world
+ * latency is routinely 10-20s. The generic 10s default aborted these requests
+ * client-side while the backend was still legitimately working, which surfaced
+ * as "The server took too long to respond" even though the backend answered.
+ * This budget stays above the backend AI_TIMEOUT_SECONDS (30s) so the server
+ * always gets the chance to return a real answer or a bounded fallback.
+ */
+export const AI_REQUEST_TIMEOUT_MS = 45000;
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -87,7 +119,7 @@ async function attemptTokenRefresh(): Promise<string | null> {
         body = JSON.stringify({ refresh_token: storedRefresh });
       }
 
-      const res = await fetch("/api/v1/auth/refresh", {
+      const res = await fetch(apiUrl("/api/v1/auth/refresh"), {
         method: "POST",
         credentials: "include",
         headers,
@@ -143,8 +175,11 @@ export async function fetchApi<T>(
     headers["Content-Type"] = "application/json";
   }
 
+  // Resolve the (possibly cross-origin in production) absolute endpoint.
+  const target = apiUrl(endpoint);
+
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(target, {
       credentials: options.credentials ?? "include",
       ...options,
       headers,
@@ -173,7 +208,7 @@ export async function fetchApi<T>(
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,
           };
-          const retryResp = await fetch(endpoint, {
+          const retryResp = await fetch(target, {
             credentials: options.credentials ?? "include",
             ...options,
             headers: retryHeaders,

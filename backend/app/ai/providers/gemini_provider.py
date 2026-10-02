@@ -52,7 +52,10 @@ class GeminiProvider(AIProvider):
         self.api_key = settings.GOOGLE_AI_API_KEY
         self.model = settings.GOOGLE_AI_MODEL or "gemini-1.5-flash"
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        self.timeout = settings.AI_TIMEOUT_SECONDS
+        # Hard upper bound on a single provider call. The orchestration layer
+        # relies on this to guarantee the AI endpoints always answer within a
+        # predictable window instead of hanging the FastAPI event loop.
+        self.timeout = max(5, int(settings.AI_TIMEOUT_SECONDS or 30))
 
     def is_available(self) -> bool:
         """Returns True only if a valid Google Gemini API key is configured."""
@@ -100,15 +103,49 @@ class GeminiProvider(AIProvider):
         if json_mode:
             payload["generationConfig"]["responseMimeType"] = "application/json"
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
+        # Explicit, split phase timeouts so a stalled TLS handshake or a hung
+        # upstream can never hold the request open indefinitely.
+        #   connect -> TCP/TLS establishment
+        #   read    -> waiting for the first byte of the Gemini response
+        #   write   -> sending the request payload
+        #   pool    -> acquiring a client connection
+        budget = self.timeout
+        timeouts = httpx.Timeout(
+            connect=min(10.0, budget),
+            read=budget,
+            write=min(10.0, budget),
+            pool=min(5.0, budget),
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=timeouts) as client:
+                resp = await client.post(url, headers=headers, json=payload)
+
+            if resp.status_code >= 400:
+                # Never surface upstream body (may embed key/quota detail) to logs.
+                raise RuntimeError(
+                    f"Gemini API returned HTTP {resp.status_code} for model {self.model}"
+                )
+
             data = resp.json()
+        except httpx.TimeoutException as err:
+            raise RuntimeError(
+                f"Gemini API timed out after {budget}s (model {self.model})."
+            ) from err
+        except httpx.HTTPError as err:
+            raise RuntimeError(
+                f"Gemini API network failure (model {self.model})."
+            ) from err
+        except ValueError as err:
+            raise RuntimeError("Gemini API returned a non-JSON response.") from err
 
         try:
             raw_content = data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError) as err:
-            raise RuntimeError(f"Malformed Gemini API response: {data}") from err
+        except (KeyError, IndexError, TypeError) as err:
+            # Covers safety blocks / empty candidate lists / truncated responses.
+            raise RuntimeError(
+                f"Malformed or blocked Gemini API response for model {self.model}."
+            ) from err
 
         # Output guard scan
         sanitized = OutputGuard.sanitize_output(raw_content)

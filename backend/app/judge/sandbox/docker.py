@@ -40,6 +40,23 @@ logger = logging.getLogger(__name__)
 # Maximum allowed output size to prevent OOM on judge worker (64 KB default)
 MAX_SAFE_OUTPUT_BYTES = 65536
 
+# Sentinels used to separate the compile phase from the execution phase so the
+# student's time limit is only ever measured against their program's runtime.
+COMPILE_OK_SENTINEL = "__DSAAPP_COMPILE_OK__"
+COMPILE_FAILED_SENTINEL = "__DSAAPP_COMPILE_FAILED__"
+
+# Compilation (g++/javac/tsc) legitimately needs far more memory and time than
+# running the resulting binary. These budgets apply ONLY to the compile step;
+# the student's program still runs under the strict problem limits.
+COMPILE_MEMORY_LIMIT_MB = 1024
+COMPILE_TIMEOUT_SECONDS = 30.0
+
+# Exit statuses that mean "the program was killed for exceeding its time limit".
+#   124 -> `timeout` reports the command it killed timed out (GNU coreutils)
+#   143 -> 128 + SIGTERM(15), observed when `timeout` signals the child
+#            (busybox, used by the alpine-based judge images)
+TIMEOUT_EXIT_CODES = frozenset({124, 143})
+
 
 class DockerSandbox(BaseSandbox):
     """Secure Docker Sandbox implementation.
@@ -127,21 +144,39 @@ class DockerSandbox(BaseSandbox):
             ),
         ]
 
-    def _build_run_command(self, lang_def, source_code: str, stdin: str | None):
-        """Builds shell command: decode source → write to workspace → [compile if needed] → run with stdin."""
+    def _build_run_command(
+        self,
+        lang_def,
+        source_code: str,
+        stdin: str | None,
+        request_time_limit_sec: float,
+    ):
+        """Builds shell command: decode source → write to workspace → [compile if needed] → run with stdin.
+
+        The execution phase is always wrapped in `timeout` so a runaway or
+        infinite-looping program is terminated at the student's limit regardless
+        of how long compilation took.
+        """
         src_b64 = self._encode_source(source_code)
         stdin_b64 = self._encode_stdin(stdin)
         run_cmd = " ".join(lang_def.run_command)
+        run_sec = max(1, int(request_time_limit_sec))
 
         if lang_def.is_compiled and lang_def.compile_command:
             compile_cmd = " ".join(lang_def.compile_command)
+            # Compile and execution are separated by a sentinel, and ONLY the
+            # execution phase is wrapped in `timeout`. This means:
+            #   * a slow compile never eats into the student's time limit, and
+            #   * an infinite loop is still killed at exactly time_limit_ms.
+            # The outer container wait stays as a coarse safety net.
             return [
                 "sh",
                 "-c",
                 (
                     f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
-                    f"{compile_cmd} 2>/dev/null && "
-                    f"printf '%s' '{stdin_b64}' | base64 -d | {run_cmd}"
+                    f"({compile_cmd} 2>&1) || echo '{COMPILE_FAILED_SENTINEL}' && "
+                    f"printf '%s' '{COMPILE_OK_SENTINEL}\\n' && "
+                    f"printf '%s' '{stdin_b64}' | base64 -d | timeout {run_sec} {run_cmd}"
                 ),
             ]
         else:
@@ -150,7 +185,7 @@ class DockerSandbox(BaseSandbox):
                 "-c",
                 (
                     f"printf '%s' '{src_b64}' | base64 -d > /workspace/{lang_def.source_filename} && "
-                    f"printf '%s' '{stdin_b64}' | base64 -d | {run_cmd}"
+                    f"printf '%s' '{stdin_b64}' | base64 -d | timeout {run_sec} {run_cmd}"
                 ),
             ]
 
@@ -204,15 +239,23 @@ class DockerSandbox(BaseSandbox):
         container = None
         try:
             command = self._build_compile_command(lang_def, request.source_code)
-            mem_limit = max(request.memory_limit_mb or 256, 256)
+            # Compilers (cc1plus, javac, tsc) legitimately need far more memory
+            # than the graded program. Applying the student's runtime memory
+            # limit here OOM-kills the compiler and reports a false
+            # COMPILATION_ERROR. Compilation runs in the same hardened,
+            # zero-network sandbox; only its RAM budget is raised.
+            mem_limit = max(
+                request.memory_limit_mb or 0, COMPILE_MEMORY_LIMIT_MB
+            )
             container = self._create_container(
                 lang_def.docker_image, command, mem_limit
             )
             container.start()
 
-            # 30s hard compilation timeout
+            # Hard compilation timeout (generous: real C++/Java/TS compiles of
+            # reasonable student submissions complete well within this).
             try:
-                result = container.wait(timeout=30.0)
+                result = container.wait(timeout=COMPILE_TIMEOUT_SECONDS)
                 exit_code = result.get("StatusCode", -1)
             except Exception:
                 exit_code = -1
@@ -267,21 +310,37 @@ class DockerSandbox(BaseSandbox):
         start_time = time.monotonic()
         container = None
         time_limit_sec = request.time_limit_ms / 1000.0
+        is_compiled = bool(lang_def.is_compiled and lang_def.compile_command)
+
+        # The container performs compile-then-run. Compiled languages get a
+        # generous fixed compile budget; interpreted languages get only the
+        # student's execution budget because there is no compile phase.
+        total_budget_sec = (
+            COMPILE_TIMEOUT_SECONDS + time_limit_sec + 1.0
+            if is_compiled
+            else time_limit_sec + 1.0
+        )
+        # Compilers (cc1plus/javac) need far more RAM than the graded program.
+        mem_limit = (
+            COMPILE_MEMORY_LIMIT_MB
+            if is_compiled
+            else (request.memory_limit_mb or lang_def.default_memory_limit_mb)
+        )
 
         try:
             command = self._build_run_command(
-                lang_def, request.source_code, request.stdin
+                lang_def, request.source_code, request.stdin, time_limit_sec
             )
-            mem_limit = request.memory_limit_mb or lang_def.default_memory_limit_mb
             container = self._create_container(
                 lang_def.docker_image, command, mem_limit
             )
             container.start()
 
-            # Wait for execution with wall-clock timeout buffer (+1.0s)
+            # Wait for compile+run with a wall-clock budget that is never
+            # shorter than the student's own execution allowance.
             timed_out = False
             try:
-                wait_res = container.wait(timeout=time_limit_sec + 1.0)
+                wait_res = container.wait(timeout=total_budget_sec)
                 exit_code = wait_res.get("StatusCode", -1)
             except Exception:
                 # Timed out waiting — kill container
@@ -301,6 +360,34 @@ class DockerSandbox(BaseSandbox):
             out_str = stdout_bytes.decode("utf-8", errors="replace")
             err_str = stderr_bytes.decode("utf-8", errors="replace")
 
+            compiler_output = None
+            compile_failed = False
+            if is_compiled:
+                # Split the combined stream on the compile/run sentinel so a
+                # compiler diagnostic is never mistaken for program output.
+                if COMPILE_FAILED_SENTINEL in out_str:
+                    compiler_output, _, out_str = out_str.partition(
+                        COMPILE_FAILED_SENTINEL
+                    )
+                    compiler_output = compiler_output.strip() or err_str.strip()
+                    compile_failed = True
+                elif COMPILE_OK_SENTINEL in out_str:
+                    _, _, out_str = out_str.partition(COMPILE_OK_SENTINEL)
+
+            if compile_failed:
+                # Compilation is not the student's program failing to run; it is
+                # reported through stderr so the caller maps it to a compilation
+                # verdict instead of a runtime/runtime-error verdict.
+                return ExecutionResult(
+                    exit_code=exit_code if exit_code != 0 else 1,
+                    stdout="",
+                    stderr=(compiler_output or "Compilation failed.")[:MAX_SAFE_OUTPUT_BYTES],
+                    execution_time_ms=elapsed_ms,
+                    timed_out=False,
+                    memory_exceeded=False,
+                    error_message="COMPILATION_ERROR",
+                )
+
             output_limit = request.output_limit_bytes or MAX_SAFE_OUTPUT_BYTES
             output_exceeded = len(out_str.encode("utf-8")) > output_limit
             if output_exceeded:
@@ -308,8 +395,10 @@ class DockerSandbox(BaseSandbox):
                     out_str[:output_limit] + "\n[OUTPUT TRUNCATED: Limit Exceeded]"
                 )
 
-            # Check TLE: container wait timed out OR elapsed exceeds configured limit
-            if timed_out or elapsed_ms > request.time_limit_ms:
+            # TLE is judged on the container's own wall clock exceeding the
+            # generous total budget, not on the raw elapsed time, so a slow
+            # compile can no longer be misreported as a student TLE.
+            if timed_out:
                 return ExecutionResult(
                     exit_code=exit_code,
                     stdout=out_str,
@@ -321,7 +410,24 @@ class DockerSandbox(BaseSandbox):
 
             # Check OOM (exit code 137 = SIGKILL by OOM killer)
             memory_exceeded = exit_code == 137
-            return ExecutionResult(
+
+            # `timeout` terminates the program when the student's limit is hit.
+            # Depending on the coreutils/busybox build the shell observes either
+            # 124 (timeout's own status) or 143 (128 + SIGTERM) when the child is
+            # signalled. Both mean the same thing: the time limit was exceeded.
+            if exit_code in TIMEOUT_EXIT_CODES:
+                return ExecutionResult(
+                    exit_code=exit_code,
+                    stdout=out_str,
+                    stderr=err_str,
+                    execution_time_ms=request.time_limit_ms,
+                    timed_out=True,
+                    memory_exceeded=False,
+                    output_exceeded=False,
+                    error_message="Time limit exceeded.",
+                )
+
+            result = ExecutionResult(
                 exit_code=exit_code,
                 stdout=out_str,
                 stderr=err_str,
@@ -332,6 +438,11 @@ class DockerSandbox(BaseSandbox):
                 output_exceeded=output_exceeded,
                 error_message=err_str if exit_code != 0 else None,
             )
+            if compiler_output:
+                result.stderr = (compiler_output + ("\n" + err_str if err_str else ""))[
+                    :MAX_SAFE_OUTPUT_BYTES
+                ]
+            return result
 
         except Exception as e:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)

@@ -1,0 +1,58 @@
+# ==============================================================================
+# DSAapp — Render Blueprint
+#
+# Backend API: Docker web service bound to the platform-injected $PORT.
+#
+# Secrets are NOT stored here. Set these in the Render dashboard
+# (Dashboard -> your service -> Environment) so they never enter git:
+#   DATABASE_URL, SECRET_KEY, GOOGLE_AI_API_KEY, CORS_ORIGINS, ALLOWED_HOSTS
+#
+# ALLOWED_HOSTS matters: TrustedHostMiddleware answers 400 for any Host it does
+# not recognise, so the backend's own hostname must be listed or the platform
+# health check fails. Wildcards such as "*.onrender.com" are supported.
+# =============================================================================
+
+services:
+  - type: web
+    name: dsaapp-api
+    runtime: docker
+    plan: starter
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    # Render scans the bound port automatically; PORT is injected for us.
+    # Never hardcode 8000 here — the Dockerfile honours ${PORT:-8000}.
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: AI_PROVIDER
+        value: gemini
+      - key: SECURE_COOKIES
+        value: "true"
+      - key: REDIS_REQUIRED
+        value: "false"
+      # Render web services have no container runtime, so the secure Docker
+      # judge cannot execute code here. This is NOT a security weakening:
+      # submissions are queued and never evaluated in-process, and no untrusted
+      # code is executed inside FastAPI. Deploy the judge on a Docker-capable
+      # host (Fly.io/VPS) with JUDGE_ENABLED=true instead.
+      - key: JUDGE_ENABLED
+        value: "false"
+      - key: JUDGE_SANDBOX_DRIVER
+        value: docker
+      # Single worker: each worker runs the lifespan and would start its own
+      # judge worker loop.
+      - key: WEB_CONCURRENCY
+        value: "1"
+      # Secrets — set via dashboard, `sync: false` keeps them out of this file.
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false

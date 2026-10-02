@@ -46,6 +46,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info(settings.get_config_diagnostic())
 
     # Database Initialization
+    # NOTE: init_db() is dialect-aware. On PostgreSQL it performs a read-only
+    # Alembic revision check and never emits DDL, so production data is never
+    # dropped, recreated, or reset. Schema changes are applied exclusively via
+    # `alembic upgrade head`.
     try:
         await init_db()
     except Exception as exc:
@@ -56,11 +60,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Redis Connection (Optional in dev, mandatory in production if configured)
     await redis_service.connect()
 
-    # Online Judge Background Worker Loop (Active in development/production, disabled in test)
+    # Online Judge Background Worker Loop.
+    # Disabled in tests. On hosts without a container runtime the worker would
+    # never be able to execute anything, so it is skipped with a clear warning
+    # instead of silently failing every queued submission. The Docker sandbox is
+    # never downgraded to a mock and code is never run in the API process.
     judge_worker_task = None
-    if settings.ENVIRONMENT != "test":
+    if settings.ENVIRONMENT == "test" or not settings.JUDGE_ENABLED:
+        if not settings.JUDGE_ENABLED:
+            logger.warning(
+                "Online Judge worker DISABLED by configuration (JUDGE_ENABLED=false). "
+                "Code submissions will be queued but not executed on this instance."
+            )
+    else:
         from backend.app.judge.runner import run_judge_worker_loop
+        from backend.app.judge.sandbox.manager import get_sandbox
 
+        sandbox = get_sandbox()
+        if not sandbox.is_available():
+            logger.error(
+                "Online Judge sandbox is UNAVAILABLE (Docker daemon not reachable). "
+                "Submissions will fail closed with a safe error. To execute code, run "
+                "this service on a Docker-capable host or set JUDGE_ENABLED=false."
+            )
+        else:
+            logger.info(f"Online Judge sandbox ready: {sandbox.get_diagnostics()}")
         judge_worker_task = asyncio.create_task(run_judge_worker_loop())
 
     yield
@@ -79,13 +103,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 def create_application() -> FastAPI:
     """Application factory applying security policies, middlewares, and routers."""
+    docs_enabled = settings.ENVIRONMENT != "production" or settings.ENABLE_API_DOCS
     app = FastAPI(
         title="DSAapp API",
         version="0.1.0",
         description="DSAapp Advanced Secure Coding Education & Online Judge API",
-        docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
-        redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
-        openapi_url="/openapi.json" if settings.ENVIRONMENT != "production" else None,
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
         lifespan=lifespan,
     )
 
@@ -93,7 +118,13 @@ def create_application() -> FastAPI:
     register_error_handlers(app)
 
     # 2. Add Security & Tracing Middlewares (order matters: innermost executes first on request)
-    # Host validation: reject unexpected Host headers
+    # Host validation: reject unexpected Host headers.
+    #
+    # TrustedHostMiddleware answers "400 Bad Request" for any Host it does not
+    # recognise. PaaS platforms (Render, Fly, Railway) health-check the service
+    # through the platform-generated hostname, which is unknown at build time.
+    # An empty allowlist therefore disables the middleware rather than letting
+    # every platform health check fail with 400.
     if settings.ALLOWED_HOSTS and "*" not in settings.ALLOWED_HOSTS:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 

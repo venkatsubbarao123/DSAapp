@@ -148,13 +148,16 @@ class AIService:
                     provider.get_diagnostics().get("provider"),
                     e,
                 )
+                err_msg = f"Fallback activated due to primary failure: {e!s}"
+                # Degraded-but-useful answer. The caller still receives a valid,
+                # correctly shaped TutorResponse instead of a hang or a 5xx.
                 fallback = get_ai_provider(override_driver="mock")
                 response = await fallback.tutor(
                     request,
                     problem_title=problem_title,
                     problem_description=problem_desc,
                 )
-                err_msg = f"Fallback activated due to primary failure: {e!s}"
+                response.conversation_id = request.conversation_id
                 return response
             success = False
             err_msg = str(e)
@@ -165,16 +168,20 @@ class AIService:
             )
         finally:
             latency = int((time.monotonic() - start_time) * 1000)
-            await AIUsageTracker.record_usage(
-                db=db,
-                user_id=user.id,
-                request_type=AIRequestType.TUTOR.value,
-                provider=provider.get_diagnostics().get("provider", "mock"),
-                model=provider.get_diagnostics().get("model", "mock-dsa-model-v1"),
-                latency_ms=latency,
-                success=success,
-                error_message=err_msg,
-            )
+            # Telemetry must never turn a successful AI answer into a 500.
+            try:
+                await AIUsageTracker.record_usage(
+                    db=db,
+                    user_id=user.id,
+                    request_type=AIRequestType.TUTOR.value,
+                    provider=provider.get_diagnostics().get("provider", "mock"),
+                    model=provider.get_diagnostics().get("model", "mock-dsa-model-v1"),
+                    latency_ms=latency,
+                    success=success,
+                    error_message=err_msg,
+                )
+            except Exception as usage_exc:  # pragma: no cover - defensive
+                logger.warning("AI usage telemetry write failed: %s", usage_exc)
 
     @staticmethod
     async def get_progressive_hint(

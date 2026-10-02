@@ -38,13 +38,22 @@ services:
     restart: unless-stopped
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-production}
+      # PRODUCTION: point this at the Neon pooled connection string.
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://dsaapp_user:dsaapp_secure_password@postgres:5432/dsaapp_prod}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - REDIS_REQUIRED=true
-      - SECRET_KEY=replace_with_a_64_character_hex_random_key_in_production_environment_here
-      - CORS_ORIGINS=["https://dsaapp.com"]
-      - ALLOWED_HOSTS=["dsaapp.com","backend","localhost","127.0.0.1"]
-      - SECURE_COOKIES=true
+      - REDIS_REQUIRED=${REDIS_REQUIRED:-true}
+      # PRODUCTION: must be a fresh 64+ character random value.
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set for production (64+ chars)}
+      # PRODUCTION: list ONLY the deployed frontend origin.
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost"]}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-["dsaapp.com","backend","localhost","127.0.0.1"]}
+      - SECURE_COOKIES=${SECURE_COOKIES:-true}
+      # AI provider (server-side only; never exposed to the browser)
+      - AI_PROVIDER=${AI_PROVIDER:-gemini}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-}
+      - AI_TIMEOUT_SECONDS=${AI_TIMEOUT_SECONDS:-30}
+      # Online judge
+      - JUDGE_SANDBOX_DRIVER=${JUDGE_SANDBOX_DRIVER:-docker}
     ports:
       - "8000:8000"
     depends_on:
@@ -52,6 +61,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # 4. Primary Relational Database (PostgreSQL 16)
   postgres:

@@ -68,6 +68,16 @@ desktop.ini
 # Temporary & logs
 logs/
 *.log
+*.err
 scratch/
 tmp/
 backups/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.vite/
+*.tsbuildinfo
+
+# Local build output
+frontend/dist/
