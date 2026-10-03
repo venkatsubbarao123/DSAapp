@@ -94,13 +94,19 @@ const DEFAULT_TIMEOUT_MS = 10000;
 
 /**
  * AI endpoints proxy a third-party LLM provider (Gemini) whose real-world
- * latency is routinely 10-20s. The generic 10s default aborted these requests
- * client-side while the backend was still legitimately working, which surfaced
- * as "The server took too long to respond" even though the backend answered.
- * This budget stays above the backend AI_TIMEOUT_SECONDS (30s) so the server
- * always gets the chance to return a real answer or a bounded fallback.
+ * latency is highly variable: observed 11s on a warm path but up to ~43s when
+ * the provider is cold or rate-limited, before the backend's own 30s provider
+ * budget plus database work is accounted for.
+ *
+ * The generic 10s default aborted these requests client-side while the backend
+ * was still legitimately working, which surfaced as "The server took too long to
+ * respond" even though the backend answered correctly.
+ *
+ * This budget deliberately sits well above the worst case so the server always
+ * gets the chance to return a real answer or its bounded fallback. It is still
+ * a hard bound: the request is aborted if the backend truly hangs.
  */
-export const AI_REQUEST_TIMEOUT_MS = 45000;
+export const AI_REQUEST_TIMEOUT_MS = 90000;
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
