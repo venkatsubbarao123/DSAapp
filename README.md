@@ -1,237 +1,1268 @@
-# DSAapp — Advanced Secure Coding Education & Online Judge Platform
+DSAapp — Full-Stack AI-Powered DSA Learning & Coding Platform
 
-DSAapp is a production-grade, highly secure software engineering and data structures & algorithms platform engineered under a strict **20% Theory / 80% Practice** pedagogical model.
+<p align="center">
+  <strong>Learn • Practice • Code • Analyze • Prepare • Improve</strong>
+</p>
 
----
+<p align="center">
+  A full-stack AI-powered Data Structures & Algorithms learning, coding,
+  interview preparation, competitive programming, and skill-development platform
+  built with React, TypeScript, FastAPI, Python, PostgreSQL, SQLAlchemy, and Alembic.
+</p>
 
-## Current Status: Phase 9 — Admin + Analytics + Notifications + PWA Verified
+<p align="center">
+  <a href="https://dsa-applogics.up.railway.app">🌐 Live Application</a> •
+  <a href="https://dsaapp-production.up.railway.app">⚙️ Backend API</a> •
+  <a href="https://github.com/venkatsubbarao123/DSAapp">💻 GitHub Repository</a>
+</p>
 
-| Layer / Feature | Status | Description |
-| :--- | :---: | :--- |
-| **Foundation & Gateway** | `VERIFIED` | FastAPI gateway with correlation IDs, security headers, size limits, structured JSON logging, and health diagnostics. |
-| **Auth & Entitlements** | `VERIFIED` | Argon2id password hashing, JWT access/refresh rotation, RBAC, Pro tier subscription boundary, and PhonePe payment integration. |
-| **Curriculum & Content** | `VERIFIED` | Tracks, Topics, Subtopics, Lessons, Concepts, Problems, Test-Cases, Code Templates, and Admin/Editor authoring workflows. |
-| **Progress & Spaced Repetition** | `VERIFIED` | Problem & lesson progress tracking, cognitive mistake classification, and Leitner/SM-2 spaced revision intervals. |
-| **Online Judge & Sandbox** | `VERIFIED` | Multi-language compilation (Python, Java, C++, JS) executing in real Docker containers with cgroup resource limits and security isolation (28/28 tests passed). |
-| **AI Tutor & Visualizers** | `VERIFIED` | Pedagogical multi-turn AI chat, progressive hint disclosure, complexity analysis, and interactive algorithm visualizers. |
-| **Practice Engine** | `VERIFIED` | Multi-mode adaptive drills (`QUICK`, `TOPIC`, `PATTERN`, `DIFFICULTY`, `WEAK_AREA`, `MISTAKES`, `REVISION`), real-time accuracy, and IDOR protection. |
-| **Server-Authoritative Gamification** | `VERIFIED` | Integer quadratic level curve $XP(L) = 50 \times (L - 1) \times L$, immutable ledger, UTC daily streaks, skill ratings, 12 mastery achievements, and privacy-safe leaderboards. |
-| **Contest Arena Engine** | `VERIFIED` | Server-authoritative lifecycle, ICPC scoring/penalty rules, 5s throttle anti-cheat, code similarity detection, and Redis caching. |
-| **AI Interview Simulator** | `VERIFIED` | 7 realistic interview tracks, authoritative countdown timers, 5-dimensional rubric scoring, and PromptGuard security. |
-| **Competitive Programming** | `VERIFIED` | Rating bands (Div 4 to Div 1, 800-2400+), Codeforces catalog integration, and separate Elo-based competitive rating tracker. |
-| **Interactive SQL Engine** | `VERIFIED` | Isolated ephemeral SQLite sandbox with AST/lexical firewall rejecting non-SELECT, system catalog, and chained queries. |
-| **OOP & Design Patterns** | `VERIFIED` | Four Pillars of OOP, SOLID design refactoring principles with code diffs, and GoF patterns in Python, Java, C++, TypeScript. |
-| **Admin & Governance Console** | `VERIFIED` | Fine-grained user directory, self-demotion/self-suspension guards, hidden test case studio, diagnostics, and append-only audit trail. |
-| **Platform Analytics Engine** | `VERIFIED` | Authoritative database-driven KPIs, cross-subsystem metrics, zero-fabrication guarantees, and 60s Redis caching with force-refresh. |
-| **Multi-Channel Notifications** | `VERIFIED` | In-app notification drawer with unread badge counter, transactional email, deduplication key engine, and preference matrix. |
-| **Progressive Web App (PWA)** | `VERIFIED` | Web App Manifest, Cache-First static assets, strict Network-Only security bypass for sensitive endpoints, and offline shell fallback. |
+📌 Project Overview
 
----
+DSAapp is a production-deployed full-stack AI-powered DSA learning and coding platform engineered around a 20% Theory / 80% Practice learning model.
 
-## Quick Start
+The platform combines structured DSA education, hands-on coding practice, AI-assisted learning, progress tracking, adaptive revision, interview preparation, competitive programming, contests, gamification, SQL practice, OOP and Design Patterns, administration, analytics, notifications, and PWA capabilities in one integrated application.
 
-### 1. Environment Configuration
-```bash
+The system is designed as a real-world full-stack application with a React/TypeScript frontend, FastAPI/Python backend, PostgreSQL production database, SQLAlchemy data layer, Alembic migrations, secure authentication, REST APIs, and Railway-based deployment.
+
+🚀 Current Production Status
+
+The application is currently deployed with separate frontend and backend services on Railway and PostgreSQL as the production persistent database.
+
+Layer
+
+Current Status
+
+Production Details
+
+Frontend
+
+LIVE
+
+React + TypeScript + Vite on Railway
+
+Backend
+
+LIVE
+
+FastAPI + Python on Railway
+
+Database
+
+CONNECTED
+
+PostgreSQL on Railway
+
+API Health
+
+HEALTHY
+
+Backend health endpoint verified
+
+DSA Content
+
+SYNCED
+
+415 source problems available in production content
+
+CORS
+
+CONFIGURED
+
+Production frontend origin configured
+
+PWA
+
+IMPLEMENTED
+
+Manifest/service-worker based application experience
+
+Redis
+
+FALLBACK
+
+In-memory fallback currently active rather than an active Redis service
+
+Production status in this README reflects the current deployed architecture. Features that are documented in the application source but are not currently enabled in the production environment are not represented as active production infrastructure.
+
+✨ Core Platform Features
+
+1. Foundation & API Gateway
+
+FastAPI application gateway
+
+RESTful API architecture
+
+Correlation/request IDs
+
+Structured JSON logging
+
+Security headers
+
+Request-size protection
+
+Health and diagnostic endpoints
+
+Centralized configuration
+
+Validation and error handling
+
+Production CORS configuration
+
+2. Authentication & Authorization
+
+The platform includes production-oriented authentication and authorization architecture.
+
+Authentication
+
+User registration
+
+Secure password hashing using Argon2id
+
+JWT access-token architecture
+
+Refresh-token architecture
+
+Secure refresh-token cookie configuration
+
+Session/token lifecycle management
+
+Authorization
+
+Role-based access control (RBAC)
+
+Server-side authorization checks
+
+Protected API operations
+
+Admin/content-management permissions
+
+Sensitive-operation protection
+
+Security Controls
+
+CORS restrictions
+
+Allowed-host validation
+
+Security headers
+
+Request validation
+
+Audit logging
+
+Environment-based secrets
+
+No browser exposure of sensitive backend credentials
+
+📚 3. Curriculum & Content Management
+
+The learning system follows a structured hierarchy:
+
+Track
+  ↓
+Topic
+  ↓
+Subtopic
+  ↓
+Lesson
+  ↓
+Concept
+  ↓
+Problem
+  ↓
+Examples / Hints / Test Cases
+
+The content system supports:
+
+Tracks
+
+Topics
+
+Subtopics
+
+Lessons
+
+Concepts
+
+Problems
+
+Examples
+
+Hints
+
+Test cases
+
+Patterns
+
+Tags
+
+Code templates
+
+Content authoring workflows
+
+Admin/editor content management
+
+🧩 4. DSA Problem Library
+
+The platform contains a structured problem library of 415 DSA problems.
+
+Difficulty
+
+Problems
+
+Easy
+
+144
+
+Medium
+
+186
+
+Hard
+
+85
+
+Total
+
+415
+
+Problems are supported with associated:
+
+Examples
+
+Hints
+
+Test cases
+
+Patterns
+
+Tags
+
+Metadata
+
+Programming-language templates
+
+Users can discover problems through topics, difficulty, patterns, search, and practice workflows.
+
+📈 5. Progress Tracking & Revision
+
+The platform tracks learning progress across problems and lessons.
+
+Progress Features
+
+Problem progress
+
+Lesson progress
+
+Submission history
+
+Accuracy tracking
+
+Mistake tracking
+
+Cognitive mistake classification
+
+Revision workflows
+
+Weak-area identification
+
+Spaced repetition
+
+Revision Models
+
+The project architecture includes:
+
+Leitner-style revision
+
+SM-2 spaced-repetition intervals
+
+This allows users to revisit concepts and problems based on their learning history rather than following only a fixed sequence.
+
+💻 6. Online Judge & Secure Code Execution
+
+The project includes a secure online-judge architecture designed around isolated execution.
+
+Supported programming languages include:
+
+Python
+
+Java
+
+C++
+
+JavaScript
+
+The judge architecture uses Docker-based isolation with resource controls and security boundaries.
+
+User Code
+   ↓
+FastAPI Submission API
+   ↓
+Submission Validation
+   ↓
+Judge / Worker Layer
+   ↓
+Isolated Docker Sandbox
+   ↓
+Compile / Execute
+   ↓
+Test Cases
+   ↓
+Verdict
+   ↓
+Submission Result
+
+Security principles
+
+Untrusted code is not executed directly inside the FastAPI application process.
+
+Resource limits are applied by the sandbox architecture.
+
+Judge failures are designed to fail closed rather than fabricate successful verdicts.
+
+Production execution capability depends on deployment infrastructure supporting Docker.
+
+🤖 7. AI Tutor & AI-Powered Learning
+
+DSAapp includes AI-assisted learning workflows designed to help users learn instead of simply receiving final answers.
+
+AI Tutor capabilities
+
+Guided problem solving
+
+Multi-turn tutoring
+
+Progressive hints
+
+Concept explanations
+
+Complexity analysis
+
+Problem-solving assistance
+
+Learning-oriented feedback
+
+AI architecture
+
+React Frontend
+      ↓
+FastAPI AI API
+      ↓
+Server-side AI Provider
+      ↓
+AI Response / Learning Guidance
+      ↓
+Frontend
+
+AI provider credentials remain server-side and are supplied through deployment environment variables.
+
+📊 8. Algorithm Visualizers
+
+Interactive visual learning is included for algorithm and data-structure concepts.
+
+The visualizer layer is designed to help users understand algorithm execution step-by-step rather than relying only on static explanations.
+
+🎯 9. Adaptive Practice Engine
+
+DSAapp provides multiple practice modes:
+
+Mode
+
+Purpose
+
+QUICK
+
+Fast general practice
+
+TOPIC
+
+Practice a selected topic
+
+PATTERN
+
+Practice a specific DSA pattern
+
+DIFFICULTY
+
+Practice by difficulty
+
+WEAK_AREA
+
+Target weak skills
+
+MISTAKES
+
+Revisit previous mistakes
+
+REVISION
+
+Spaced-revision practice
+
+The practice engine can use learning history and user performance to guide practice selection.
+
+🏆 10. Gamification
+
+The platform includes server-authoritative gamification capabilities.
+
+Gamification components
+
+XP
+
+Levels
+
+Daily streaks
+
+Skill ratings
+
+Achievements
+
+Leaderboards
+
+Learning milestones
+
+The application uses server-side state for important gamification operations to reduce client-side manipulation.
+
+📅 11. Daily Challenges
+
+Daily learning activities are supported through challenge-oriented content and progress tracking.
+
+Daily challenges integrate with the wider practice, progress, streak, XP, and achievement systems.
+
+🏁 12. Contest Arena
+
+The project includes a contest architecture with server-authoritative contest lifecycle management.
+
+Capabilities include:
+
+Contest lifecycle
+
+Contest problems
+
+Time-bound participation
+
+ICPC-style scoring/penalty concepts
+
+Submission throttling
+
+Anti-cheat-oriented controls
+
+Code similarity detection architecture
+
+Contest ranking
+
+Where Redis is enabled, caching/coordination can be used by contest-related infrastructure; the current production environment uses the configured fallback where Redis is unavailable.
+
+🎤 13. AI Interview Simulator
+
+The platform includes an AI-powered interview preparation workflow.
+
+Interview capabilities
+
+Multiple interview tracks
+
+Session-based interviews
+
+Countdown/timing architecture
+
+Interview questions
+
+AI-assisted interaction
+
+Multi-dimensional scoring
+
+Interview reports
+
+Performance feedback
+
+The interview system is designed to simulate realistic technical interview preparation rather than functioning only as a static question bank.
+
+🏅 14. Competitive Programming
+
+Competitive programming features include:
+
+Competitive problem catalogue
+
+Rating bands
+
+Rating tracking
+
+Contest participation
+
+Competitive performance tracking
+
+The architecture supports separate competitive-rating concepts from the general learning/gamification system.
+
+🧮 15. Interactive SQL Learning
+
+DSAapp includes an interactive SQL practice environment.
+
+The SQL learning architecture uses an isolated SQLite execution model with query validation/firewall controls.
+
+Security-oriented restrictions include rejection of:
+
+Non-SELECT operations
+
+System-catalog access
+
+Chained/multi-statement queries
+
+The goal is to provide hands-on SQL practice without exposing the main production database.
+
+🏗️ 16. OOP & Design Patterns
+
+The OOP learning module covers:
+
+OOP
+
+Four pillars of OOP
+
+Encapsulation
+
+Abstraction
+
+Inheritance
+
+Polymorphism
+
+Design Principles
+
+SOLID principles
+
+Refactoring concepts
+
+Code-quality practices
+
+Design Patterns
+
+Gang of Four patterns
+
+Python examples
+
+Java examples
+
+C++ examples
+
+TypeScript examples
+
+👨‍💼 17. Admin & Governance
+
+The platform contains administrative and governance capabilities for managing the learning ecosystem.
+
+Features include:
+
+User directory
+
+User management
+
+Role-based administrative access
+
+Content management
+
+Problem management
+
+Test-case management
+
+Publishing workflows
+
+Platform diagnostics
+
+Audit trail
+
+Governance controls
+
+Sensitive administrative operations are protected by server-side authorization.
+
+📊 18. Platform Analytics
+
+The analytics layer provides database-driven platform metrics across multiple subsystems.
+
+Analytics areas include:
+
+Learning analytics
+
+User analytics
+
+Practice analytics
+
+Gamification analytics
+
+Contest analytics
+
+Interview analytics
+
+SQL analytics
+
+OOP analytics
+
+Judge analytics
+
+AI analytics
+
+Premium/payment-related monitoring
+
+System health
+
+The analytics architecture is intended to derive metrics from authoritative application data rather than fabricate client-side values.
+
+🔔 19. Notifications
+
+The notification system supports:
+
+In-app notifications
+
+Unread notification counts
+
+Notification preferences
+
+Transactional email architecture
+
+Deduplication keys
+
+Notification delivery tracking
+
+Administrative broadcasts
+
+Multi-channel notification architecture
+
+📱 20. Progressive Web App (PWA)
+
+DSAapp includes PWA capabilities for a more app-like web experience.
+
+Components include:
+
+Web App Manifest
+
+Service Worker
+
+Static asset caching
+
+Offline shell
+
+Update handling
+
+Install experience
+
+Network-only handling for sensitive API operations
+
+🏗️ 21. Full-Stack Architecture
+
+                         USER
+                           │
+                           ▼
+              ┌────────────────────────┐
+              │ React + TypeScript     │
+              │ Vite + PWA             │
+              │ Responsive Frontend    │
+              └───────────┬────────────┘
+                          │
+                    HTTPS / REST APIs
+                          │
+                          ▼
+              ┌────────────────────────┐
+              │ FastAPI Backend        │
+              │ Python                 │
+              │ Auth / RBAC / Logic    │
+              │ AI / Practice / Admin  │
+              └───────────┬────────────┘
+                          │
+                     SQLAlchemy
+                          │
+                          ▼
+              ┌────────────────────────┐
+              │ PostgreSQL             │
+              │ Production Database    │
+              └────────────────────────┘
+
+       Optional / supporting infrastructure
+       ├── Redis caching / queue abstraction
+       ├── Docker judge sandbox
+       ├── AI provider integration
+       └── Notification infrastructure
+
+🔄 22. Application Data Flow
+
+User Action
+    ↓
+React Component
+    ↓
+API Client
+    ↓
+FastAPI Endpoint
+    ↓
+Authentication / Authorization
+    ↓
+Validation / Business Logic
+    ↓
+Service / Repository Layer
+    ↓
+SQLAlchemy
+    ↓
+PostgreSQL
+    ↓
+Response
+    ↓
+React State / UI
+
+For AI workflows:
+
+User
+ ↓
+React AI Interface
+ ↓
+FastAPI AI Endpoint
+ ↓
+Server-side AI Provider
+ ↓
+AI Response
+ ↓
+Learning UI
+
+For code execution:
+
+Code Submission
+ ↓
+Submission API
+ ↓
+Validation
+ ↓
+Judge Layer
+ ↓
+Docker Sandbox
+ ↓
+Test Cases
+ ↓
+Verdict
+ ↓
+Submission History / Progress
+
+🧰 23. Technology Stack
+
+Frontend
+
+React
+
+TypeScript
+
+Vite
+
+HTML5
+
+CSS
+
+REST API integration
+
+PWA technologies
+
+Backend
+
+Python
+
+FastAPI
+
+REST APIs
+
+SQLAlchemy
+
+Alembic
+
+JWT authentication
+
+Argon2id
+
+Database
+
+PostgreSQL
+
+SQLite for local/isolated practice scenarios where applicable
+
+Alembic migrations
+
+Infrastructure
+
+Railway
+
+Docker architecture
+
+Redis abstraction/fallback
+
+Git
+
+GitHub
+
+AI
+
+Server-side AI provider integration
+
+AI Tutor workflows
+
+AI interview workflows
+
+🗄️ 24. Database Architecture
+
+The production PostgreSQL database stores structured data for the platform's major domains.
+
+Core data areas include:
+
+Users
+ ├── Authentication / Roles
+ ├── Progress
+ ├── Submissions
+ ├── Mistakes
+ ├── Revision
+ ├── XP / Levels
+ ├── Achievements
+ ├── Ratings
+ └── Notifications
+
+Learning Content
+ ├── Tracks
+ ├── Topics
+ ├── Subtopics
+ ├── Lessons
+ ├── Concepts
+ ├── Problems
+ ├── Examples
+ ├── Hints
+ ├── Test Cases
+ ├── Patterns
+ └── Tags
+
+Advanced Systems
+ ├── Contests
+ ├── Contest Problems
+ ├── Interviews
+ ├── Competitive Programming
+ ├── SQL Practice
+ ├── OOP
+ ├── Analytics
+ └── Audit Logs
+
+Database schema changes are managed through Alembic migrations.
+
+🔐 25. Security Architecture
+
+Security is applied across multiple layers.
+
+Application Security
+
+Authentication
+
+Authorization
+
+RBAC
+
+Input validation
+
+Secure cookies
+
+CORS restrictions
+
+Allowed-host validation
+
+Security headers
+
+Request-size limits
+
+Audit logging
+
+Secret Management
+
+Sensitive values are provided through environment variables and are not intended to be committed to Git.
+
+Examples include:
+
+Database credentials
+
+JWT secret
+
+AI provider keys
+
+Payment credentials
+
+Deployment-specific configuration
+
+Code Execution Security
+
+Untrusted code is isolated from the API process and relies on sandbox infrastructure when execution is enabled.
+
+📁 26. Project Structure
+
+A simplified high-level structure is:
+
+DSAapp/
+│
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── db/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── main.py
+│   │
+│   ├── tests/
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.*
+│
+├── alembic/
+├── scripts/
+├── infra/
+├── docs/
+├── docker-compose.yml
+├── .env.example
+└── README.md
+
+The exact repository tree may evolve as modules are added or reorganized. The structure above represents the major architectural separation of the project.
+
+⚙️ 27. Local Development Setup
+
+Prerequisites
+
+Python 3.x
+
+Node.js / npm
+
+PostgreSQL for production-style development where required
+
+Docker Desktop for Docker-based execution features
+
+Git
+
+Environment Configuration
+
 cp .env.example .env
-```
 
-### 2. Backend Setup
-```bash
+Configure required secrets and service settings in .env.
+
+🐍 28. Backend Setup
+
+Windows PowerShell:
+
 python -m venv backend/.venv
-.\backend\.venv\Scripts\Activate.ps1   # On Windows
+.\backend\.venv\Scripts\Activate.ps1
 pip install -r backend/requirements.txt
-alembic -c backend/alembic.ini upgrade head
-uvicorn backend.app.main:app --reload --port 8000
-```
 
-### 3. Frontend Setup
-```bash
+Run migrations:
+
+python -m alembic -c backend/alembic.ini upgrade head
+
+Start the backend:
+
+uvicorn backend.app.main:app --reload --port 8000
+
+⚛️ 29. Frontend Setup
+
 cd frontend
 npm install
 npm run dev
-```
 
-### 4. Running Automated Tests
-```bash
-# Run backend non-docker suite
-.\backend\.venv\Scripts\pytest backend/tests -v --ignore=backend/tests/test_real_docker_integration.py
+Production build:
 
-# Run backend real Docker sandbox integration suite (requires a running Docker daemon)
-.\backend\.venv\Scripts\pytest backend/tests/test_real_docker_integration.py -v
+npm run build
 
-# Run frontend Vitest suite
-cd frontend
-npm run test
+TypeScript validation:
 
-# Run frontend TypeScript typecheck (0 errors)
 npm run typecheck
 
-# Build frontend production bundle
-npm run build
-```
+🧪 30. Testing & Verification
 
-### 5. End-to-End Acceptance Verification
-With the backend running locally, this exercises the complete user journey
-(register -> problems -> AI -> interview -> gamification -> logout) against the
-live API:
-```bash
-python scripts/verify_production_acceptance.py
-```
+The project contains backend and frontend testing infrastructure.
 
----
+Backend
 
-## Deployment
+.\backend\.venv\Scripts\pytest backend/tests -v --ignore=backend/tests/test_real_docker_integration.py
 
-### Architecture
+Docker integration tests
 
-| Tier | Service | Notes |
-| :--- | :--- | :--- |
-| Frontend | Netlify / Vercel | Static SPA. `netlify.toml` and `vercel.json` both included. |
-| Backend | Render / Fly.io / any Docker host | `backend/Dockerfile`, port `8000`. |
-| Database | Neon PostgreSQL | Pooled connection string with `sslmode=require`. |
-| Cache/Queue | Redis (optional) | Falls back to in-memory when `REDIS_REQUIRED=false`. |
+Requires a running Docker daemon:
 
-### Required production environment variables (backend)
+.\backend\.venv\Scripts\pytest backend/tests/test_real_docker_integration.py -v
 
-| Variable | Required | Description |
-| :--- | :---: | :--- |
-| `ENVIRONMENT` | yes | Must be `production`. Startup aborts on invalid config. |
-| `SECRET_KEY` | yes | Cryptographically random string, **64+ characters**. Used to sign JWTs. |
-| `DATABASE_URL` | yes | Neon pooled URL, e.g. `postgresql://USER:PASS@ep-xxx.neon.tech/neondb?sslmode=require`. A sync `postgresql://` scheme is auto-upgraded to the async `postgresql+asyncpg` driver. |
-| `CORS_ORIGINS` | yes | JSON list containing **only** the deployed frontend origin. Wildcards are rejected in production. |
-| `ALLOWED_HOSTS` | yes | JSON list of accepted `Host` headers (backend domain). |
-| `GOOGLE_AI_API_KEY` | yes | Gemini key for the AI Tutor. Server-side only — never sent to the browser. |
-| `AI_PROVIDER` | yes | `gemini` for live AI. |
-| `SECURE_COOKIES` | yes | Must be `true` in production (refresh-token cookie hardening). |
-| `REDIS_URL` / `REDIS_REQUIRED` | no | Set `REDIS_REQUIRED=true` if the judge queue must use Redis. |
-| `PHONEPE_*` | no | Only if enabling real payments (`PAYMENT_MODE=phonepe_production`). |
+Frontend
 
-### Required production environment variable (frontend)
-
-| Variable | Required | Description |
-| :--- | :---: | :--- |
-| `VITE_API_BASE_URL` | yes | Absolute origin of the deployed backend, e.g. `https://dsaapp-api.onrender.com`. Must be set at **build** time. |
-
-### Deploying the frontend
-
-```bash
 cd frontend
-VITE_API_BASE_URL=https://<your-backend-host> npm run build   # outputs dist/
-```
-Then connect the repository to Netlify or Vercel — both host configs are committed
-(`netlify.toml`, `vercel.json`) and include the SPA history fallback plus the
-security headers.
+npm run test
+npm run typecheck
+npm run build
 
-### Deploying the backend
+Production acceptance
 
-`render.yaml` is committed and can be used as a Render Blueprint. It declares
-`healthCheckPath: /health`, the Docker runtime and `./backend/Dockerfile`, and
-every secret uses `sync: false` so nothing sensitive enters git.
+python scripts/verify_production_acceptance.py
 
-```bash
-docker build -t dsaapp-backend ./backend
-docker run -p 8000:8000 --env-file .env.production dsaapp-backend
-```
+🗃️ 31. Database Migrations
 
-**Port binding.** The container CMD is:
+Alembic is used to manage production schema changes.
 
-```dockerfile
-CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}"]
-```
+Upgrade:
 
-Shell form is required so `${PORT}` is expanded at runtime. A JSON `exec` array
-cannot expand environment variables and therefore always binds port 8000 — which
-is why a previous Render deployment bound `0.0.0.0:8000` while the platform
-probed a different port and timed out. The `HEALTHCHECK` probe also follows
-`$PORT`. Single worker by default, because every uvicorn worker runs the FastAPI
-lifespan and would start its own judge worker loop.
+python -m alembic -c backend/alembic.ini upgrade head
 
-**`ALLOWED_HOSTS` is mandatory in production.** `TrustedHostMiddleware` answers
-`400 Bad Request` for any `Host` header it does not recognise. Render health-checks
-the service through its generated hostname, so that hostname must be listed or
-`/health` returns 400 and the service never goes LIVE. Wildcards are supported
-(`*.onrender.com`). Startup now fails fast with an actionable message if the
-list is empty.
+The production deployment does not rely on blindly running SQLAlchemy create_all() against an Alembic-managed PostgreSQL schema.
 
-`CORS_ORIGINS` and `ALLOWED_HOSTS` accept a JSON array, a comma-separated list, or
-a single value — shell quoting differs between platforms and an unquoted value
-must never crash startup.
+This prevents PostgreSQL enum/type collisions and keeps schema evolution migration-controlled.
 
-### Render environment variables
+🌐 32. Production Deployment
 
-| Variable | Required | Notes |
-| :--- | :---: | :--- |
-| `ENVIRONMENT` | yes | `production` |
-| `SECRET_KEY` | yes | ≥ 64 chars. Startup **aborts** if shorter or prefixed `dev_`. |
-| `DATABASE_URL` | yes | Neon pooled URL. Must not be SQLite. |
-| `CORS_ORIGINS` | yes | Exact frontend origin only. No `*`. |
-| `ALLOWED_HOSTS` | yes | Backend hostname(s), e.g. `*.onrender.com`. Omitting this makes `/health` return **400**. |
-| `SECURE_COOKIES` | yes | `true` |
-| `GOOGLE_AI_API_KEY` | yes | Server-side only. |
-| `AI_PROVIDER` | yes | `gemini` |
-| `JUDGE_ENABLED` | no | `false` on Render (no container runtime). |
-| `ENABLE_API_DOCS` | no | `true` to expose `/docs` and `/openapi.json` in production. Off by default. |
-| `WEB_CONCURRENCY` | no | Defaults to `1`. |
+The current production architecture uses Railway.
 
-Apply migrations once against production before serving traffic:
-```bash
-python -m alembic -c alembic.ini upgrade head
-```
+Tier
 
-> **Why the migration step matters.** At startup the API performs a *read-only*
-> check of `alembic_version` against the revision this build expects
-> (`EXPECTED_ALEMBIC_HEAD` in `backend/app/db/init_db.py`). It deliberately does
-> **not** run `Base.metadata.create_all()` on PostgreSQL, because that emits a
-> bare `CREATE TYPE ... AS ENUM(...)` for every model enum and fails with
-> `duplicate key value violates unique constraint "pg_type_typname_nsp_index"`
-> on any database Alembic has already provisioned. `create_all()` is retained
-> only for SQLite (local dev and the throwaway in-memory test database).
->
-> If you ever add a migration, bump `EXPECTED_ALEMBIC_HEAD` to the new revision
-> id, otherwise startup logs a (non-fatal) schema-drift warning.
+Service
 
-### Render deployment notes
+Production URL
 
-Render does not provide a container runtime on standard web services, so the
-online judge cannot execute code there. Two supported options:
+Frontend
 
-| Option | What you get |
-| :--- | :--- |
-| **API only** (recommended for Render free/starter) | Set `JUDGE_ENABLED=false`. The API, auth, problems, progress, AI Tutor and interview all work. Submissions are queued but never executed. |
-| **Dedicated judge host** | Deploy the backend to a Docker-capable host (Fly.io, a VPS, ECS) with `JUDGE_ENABLED=true` and `JUDGE_SANDBOX_DRIVER=docker`, then build the five judge images from `infra/judge/*`. |
+Railway
 
-Security is **not** weakened either way:
-- `JUDGE_SANDBOX_DRIVER=mock` is rejected in production at startup — verdicts can never be fabricated.
-- No untrusted code is ever executed inside the FastAPI process.
-- If the Docker daemon is unreachable the judge fails **closed** with a safe error, never a fake "ACCEPTED".
+https://dsa-applogics.up.railway.app
 
-### Running the whole stack with Docker Compose
-```bash
-cp .env.example .env     # then fill in SECRET_KEY / DATABASE_URL / GOOGLE_AI_API_KEY
-docker compose up -d --build
-```
-The compose file starts an nginx gateway (`http://localhost`), the frontend, the
-backend, PostgreSQL and Redis.
+Backend
 
-### Security checklist before going live
-- [ ] `SECRET_KEY` is a fresh 64+ character random value (never the dev default).
-- [ ] `.env` is **not** committed (it is already covered by `.gitignore`).
-- [ ] `CORS_ORIGINS` lists only your real frontend origin.
-- [ ] `GOOGLE_AI_API_KEY` lives only in the host's secret store.
-- [ ] HTTPS is terminated in front of both tiers.
-- [ ] Judge images (`infra/judge/*`) are built on a Docker-capable host; submissions
-      require a working Docker daemon on the backend host.
+Railway
 
----
+https://dsaapp-production.up.railway.app
 
-## Architectural Documentation
-* [Architecture Blueprint](docs/ARCHITECTURE.md)
-* [Security Specification & Compliance](docs/SECURITY.md)
-* [Local Development Guide](docs/DEVELOPMENT.md)
-* [Testing & Verification Guide](docs/TESTING.md)
-* [Administration Manual](docs/ADMIN.md)
-* [Analytics Specification](docs/ANALYTICS.md)
-* [Notifications Engine](docs/NOTIFICATIONS.md)
-* [Progressive Web App (PWA)](docs/PWA.md)
-* [Phase 8 Completion Report](docs/PHASE_8_COMPLETION_REPORT.md)
-* [Phase 9 Completion Report](docs/PHASE_9_COMPLETION_REPORT.md)
+Database
+
+Railway PostgreSQL
+
+Private production database
+
+Deployment flow
+
+Local Development
+       ↓
+Git
+       ↓
+GitHub
+       ↓
+Railway
+   ┌───┼──────────────┐
+   ↓   ↓              ↓
+Frontend Backend   PostgreSQL
+
+🔗 33. Live Application
+
+Frontend
+
+https://dsa-applogics.up.railway.app
+
+Backend
+
+https://dsaapp-production.up.railway.app
+
+GitHub
+
+https://github.com/venkatsubbarao123/DSAapp
+
+🛠️ 34. Production Engineering & Debugging
+
+During deployment and production verification, real application issues were identified and resolved, including:
+
+Frontend API routing
+
+The frontend initially attempted to communicate with the wrong API origin. The production API base URL was corrected so frontend requests reach the FastAPI backend.
+
+SPA routing
+
+Routes containing query parameters required handling compatible with the deployed single-page application.
+
+PostgreSQL migrations
+
+Production schema creation was moved through Alembic-managed migrations rather than relying on automatic table creation.
+
+Production content synchronization
+
+The local application content was synchronized into the production PostgreSQL environment, including the 415-problem source library.
+
+CORS
+
+The production frontend origin was explicitly configured in the backend CORS policy.
+
+Health verification
+
+The backend health endpoint was used to verify service availability and database connectivity.
+
+🔒 35. Environment Variables
+
+Important backend configuration categories include:
+
+Variable
+
+Purpose
+
+ENVIRONMENT
+
+Runtime environment
+
+SECRET_KEY
+
+JWT/security signing
+
+DATABASE_URL
+
+PostgreSQL connection
+
+CORS_ORIGINS
+
+Allowed frontend origins
+
+ALLOWED_HOSTS
+
+Trusted backend hosts
+
+GOOGLE_AI_API_KEY
+
+Server-side AI provider credential
+
+AI_PROVIDER
+
+AI provider selection
+
+SECURE_COOKIES
+
+Secure authentication cookies
+
+REDIS_URL
+
+Optional Redis connection
+
+REDIS_REQUIRED
+
+Redis requirement/fallback behavior
+
+PHONEPE_*
+
+Payment configuration when enabled
+
+Frontend:
+
+VITE_API_BASE_URL
+
+The production frontend currently points to:
+
+https://dsaapp-production.up.railway.app
+
+Never commit real secrets, API keys, passwords, database credentials, or private tokens to GitHub.
+
+📖 36. Documentation
+
+Project documentation includes architecture, security, development, testing, administration, analytics, notifications, PWA, and phase completion documentation.
+
+Relevant documentation areas:
+
+Architecture Blueprint
+Security Specification
+Local Development Guide
+Testing & Verification Guide
+Administration Manual
+Analytics Specification
+Notifications Engine
+PWA Documentation
+Phase Completion Reports
+
+👨‍💻 37. Developer
+
+Choppavarapu Venkata Subba Rao
+
+AI/ML Developer
+
+📧 Email: venkatsubbarao000@gmail.com
+
+📱 Phone: 7093260994
+
+💼 LinkedIn: https://www.linkedin.com/in/venkatasubbarao09
+
+💻 GitHub: https://github.com/venkatsubbarao123
+
+📌 38. Resume-Ready Description
+
+DSAapp — Full-Stack AI-Powered DSA Learning & Coding Platform
+
+Developed and deployed a full-stack AI-powered DSA learning and coding platform using React, TypeScript, Vite, Python, FastAPI, SQLAlchemy, PostgreSQL, Alembic, JWT authentication, Docker-based sandbox architecture, and Railway. Built a structured learning ecosystem with 415 DSA problems, curriculum management, examples, hints, test cases, progress tracking, spaced revision, adaptive practice, AI-assisted tutoring, algorithm visualizers, gamification, contests, AI interview simulation, competitive programming, SQL/OOP learning, analytics, notifications, and PWA support. Implemented secure REST APIs, authentication/RBAC, production database migrations, CORS configuration, content synchronization, health verification, and production deployment.
+
+🎤 39. Interview Explanation
+
+“DSAapp is a full-stack AI-powered DSA learning and coding platform that follows a 20% theory and 80% practice approach. I worked with React and TypeScript for the frontend, FastAPI and Python for the backend, and PostgreSQL with SQLAlchemy and Alembic for the production data layer. The platform contains 415 DSA problems with topics, examples, hints and test cases, along with progress tracking, spaced revision, adaptive practice, AI tutoring, algorithm visualizers, gamification, contests, AI interview simulation, competitive programming, SQL and OOP learning. I also worked on authentication, RBAC, API integration, database migrations, CORS, production debugging, content synchronization, and Railway deployment.”
+
+⭐ Project Highlights
+
+Full-stack React + FastAPI architecture
+
+AI-powered learning workflows
+
+415 structured DSA problems
+
+20% Theory / 80% Practice learning model
+
+Secure authentication and RBAC
+
+PostgreSQL production database
+
+Alembic migration management
+
+Adaptive practice engine
+
+Progress and spaced revision
+
+AI Tutor
+
+Algorithm visualizers
+
+Gamification and leaderboards
+
+Contest system
+
+AI Interview Simulator
+
+Competitive programming
+
+Interactive SQL learning
+
+OOP and Design Patterns
+
+Admin and analytics platform
+
+Notifications
+
+PWA
+
+Railway production deployment
+
+🌐 Project Links
+
+Resource
+
+Link
+
+🌐 Live Application
+
+https://dsa-applogics.up.railway.app
+
+⚙️ Backend API
+
+https://dsaapp-production.up.railway.app
+
+💻 GitHub Repository
+
+https://github.com/venkatsubbarao123/DSAapp
+
+💼 LinkedIn
+
+https://www.linkedin.com/in/venkatasubbarao09
+
+📄 License
+
+This project is maintained as a personal software engineering and portfolio project. Refer to the repository for the applicable licensing terms.
+
+<p align="center">
+  <strong>DSAapp — Learn Smarter. Practice Better. Code Confidently.</strong>
+</p>
