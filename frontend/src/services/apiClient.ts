@@ -15,7 +15,8 @@ import { APIResponse, APIErrorDetail } from "../types/api.ts";
  *   VITE_API_BASE_URL points to the Railway backend.
  */
 export const API_BASE_URL: string = (
-  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? ""
+  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ||
+  "https://dsaapp-production.up.railway.app"
 ).replace(/\/+$/, "");
 
 export function apiUrl(path: string): string {
