@@ -104,7 +104,7 @@ export const AppContent: React.FC = () => {
     if (currentPath === "/curriculum") {
       return <CurriculumPage onNavigate={navigate} />;
     }
-    if (currentPath === "/topics") {
+    if (currentPath === "/topics" || currentPath.startsWith("/topics?")) {
       return <TopicsPage onNavigate={navigate} />;
     }
     if (currentPath.startsWith("/topics/")) {
