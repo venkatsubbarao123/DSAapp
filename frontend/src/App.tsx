@@ -92,7 +92,7 @@ export const AppContent: React.FC = () => {
   }, [currentPath]);
 
   const renderCurrentView = () => {
-    if (currentPath === "/") {
+    if (currentPath === "/" || currentPath.startsWith("/?")) {
       return <HomePage onNavigate={navigate} />;
     }
     if (currentPath === "/status") {
