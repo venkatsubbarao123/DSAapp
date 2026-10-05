@@ -194,8 +194,10 @@ describe("DSAapp Phase 7 Practice Engine & Gamification UI", () => {
     expect(screen.getByRole("button", { name: /Longest Streak/i })).toBeInTheDocument();
 
     // Check table entries
-    expect(screen.getByText("CodeMaster")).toBeInTheDocument();
-    expect(screen.getByText("ByteSolver")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("CodeMaster")).toBeInTheDocument();
+      expect(screen.getByText("ByteSolver")).toBeInTheDocument();
+    });
   });
 
   it("displays Phase 7 version tag and navigation links in Header", async () => {
